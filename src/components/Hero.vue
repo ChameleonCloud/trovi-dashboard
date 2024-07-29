@@ -4,11 +4,11 @@ import { defineProps } from 'vue';
 defineProps({
     title: {
         type: String,
-        default: 'Become a Vue Dev',
+        default: 'A collection of shared artifacts.',
     },
     subtitle: {
         type: String,
-        default: '',
+        default: 'And an open platform for practical reproducibility.',
     }
 });
 
