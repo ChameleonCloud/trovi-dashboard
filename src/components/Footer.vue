@@ -12,13 +12,12 @@ const icons = ref(['mdi-email-outline', 'mdi-linkedin', 'mdi-twitter']);
                 <v-btn v-for="icon in icons" :key="icon" :icon="icon" class="mx-2" variant="text"></v-btn>
             </div>
             <!-- Logo and Text -->
-            <div class="flex flex-col items-center text-center max-w-4xl px-4 space-y-4">
+            <div class="flex flex-col items-center text-center max-w-3xl px-3 space-y-5">
                 <!-- Larger Logo -->
                 <img src="@/assets/img/USNSF_Logo_Lockup_with_Headline_RGB_1200ppi.png" alt="US NSF Logo"
-                    class="w-48 h-auto" />
+                    class="w-64 h-auto" />
                 <span>
-                    Trovi is funded by a grant from the National Science Foundation
-                    (Award No. XXXXXX - CCRI CISE).
+                    Trovi is funded by a grant from the National Science Foundation (Award No. XXXXXX - CCRI CISE).
                 </span>
             </div>
             <v-divider></v-divider>
