@@ -1,17 +1,21 @@
-// home page to home vue
-
-import { createRouter, createWebHashHistory } from "vue-router";
+import { createRouter, createWebHistory } from "vue-router";
 import HomeView from "@/views/HomeView.vue";
 
 const router = createRouter({
-    history: createWebHashHistory(import.meta.env.BASE_URL),
+    // to go back with the back button
+    history: createWebHistory(import.meta.env.BASE_URL),
+    // array of objects
     routes: [
         {
             path: '/',
             name: 'home',
-            component: HomeView
-        }
-    ]
+            component: HomeView,
+        },
+    ],
 });
 
 export default router;
+
+
+// home page to home vue
+// main router about page to about view
