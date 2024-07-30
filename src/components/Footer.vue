@@ -3,7 +3,6 @@ import { ref } from 'vue';
 
 const icons = ref(['mdi-email-outline', 'mdi-linkedin', 'mdi-twitter']);
 </script>
-
 <template>
     <footer class="bg-gray-100 text-gray-700 py-4 mt-auto">
         <div class="container mx-auto flex flex-col items-center space-y-4">
@@ -24,7 +23,7 @@ const icons = ref(['mdi-email-outline', 'mdi-linkedin', 'mdi-twitter']);
             <!-- Footer Text -->
             <div class="flex flex-col items-center">
                 <div>
-                    {{ new Date().getFullYear() }} — <strong>Trovi©</strong>
+                    <strong> Trovi </strong> [Alpha version ©] - {{ new Date().getFullYear() }}
                 </div>
             </div>
         </div>
