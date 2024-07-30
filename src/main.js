@@ -1,8 +1,10 @@
-import './assets/main.css'
+import './assets/main.css';
+import 'primeicons/primeicons.css';
 
-import { createApp } from 'vue'
-import { createPinia } from 'pinia'
-import App from './components/App.vue'
+
+import { createApp } from 'vue';
+import { createPinia } from 'pinia';
+import App from './components/App.vue';
 
 const app = createApp(App)
 
