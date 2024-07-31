@@ -29,7 +29,6 @@ onMounted(async () => {
 }
 );
 </script>
-
 <template>
     <BackButton />
     <section v-if="!state.isLoading" class="bg-green-50">
