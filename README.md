@@ -1,7 +1,6 @@
-# vue-trovi
+# [Trovi sharing portal](https://chameleoncloud.readthedocs.io/en/latest/technical/sharing.html)
 
 Trovi on Chameleon is an open-source service designed to enhance the practical reproducibility of computer science research.
-[Trovi sharing portal](https://chameleoncloud.readthedocs.io/en/latest/technical/sharing.html)
 
 Vue 3 in Vite
 
@@ -30,5 +29,3 @@ npm run dev
 ```sh
 npm run build
 ```
-
-# vue-trovi
