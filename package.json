@@ -7,11 +7,12 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "server": "json-server --watch src/jobs.json 3000"
+    "server": "json-server --watch src/jobs.json --port 2000"
   },
   "dependencies": {
     "@heroicons/vue": "^2.1.5",
     "@mdi/font": "^7.4.47",
+    "axios": "^1.7.2",
     "json-server": "^1.0.0-beta.1",
     "pinia": "^2.1.7",
     "primeicons": "^7.0.0",

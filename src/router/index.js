@@ -22,7 +22,7 @@ const router = createRouter({
         {
             path: '/jobs/:id',
             name: 'job',
-            component: JobView
+            component: JobView,
         },
         {
             path: '/:catchAll(.*)',

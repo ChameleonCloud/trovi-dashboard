@@ -1,8 +1,11 @@
 <script setup>
-import jobsData from '@/jobs.json';
-import { ref, defineProps } from 'vue';
-import JobListing from './JobListing.vue';
 import { RouterLink } from 'vue-router';
+import JobListing from './JobListing.vue';
+// import jobsData from '@/jobs.json';
+// both we can use ref or reactive. I'll stick with ref() because it can take both objects or primitives
+// import { ref, defineProps, onMounted } from 'vue';
+import { reactive, defineProps, onMounted } from 'vue';
+import axios from 'axios';
 
 defineProps({
     limit: Number,
@@ -12,8 +15,26 @@ defineProps({
     }
 })
 
-const jobs = ref(jobsData);
-console.log(jobs.value);
+// bring it reactive and pass an object
+const state = reactive({
+    // jobs: [], empty array here
+    jobs: [],
+    isloading: true
+})
+
+onMounted(async () => {
+    try {
+        const response = await axios.get('http://localhost:2000/jobs');
+        state.jobs = response.data;
+    } catch (error) {
+        console.error('Error fetching jobs', error);
+    } finally {
+        state.isloading = false;
+    }
+}
+);
+
+// console.log(jobs.value);
 </script>
 
 <template>
@@ -24,7 +45,7 @@ console.log(jobs.value);
             </h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <!-- Iterate over jobs array -->
-                <JobListing v-for="job in jobs.slice(0, limit || jobs.length)" :key="job.id" :job="job" />
+                <JobListing v-for="job in state.jobs.slice(0, limit || state.jobs.length)" :key="job.id" :job="job" />
             </div>
         </div>
     </section>
