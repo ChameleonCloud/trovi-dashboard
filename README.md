@@ -2,7 +2,7 @@
 
 Trovi on Chameleon is an open-source service designed to enhance the practical reproducibility of computer science research.
 
-Front-end [Vue 3 in Vite]
+Vue 3 in Vite
 
 ## Recommended IDE Setup
 
