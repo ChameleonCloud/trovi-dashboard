@@ -13,11 +13,11 @@ const toggleFullDescription = () => {
 }
 
 const truncatedDescription = computed(() => {
-    let description = props.job.description;
+    let short_description = props.job.short_description;
     if (!showFullDescription.value) {
-        description = description.substring(0, 90) + '...';
+        short_description = short_description.substring(0, 90) + '...';
     }
-    return description;
+    return short_description;
 });
 </script>
 
@@ -67,7 +67,7 @@ const truncatedDescription = computed(() => {
 
         <!-- Button Section -->
         <div class="flex justify-end">
-            <RouterLink :to="'/jobs/' + job.id"
+            <RouterLink :to="'/jobs/' + job.uuid"
                 class="bg-lime-600 hover:bg-lime-600 text-white px-5 py-2 rounded-lg text-center text-sm">
                 View
             </RouterLink>

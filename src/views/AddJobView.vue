@@ -44,8 +44,7 @@ const handleSubmit = async () => {
         router.push(`/jobs/${response.data.id}`);
     } catch (error) {
         console.error('Error fetching job', error);
-
-        toast.error('Job Was Not Added')
+        toast.error('Job ')
         // @todo - show toast / notification
     }
 

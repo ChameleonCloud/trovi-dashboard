@@ -10,7 +10,7 @@ const route = useRoute();
 const router = useRouter();
 const toast = useToast();
 
-const jobId = route.params.id;
+const jobId = route.params.uuid;
 
 const state = reactive({
     job: {},
@@ -27,7 +27,7 @@ const deleteJob = async () => {
         }
     } catch (error) {
         console.error('Error deleting job', error);
-        toast.error('Job not deleted...');
+        toast.error('Job was not deleted...');
     }
 }
 
@@ -84,20 +84,12 @@ onMounted(async () => {
 
                 <!-- Sidebar -->
                 <aside>
-                    <!-- Author Info and Statistics -->
+                    <!-- Author Info and Statistics this has to be fixed -->
                     <div class="bg-white p-6 rounded-lg shadow-md mb-6">
-                        <h3 class="text-xl font-bold mb-4 text-lime-600">Artifact Owner</h3>
-                        <div class="flex items-center mb-4">
-                            <div
-                                class="w-12 h-12 rounded-full bg-lime-500 text-white flex items-center justify-center text-2xl font-bold">
-                                {{ state.job.authors[0]?.full_name.charAt(0) }}
-                            </div>
-                            <div class="ml-4">
-                                <div class="text-2xl font-semibold">{{ state.job.authors[0]?.full_name }}</div>
-                                <div class="text-lg text-gray-600">{{ state.job.authors[0]?.affiliation }}</div>
-                                <div class="text-lg text-gray-500">{{ state.job.authors[0]?.email }}</div>
-                            </div>
-                        </div>
+                        <h3 class="text-xl font-bold mb-4">Artifact Owner</h3>
+                        <!-- <div class="text-2xl font-semibold mb-2">{{ state.job.authors[0]?.full_name }}</div>
+                        <div class="text-lg mb-2">{{ state.job.authors[0]?.affiliation }}</div>
+                        <div class="text-lg mb-4">{{ state.job.authors[0]?.email }}</div> -->
 
                         <div class="flex items-center mb-2">
                             <i class="fas fa-eye mr-2 text-lime-500"></i>
@@ -116,9 +108,9 @@ onMounted(async () => {
                     <!-- Manage -->
                     <div class="bg-white p-6 rounded-lg shadow-md">
                         <h3 class="text-xl font-bold mb-6">Manage Artifact</h3>
-                        <RouterLink :to="`/jobs/edit/${state.job.id}`"
+                        <RouterLink :to="`/jobs/edit/${state.job.uuid}`"
                             class="bg-lime-500 hover:bg-lime-600 text-white text-center font-bold py-2 px-4 rounded-full w-full focus:outline-none focus:shadow-outline mt-4 block">
-                            Edit
+                            Update in GitHub
                         </RouterLink>
                         <button @click="deleteJob"
                             class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-full w-full focus:outline-none focus:shadow-outline mt-4 block">
