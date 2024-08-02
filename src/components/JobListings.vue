@@ -25,7 +25,7 @@ const state = reactive({
 
 onMounted(async () => {
     try {
-        const response = await axios.get('/api/jobs');
+        const response = await axios.get('http://localhost:2000/jobs');
         state.jobs = response.data;
     } catch (error) {
         console.error('Error fetching jobs', error);
@@ -39,10 +39,10 @@ onMounted(async () => {
 </script>
 
 <template>
-    <section class="bg-blue-50 px-4 py-10">
+    <section class="bg-stone-100 px-4 py-10">
         <div class="container-xl lg:container m-auto">
-            <h2 class="text-3xl font-bold text-green-500 mb-6 text-center">
-                Browse Jobs
+            <h2 class="text-3xl font-bold text-zinc-950 mb-6 text-center">
+                Browse Artifacts
             </h2>
             <!-- Show loading spiinner while loading is true -->
             <div v-if="state.isLoading" class="text-center text-gray-500 py-6">
@@ -57,9 +57,12 @@ onMounted(async () => {
         </div>
     </section>
 
+
     <section v-if="showButton" class="m-auto max-w-lg my-10 px-6">
         <RouterLink to="/jobs" class="block bg-black text-white text-center py-4 px-6 rounded-xl hover:bg-gray-700">
-            View All Jobs
+            View All Artifacts
         </RouterLink>
+
     </section>
+
 </template>
