@@ -14,7 +14,7 @@ import Card from '@/components/Card.vue';
                         Get started with our collection of shared artifacts.
                     </p>
                     <RouterLink to="/jobs"
-                        class="inline-block bg-black text-white rounded-lg px-4 py-2 hover:bg-gray-300 hover:text-black">
+                        class="inline-block bg-black text-white rounded-lg px-4 py-2 hover:bg-lime-600 hover:text-white">
                         Get Started
                     </RouterLink>
                 </Card>
@@ -24,7 +24,7 @@ import Card from '@/components/Card.vue';
                         Create a new artifact and share it with the community.
                     </p>
                     <RouterLink to="/jobs/add"
-                        class="inline-block bg-black text-white rounded-lg px-4 py-2 hover:bg-gray-300 hover:text-black">
+                        class="inline-block bg-black text-white rounded-lg px-4 py-2 hover:bg-lime-600 hover:text-white">
                         Try it
                     </RouterLink>
                 </Card>

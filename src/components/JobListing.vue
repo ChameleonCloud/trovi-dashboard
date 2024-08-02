@@ -51,7 +51,7 @@ const truncatedDescription = computed(() => {
                 </div>
                 <!-- concatenate with jobid -->
                 <RouterLink :to="'/jobs/' + job.id"
-                    class="h-[36px] bg-lime-600 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-center text-sm">
+                    class="h-[36px] bg-lime-600 hover:bg-gray-900 text-white px-4 py-2 rounded-lg text-center text-sm">
                     Read More
                 </RouterLink>
             </div>
