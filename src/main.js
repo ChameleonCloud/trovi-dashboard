@@ -1,4 +1,5 @@
 import './assets/main.css';
+import '@fortawesome/fontawesome-free/css/all.css';
 import 'primeicons/primeicons.css';
 import Toast from 'vue-toastification';
 import 'vue-toastification/dist/index.css';
