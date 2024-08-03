@@ -31,8 +31,12 @@ const isActiveLink = (routePath) => {
                 :class="[isActiveLink('/jobs') ? 'bg-zinc-800' : 'hover:bg-gray-900 hover:text-white', 'text-white', 'px-3', 'py-2', 'rounded-md']">
                 Explore <!-- Jobs -->
               </RouterLink>
-              <RouterLink to="/jobs/add"
-                :class="[isActiveLink('/jobs/add') ? 'bg-zinc-800' : 'hover:bg-gray-900 hover:text-white', 'text-white', 'px-3', 'py-2', 'rounded-md']">
+              <!-- <RouterLink to="/jobs/add" -->
+              <RouterLink to="/NotFoundView"
+                :class="[isActiveLink('/NotFoundView') ? 'bg-zinc-800' : 'hover:bg-gray-900 hover:text-white', 'text-white', 'px-3', 'py-2', 'rounded-md']">
+
+                <!-- :class="[isActiveLink('/jobs/add') ? 'bg-zinc-800' : 'hover:bg-gray-900 hover:text-white', 'text-white', -->
+                <!-- 'px-3', 'py-2', 'rounded-md']"> -->
                 Docs <!-- Add Job -->
               </RouterLink>
             </div>

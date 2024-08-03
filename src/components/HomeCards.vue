@@ -23,7 +23,8 @@ import Card from '@/components/Card.vue';
                     <p class="mt-2 mb-4">
                         Create a new artifact and share it with the community.
                     </p>
-                    <RouterLink to="/jobs/add"
+                    <!-- <RouterLink to="/jobs/add" -->
+                    <RouterLink to="/NotFoundView"
                         class="inline-block bg-black text-white rounded-lg px-4 py-2 hover:bg-lime-600 hover:text-white">
                         Try it
                     </RouterLink>
