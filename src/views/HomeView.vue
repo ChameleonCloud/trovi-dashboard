@@ -10,4 +10,5 @@ import JobListing from '@/components/JobListings.vue';
     <Hero />
     <HomeCards />
     <job-listing :limit="6" :showButton="true" />
+
 </template>
