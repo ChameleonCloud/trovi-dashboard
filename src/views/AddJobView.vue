@@ -1,12 +1,13 @@
 <script setup>
-import { reactive } from 'vue';
-import axios from 'axios';
 import router from '@/router';
+import { reactive } from 'vue';
 import { useToast } from 'vue-toastification';
+import axios from 'axios';
 
 const form = reactive({
     type: 'Full-Time',
     title: '',
+    description: '',
     salary: '',
     location: '',
     company: {
@@ -20,7 +21,6 @@ const form = reactive({
 const toast = useToast();
 
 const handleSubmit = async () => {
-    // console.log(form.title)
     const newJob = {
         title: form.title,
         type: form.type,
@@ -31,27 +31,20 @@ const handleSubmit = async () => {
             name: form.company.name,
             description: form.company.description,
             contactEmail: form.company.contactEmail,
-            contactPhone: form.company.contactPhone
+            contactPhone: form.company.contactPhone,
         },
     };
-    // This is to check if the request works --> console.log(newJob);
 
     try {
         const response = await axios.post('/api/jobs', newJob);
-        // @todo - show toast / notification
         toast.success('Job Added Successfully');
-
         router.push(`/jobs/${response.data.id}`);
     } catch (error) {
         console.error('Error fetching job', error);
-        toast.error('Job ')
-        // @todo - show toast / notification
+        toast.error('Job Was Not Added');
     }
-
-
 };
 </script>
-
 
 <template>
     <section class="bg-green-50">
@@ -103,9 +96,7 @@ const handleSubmit = async () => {
                     </div>
 
                     <div class="mb-4">
-                        <label class="block text-gray-700 font-bold mb-2">
-                            Location
-                        </label>
+                        <label class="block text-gray-700 font-bold mb-2"> Location </label>
                         <input type="text" v-model="form.location" id="location" name="location"
                             class="border rounded w-full py-2 px-3 mb-2" placeholder="Company Location" required />
                     </div>
