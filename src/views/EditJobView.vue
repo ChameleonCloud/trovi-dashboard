@@ -1,18 +1,18 @@
 <script setup>
-import router from '@/router';
 import { reactive, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
-import { useToast } from 'vue-toastification';
 import axios from 'axios';
+import router from '@/router';
+import { useToast } from 'vue-toastification';
 
 const route = useRoute();
+// const router = useRouter();
 
-const jobId = route.params.uuid;
+const jobId = route.params.id;
 
 const form = reactive({
     type: 'Full-Time',
     title: '',
-    description: '',
     salary: '',
     location: '',
     company: {
@@ -25,12 +25,13 @@ const form = reactive({
 
 const state = reactive({
     job: {},
-    isLoading: true,
+    isLoading: true
 });
 
 const toast = useToast();
 
 const handleSubmit = async () => {
+    // console.log(form.title)
     const updatedJob = {
         title: form.title,
         type: form.type,
@@ -41,17 +42,22 @@ const handleSubmit = async () => {
             name: form.company.name,
             description: form.company.description,
             contactEmail: form.company.contactEmail,
-            contactPhone: form.company.contactPhone,
+            contactPhone: form.company.contactPhone
         },
     };
+    // This is to check if the request works --> console.log(newJob);
 
     try {
         const response = await axios.put(`/api/jobs/${jobId}`, updatedJob);
+        // @todo - show toast / notification
         toast.success('Job Updated Successfully');
-        router.push(`/jobs/${response.data.uuid}`);
+
+        router.push(`/jobs/${response.data.id}`);
     } catch (error) {
         console.error('Error fetching job', error);
-        toast.error('Job Was Not Added');
+
+        toast.error('Job Was Not Added')
+        // @todo - show toast / notification
     }
 };
 
@@ -59,7 +65,7 @@ onMounted(async () => {
     try {
         const response = await axios.get(`/api/jobs/${jobId}`);
         state.job = response.data;
-        // Populate inputs
+        //populate inputs
         form.type = state.job.type;
         form.title = state.job.title;
         form.description = state.job.description;
@@ -75,6 +81,7 @@ onMounted(async () => {
         state.isLoading = false;
     }
 });
+
 </script>
 
 <template>
@@ -127,7 +134,9 @@ onMounted(async () => {
                     </div>
 
                     <div class="mb-4">
-                        <label class="block text-gray-700 font-bold mb-2"> Location </label>
+                        <label class="block text-gray-700 font-bold mb-2">
+                            Location
+                        </label>
                         <input type="text" v-model="form.location" id="location" name="location"
                             class="border rounded w-full py-2 px-3 mb-2" placeholder="Company Location" required />
                     </div>

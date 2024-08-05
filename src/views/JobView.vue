@@ -17,20 +17,19 @@ const state = reactive({
     isLoading: true,
 });
 
-
-// const deleteJob = async () => {
-//     try {
-//         const confirm = window.confirm('Are you sure you want to delete this job?');
-//         if (confirm) {
-//             await axios.delete(`/api/jobs/${jobId}`);
-//             toast.success('Job Deleted Successfully');
-//             router.push('/jobs');
-//         }
-//     } catch (error) {
-//         console.error('Error deleting job', error);
-//         toast.error('Job Not Deleted');
-//     }
-// };
+const deleteJob = async () => {
+    try {
+        const confirm = window.confirm('Are you sure you want to delete this job?');
+        if (confirm) {
+            await axios.delete(`/api/jobs/${jobId}`);
+            toast.success('Job Deleted Successfully');
+            router.push('/jobs');
+        }
+    } catch (error) {
+        console.error('Error deleting job', error);
+        toast.error('Job was not deleted...');
+    }
+}
 
 onMounted(async () => {
     try {
@@ -46,70 +45,76 @@ onMounted(async () => {
 
 <template>
     <BackButton />
-    <section v-if="!state.isLoading" class="bg-green-50">
+    <section v-if="!state.isLoading" class="bg-stone-100">
         <div class="container m-auto py-10 px-6">
             <div class="grid grid-cols-1 md:grid-cols-70/30 w-full gap-6">
                 <main>
                     <div class="bg-white p-6 rounded-lg shadow-md text-center md:text-left">
-                        <!-- <div class="text-gray-500 mb-4">{{ state.job.title }}</div> -->
-                        <!-- <h1 class="text-3xl font-bold mb-4">{{ state.job.title }}</h1> -->
+                        <div class="text-gray-500 mb-4">{{ state.job.type }}</div>
+                        <h1 class="text-3xl font-bold mb-4">{{ state.job.title }}</h1>
                         <div class="text-gray-500 mb-4 flex align-middle justify-center md:justify-start">
-                            <i class="pi pi-map-marker text-xl text-orange-700 mr-2"></i>
-                            <!-- <p class="text-orange-700">{{ state.job.long_description }}</p> -->
+                            <div>
+                                <div class="flex flex-wrap gap-2 mt-2">
+                                    <template v-for="tag in state.job.tags" :key="tag">
+                                        <span
+                                            class="flex items-center bg-lime-500 text-white text-sm font-medium px-2.5 py-0.5 rounded-full">
+                                            <i class="fas fa-tag mr-1"></i> {{ tag }}
+                                        </span>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-gray-500 mt-4">
+                            <p>Created At: {{ new Date(state.job.created_at).toLocaleDateString() }}</p>
+                            <p>Last update: {{ new Date(state.job.updated_at).toLocaleDateString() }}</p>
                         </div>
                     </div>
 
+                    <!-- Artifact Description (updated to long_description) -->
                     <div class="bg-white p-6 rounded-lg shadow-md mt-6">
                         <h3 class="text-green-800 text-lg font-bold mb-6">
-                            Job Description
+                            Artifact Description
                         </h3>
 
                         <p class="mb-4">
                             {{ state.job.long_description }}
                         </p>
-
-                        <!-- <h3 class="text-green-800 text-lg font-bold mb-2">Salary</h3> -->
-
-                        <p class="mb-4">{{ state.job.long_description }} / Year</p>
                     </div>
                 </main>
 
                 <!-- Sidebar -->
                 <aside>
-                    <!-- Company Info -->
-                    <div class="bg-white p-6 rounded-lg shadow-md">
-                        <!-- <h3 class="text-xl font-bold mb-6">Company Info</h3> -->
+                    <!-- Author Info and Statistics this has to be fixed -->
+                    <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+                        <h3 class="text-xl font-bold mb-4">Artifact Owner</h3>
+                        <!-- <div class="text-2xl font-semibold mb-2">{{ state.job.authors[0]?.full_name }}</div>
+                        <div class="text-lg mb-2">{{ state.job.authors[0]?.affiliation }}</div>
+                        <div class="text-lg mb-4">{{ state.job.authors[0]?.email }}</div> -->
 
-                        <!-- <h2 class="text-2xl">{{ state.job.company.name }}</h2> -->
-
-                        <p class="my-2">
-                            <!-- {{ state.job.company.description }} -->
-                        </p>
-
-                        <hr class="my-4" />
-
-                        <!-- <h3 class="text-xl">Contact Email:</h3> -->
-
-                        <p class="my-2 bg-green-100 p-2 font-bold">
-                            <!-- {{ state.job.company.contactEmail }} -->
-                        </p>
-
-                        <!-- <h3 class="text-xl">Contact Phone:</h3> -->
-
-                        <p class="my-2 bg-green-100 p-2 font-bold">
-                            <!-- {{ state.job.company.contactPhone }} -->
-                        </p>
+                        <div class="flex items-center mb-2">
+                            <i class="fas fa-eye mr-2 text-lime-500"></i>
+                            <span>Access Count: {{ state.job.access_count }}</span>
+                        </div>
+                        <div class="flex items-center mb-2">
+                            <i class="fas fa-user-check mr-2 text-lime-500"></i>
+                            <span>Unique Access Count: {{ state.job.unique_access_count }}</span>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-list-alt mr-2 text-lime-500"></i>
+                            <span>Unique Cell Execution Count: {{ state.job.unique_cell_execution_count }}</span>
+                        </div>
                     </div>
 
                     <!-- Manage -->
-                    <div class="bg-white p-6 rounded-lg shadow-md mt-6">
-                        <h3 class="text-xl font-bold mb-6">Manage Job</h3>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-xl font-bold mb-6">Manage Artifact</h3>
                         <RouterLink :to="`/jobs/edit/${state.job.uuid}`"
-                            class="bg-lime-500 hover:bg-lime-700 text-white text-center font-bold py-2 px-4 rounded-full w-full focus:outline-none focus:shadow-outline mt-4 block">
-                            Open Artifact in GitHub</RouterLink>
+                            class="bg-lime-500 hover:bg-lime-600 text-white text-center font-bold py-2 px-4 rounded-full w-full focus:outline-none focus:shadow-outline mt-4 block">
+                            Update in GitHub
+                        </RouterLink>
                         <button @click="deleteJob"
                             class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-full w-full focus:outline-none focus:shadow-outline mt-4 block">
-                            Delete Job
+                            Delete
                         </button>
                     </div>
                 </aside>
@@ -117,6 +122,7 @@ onMounted(async () => {
         </div>
     </section>
 
+    <!-- Show loading spinner while loading is true -->
     <div v-else class="text-center text-gray-500 py-6">
         <PulseLoader />
     </div>

@@ -2,69 +2,75 @@
 import { RouterLink } from 'vue-router';
 import { defineProps, ref, computed } from 'vue';
 
-// Define props
 const props = defineProps({
-    job: {
-        type: Object,
-        required: true
-    }
+    job: Object,
 });
 
-// State to manage full description toggle
 const showFullDescription = ref(false);
 
-// Toggle full description
 const toggleFullDescription = () => {
     showFullDescription.value = !showFullDescription.value;
-};
+}
 
-// Compute truncated description
 const truncatedDescription = computed(() => {
-    let long_description = props.job.long_description || '';
-    if (!showFullDescription.value && long_description.length > 90) {
-        long_description = long_description.substring(0, 90) + '...';
+    let short_description = props.job.short_description;
+    if (!showFullDescription.value) {
+        short_description = short_description.substring(0, 90) + '...';
     }
-    return long_description;
+    return short_description;
 });
 </script>
 
 <template>
-    <div class="bg-white rounded-xl shadow-md relative">
-        <div class="p-4">
-            <!-- Job Title -->
-            <div class="mb-6">
-                <h3 class="text-xl font-bold">{{ props.job.title }}</h3>
-            </div>
-
-            <!-- Job Description -->
-            <div class="mb-5">
+    <!-- Job Listing 1 -->
+    <div class="bg-white rounded-xl shadow-md relative p-4">
+        <div class="mb-4">
+            <div class="text-gray-600 my-2">{{ job.type }}</div>
+            <h3 class="text-xl font-bold mb-2">{{ job.title }}</h3>
+            <div class="text-gray-600 mb-4">
                 <div>
                     {{ truncatedDescription }}
                 </div>
-                <button @click="toggleFullDescription" class="text-lime-600 hover:text-lime-800 mb-5">
+                <button @click="toggleFullDescription" class="text-lime-600 hover:text-green-600">
                     {{ showFullDescription ? 'Less' : 'More' }}
                 </button>
             </div>
+        </div>
 
-            <!-- Separator -->
-            <div class="border border-gray-100 mb-5"></div>
-
-            <!-- Tags and Read More Link -->
-            <div class="flex flex-col lg:flex-row justify-between mb-4">
-                <!-- Tags -->
-                <div class="flex flex-wrap gap-2 mb-3">
-                    <div v-if="props.job.tags.length === 0" class="text-gray-500">No tags</div>
-                    <div v-for="(tag, index) in props.job.tags" :key="index" class="flex items-center text-lime-600">
-                        <i class="pi pi-tag text-lime-600 mr-1"></i>
-                        {{ tag }}
-                    </div>
-                </div>
-                <!-- Read More Link -->
-                <RouterLink :to="'/jobs/' + props.job.uuid"
-                    class="h-[36px] bg-lime-600 hover:bg-black text-white px-4 py-2 rounded-lg text-center text-sm">
-                    Read More
-                </RouterLink>
+        <!-- Tags Section -->
+        <div class="mb-4">
+            <div class="flex flex-wrap gap-2">
+                <template v-for="tag in job.tags" :key="tag">
+                    <span
+                        class="flex items-center bg-lime-500 text-white text-sm font-medium px-2.5 py-0.5 rounded-full">
+                        <i class="fas fa-tag mr-1"></i> {{ tag }}
+                    </span>
+                </template>
             </div>
+        </div>
+
+        <div class="border border-gray-100 mb-4"></div>
+
+        <!-- Author and Institution Section -->
+        <div class="mb-4">
+            <div v-if="job.authors && job.authors.length > 0" class="flex flex-col">
+                <div class="flex items-center mb-1">
+                    <h3 class="text-lime-600 mr-2">Author:</h3>
+                    <span>{{ job.authors[0].full_name }}</span>
+                </div>
+                <div class="flex items-center">
+                    <h3 class="text-lime-600 mr-2">Institution:</h3>
+                    <span>{{ job.authors[0].affiliation }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Button Section -->
+        <div class="flex justify-end">
+            <RouterLink :to="'/jobs/' + job.uuid"
+                class="bg-lime-600 hover:bg-lime-600 text-white px-5 py-2 rounded-lg text-center text-sm">
+                View
+            </RouterLink>
         </div>
     </div>
 </template>

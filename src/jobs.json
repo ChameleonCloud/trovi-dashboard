@@ -3229,7 +3229,7 @@
       "updated_at": "2024-03-23T10:22UTC",
       "title": "HDFS-14366",
       "short_description": "This Artifact Reproduce HDFS-14366",
-      "long_description": "In our HDFS cluster we observed that append operation can take as much as 10X write lock time than other write operations. \ngetDatanodeManager().getNumLiveDataNodes() is very expensive. The fix is not to invoke it unless we really need to. Just add a short cut to return true if liveReplicas \u003E= minReplication",
+      "long_description": "In our HDFS cluster we observed that append operation can take as much as 10X write lock time than other write operations. \ngetDatanodeManager().getNumLiveDataNodes() is very expensive. The fix is not to invoke it unless we really need to. Just add a short cut to return true if liveReplicas >= minReplication",
       "tags": [],
       "authors": [
         {
@@ -3847,7 +3847,7 @@
       "updated_at": "2024-02-27T13:20UTC",
       "title": "YARN-10767",
       "short_description": "Reproduce Bugs: Yarn Logs Command retrying on Standby RM for 30 times",
-      "long_description": "When ResourceManager HA is enabled and the first RM is unavailable, on executing \"bin/yarn logs -applicationId \u003CappID\u003E -am 1\", we get ConnectionException for connecting to the first RM, the ConnectionException Occurs for 30 times before it tries to connect to the second RM.",
+      "long_description": "When ResourceManager HA is enabled and the first RM is unavailable, on executing \"bin/yarn logs -applicationId <appID> -am 1\", we get ConnectionException for connecting to the first RM, the ConnectionException Occurs for 30 times before it tries to connect to the second RM.",
       "tags": [],
       "authors": [
         {
@@ -3878,7 +3878,7 @@
             "urn": "urn:trovi:contents:chameleon:90a2bc9b-82e8-4694-82bc-12125826690b"
           },
           "metrics": {
-            "access_count": 12,
+            "access_count": 14,
             "unique_access_count": 3,
             "unique_cell_execution_count": 1
           },
@@ -3886,7 +3886,7 @@
         }
       ],
       "metrics": {
-        "access_count": 12,
+        "access_count": 14,
         "unique_access_count": 3,
         "unique_cell_execution_count": 1
       }
@@ -3897,7 +3897,7 @@
       "updated_at": "2024-02-23T05:31UTC",
       "title": "Artifact for ELECT: Enabling Erasure Coding Tiering for LSM-tree-based Storage (FAST 2024)",
       "short_description": "This is the artifact for the FAST '24 paper \"ELECT: Enabling Erasure Coding Tiering for LSM-tree-based Storage\".",
-      "long_description": "**Artifact Description:**\r\n\r\nThis is the artifact for the FAST '24 paper \"ELECT: Enabling Erasure Coding Tiering for LSM-tree-based Storage\".  ELECT is a distributed tiered KV store that enables replication and erasure coding tiering. \r\n\r\nFor more detailed documentation, please refer to the README of the [ELECT repository](https://github.com/adslabcuhk/elect).\r\n\r\n**Paper:**\r\n\r\nLink to the USENIX FAST'24: [https://www.usenix.org/conference/fast24/presentation/ren](https://www.usenix.org/conference/fast24/presentation/ren)\r\n\r\n**Citation:**\r\n\r\n@INPROCEEDINGS{fast24elect,\u003Cbr\u003E \r\nTITLE = \"{ELECT}: Enabling Erasure Coding Tiering for LSM-tree-based Storage\",\u003Cbr\u003E \r\nAUTHOR = \"Yanjing Ren and Yuanming Ren and Xiaolu Li and Yuchong Hu and Jingwei Li and Patrick P.C. Lee\",\u003Cbr\u003E \r\nNOTE = \"To appear, won all 3 Artifact-Evaluation badges\",\u003Cbr\u003E \r\nBOOKTITLE = \"Proceedings of the 22nd USENIX Conference on File and Storage Technologies (FAST '24)\",\u003Cbr\u003E \r\nADDRESS = \"Santa Clara, CA\",\u003Cbr\u003E \r\nMONTH = \"February\",\u003Cbr\u003E \r\nYEAR = \"2024\",\u003Cbr\u003E \r\nPUBLISHER = \"USENIX Association\"\u003Cbr\u003E \r\n}\r\n\r\n**Reproducibility status:**\r\n\r\nThis artifact was evaluated by [USENIX FAST 2024 Artifact Evaluation](https://www.usenix.org/conference/fast24/call-for-artifacts) Committee members and awarded all 3 Artifact-Evaluation badges: **Artifacts Available**, **Artifacts Functional**, and **Results Reproduced**.\r\n\r\n**Experiment:**\r\n\r\n*Testbed*\r\n\r\nAs a distributed KV store, ELECT requires a cluster of machines to run. With the default erasure coding parameters (i.e., [n,k]==[6,4]), ELECT requires a minimum of 6 machines as the storage nodes. In addition, we require a server node as the cold tier to store the cold data. We also need a client node to run the YCSB benchmark tool. Therefore, we require at least eight machines to reproduce the evaluations.\r\n\r\n*Detailed Instructions*\r\n\r\nPlease refer to our [artifact evaluation instructions](https://github.com/adslabcuhk/elect/blob/main/AE_INSTRUCTION.md) to run the evaluations as in our paper.\r\n\r\n**Support:**\r\n\r\nFor any support, please email Yanjing Ren (yjren22@cse.cuhk.edu.hk) or create an issue at the GitHub repository.",
+      "long_description": "**Artifact Description:**\r\n\r\nThis is the artifact for the FAST '24 paper \"ELECT: Enabling Erasure Coding Tiering for LSM-tree-based Storage\".  ELECT is a distributed tiered KV store that enables replication and erasure coding tiering. \r\n\r\nFor more detailed documentation, please refer to the README of the [ELECT repository](https://github.com/adslabcuhk/elect).\r\n\r\n**Paper:**\r\n\r\nLink to the USENIX FAST'24: [https://www.usenix.org/conference/fast24/presentation/ren](https://www.usenix.org/conference/fast24/presentation/ren)\r\n\r\n**Citation:**\r\n\r\n@INPROCEEDINGS{fast24elect,<br> \r\nTITLE = \"{ELECT}: Enabling Erasure Coding Tiering for LSM-tree-based Storage\",<br> \r\nAUTHOR = \"Yanjing Ren and Yuanming Ren and Xiaolu Li and Yuchong Hu and Jingwei Li and Patrick P.C. Lee\",<br> \r\nNOTE = \"To appear, won all 3 Artifact-Evaluation badges\",<br> \r\nBOOKTITLE = \"Proceedings of the 22nd USENIX Conference on File and Storage Technologies (FAST '24)\",<br> \r\nADDRESS = \"Santa Clara, CA\",<br> \r\nMONTH = \"February\",<br> \r\nYEAR = \"2024\",<br> \r\nPUBLISHER = \"USENIX Association\"<br> \r\n}\r\n\r\n**Reproducibility status:**\r\n\r\nThis artifact was evaluated by [USENIX FAST 2024 Artifact Evaluation](https://www.usenix.org/conference/fast24/call-for-artifacts) Committee members and awarded all 3 Artifact-Evaluation badges: **Artifacts Available**, **Artifacts Functional**, and **Results Reproduced**.\r\n\r\n**Experiment:**\r\n\r\n*Testbed*\r\n\r\nAs a distributed KV store, ELECT requires a cluster of machines to run. With the default erasure coding parameters (i.e., [n,k]==[6,4]), ELECT requires a minimum of 6 machines as the storage nodes. In addition, we require a server node as the cold tier to store the cold data. We also need a client node to run the YCSB benchmark tool. Therefore, we require at least eight machines to reproduce the evaluations.\r\n\r\n*Detailed Instructions*\r\n\r\nPlease refer to our [artifact evaluation instructions](https://github.com/adslabcuhk/elect/blob/main/AE_INSTRUCTION.md) to run the evaluations as in our paper.\r\n\r\n**Support:**\r\n\r\nFor any support, please email Yanjing Ren (yjren22@cse.cuhk.edu.hk) or create an issue at the GitHub repository.",
       "tags": [
         "reproducible research",
         "experiment"
@@ -4042,7 +4042,7 @@
       "updated_at": "2024-02-01T19:46UTC",
       "title": "Artifact for Baleen: ML Admission & Prefetching for Flash Caches (FAST 2024)",
       "short_description": "To aid artifact evaluation for Baleen (accepted to FAST 2024)",
-      "long_description": "**Artifact description:**\r\nBaleen is a flash cache that uses coordinated ML admission and prefetching to reduce peak backend load in bulk storage systems. This artifact contains Python code to reproduce the simulator results and key figures in the Baleen paper.\r\n\r\n**START HERE (README)**: [https://github.com/wonglkd/Baleen-FAST24](https://github.com/wonglkd/Baleen-FAST24)\r\n\r\n**First-timers:** you will need an active allocation to launch this artifact on Chameleon. If you are unsure how to get one, please contact the [Chameleon Helpdesk](mailto:help@chameleoncloud.org).\r\n\r\n\u003E **Baleen: ML Admission & Prefetching for Flash Caches** \u003Cbr\u003E\r\n\u003E Daniel Lin-Kit Wong, Hao Wu, Carson Molder, Sathya Gunasekar, Jimmy Lu, Snehal Khandkar, Abhinav Sharma, Daniel S. Berger, Nathan Beckmann, Gregory R. Ganger\u003Cbr\u003E\r\n\u003E USENIX FAST 2024 \u003Cbr\u003E\r\n[Link to paper site](https://www.usenix.org/conference/fast24/presentation/wong)\r\n\r\n**Estimated time to reproduce:** 3 hours (setup, small-scale experiment, plotting figures using intermediate results). To re-run all experiments from scratch would take \u003E600 machine-days.\r\n\r\n**Reproducibility status:** awarded *Results Reproduced*, *Artifacts Functional*, *Artifacts Available* badges during [FAST 2024 Artifact Evaluation](https://sysartifacts.github.io/fast2024/).\r\n\r\n**Experiment Pattern:** This artifact provisions a single node to run simulator runs and the Jupyter notebooks. ([See notebook for details](https://github.com/wonglkd/Baleen-FAST24/blob/main/chameleon/2-start-dedicated-server.ipynb))\r\n\r\n**Support:** [create a GitHub issue](https://github.com/wonglkd/Baleen-FAST24/issues/new) (preferred) or email wonglkd@cmu.edu\r\n\r\nSee also:\r\n\r\n* [README on GitHub](https://github.com/wonglkd/Baleen-FAST24)\r\n* [Walkthrough Video on YouTube](http://tiny.cc/BaleenArtifactYT)",
+      "long_description": "**Artifact description:**\r\nBaleen is a flash cache that uses coordinated ML admission and prefetching to reduce peak backend load in bulk storage systems. This artifact contains Python code to reproduce the simulator results and key figures in the Baleen paper.\r\n\r\n**START HERE (README)**: [https://github.com/wonglkd/Baleen-FAST24](https://github.com/wonglkd/Baleen-FAST24)\r\n\r\n**First-timers:** you will need an active allocation to launch this artifact on Chameleon. If you are unsure how to get one, please contact the [Chameleon Helpdesk](mailto:help@chameleoncloud.org).\r\n\r\n> **Baleen: ML Admission & Prefetching for Flash Caches** <br>\r\n> Daniel Lin-Kit Wong, Hao Wu, Carson Molder, Sathya Gunasekar, Jimmy Lu, Snehal Khandkar, Abhinav Sharma, Daniel S. Berger, Nathan Beckmann, Gregory R. Ganger<br>\r\n> USENIX FAST 2024 <br>\r\n[Link to paper site](https://www.usenix.org/conference/fast24/presentation/wong)\r\n\r\n**Estimated time to reproduce:** 3 hours (setup, small-scale experiment, plotting figures using intermediate results). To re-run all experiments from scratch would take >600 machine-days.\r\n\r\n**Reproducibility status:** awarded *Results Reproduced*, *Artifacts Functional*, *Artifacts Available* badges during [FAST 2024 Artifact Evaluation](https://sysartifacts.github.io/fast2024/).\r\n\r\n**Experiment Pattern:** This artifact provisions a single node to run simulator runs and the Jupyter notebooks. ([See notebook for details](https://github.com/wonglkd/Baleen-FAST24/blob/main/chameleon/2-start-dedicated-server.ipynb))\r\n\r\n**Support:** [create a GitHub issue](https://github.com/wonglkd/Baleen-FAST24/issues/new) (preferred) or email wonglkd@cmu.edu\r\n\r\nSee also:\r\n\r\n* [README on GitHub](https://github.com/wonglkd/Baleen-FAST24)\r\n* [Walkthrough Video on YouTube](http://tiny.cc/BaleenArtifactYT)",
       "tags": [
         "reproducible research"
       ],
@@ -6241,7 +6241,7 @@
             "urn": "urn:trovi:contents:chameleon:f5d183bd-69f2-4a8d-95e5-f87475015b4a"
           },
           "metrics": {
-            "access_count": 49,
+            "access_count": 50,
             "unique_access_count": 19,
             "unique_cell_execution_count": 7
           },
@@ -6249,7 +6249,7 @@
         }
       ],
       "metrics": {
-        "access_count": 49,
+        "access_count": 50,
         "unique_access_count": 19,
         "unique_cell_execution_count": 7
       }
@@ -6304,9 +6304,9 @@
             "urn": "urn:trovi:contents:chameleon:1b2d835b-fb93-40e7-a108-d93a5a13e0b9"
           },
           "metrics": {
-            "access_count": 281,
-            "unique_access_count": 129,
-            "unique_cell_execution_count": 67
+            "access_count": 283,
+            "unique_access_count": 131,
+            "unique_cell_execution_count": 68
           },
           "links": []
         },
@@ -6439,9 +6439,9 @@
         }
       ],
       "metrics": {
-        "access_count": 496,
-        "unique_access_count": 141,
-        "unique_cell_execution_count": 68
+        "access_count": 498,
+        "unique_access_count": 143,
+        "unique_cell_execution_count": 69
       }
     },
     {
@@ -8234,7 +8234,7 @@
             "urn": "urn:trovi:contents:chameleon:3c86605d-4921-4b26-8f55-bc0bb236996d"
           },
           "metrics": {
-            "access_count": 43,
+            "access_count": 45,
             "unique_access_count": 10,
             "unique_cell_execution_count": 4
           },
@@ -8242,7 +8242,7 @@
         }
       ],
       "metrics": {
-        "access_count": 43,
+        "access_count": 45,
         "unique_access_count": 10,
         "unique_cell_execution_count": 4
       }
@@ -12152,8 +12152,8 @@
             "urn": "urn:trovi:contents:chameleon:1bdab48d-87d3-4fae-89c1-972f22c48ab2"
           },
           "metrics": {
-            "access_count": 180,
-            "unique_access_count": 16,
+            "access_count": 181,
+            "unique_access_count": 17,
             "unique_cell_execution_count": 0
           },
           "links": [
@@ -12185,8 +12185,8 @@
         }
       ],
       "metrics": {
-        "access_count": 195,
-        "unique_access_count": 16,
+        "access_count": 196,
+        "unique_access_count": 17,
         "unique_cell_execution_count": 0
       }
     },
@@ -12841,9 +12841,5 @@
         "unique_cell_execution_count": 0
       }
     }
-  ],
-  "next": {
-    "after": null,
-    "limit": 171
-  }
+  ]
 }
