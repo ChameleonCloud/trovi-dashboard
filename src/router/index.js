@@ -20,7 +20,7 @@ const router = createRouter({
             component: JobsView,
         },
         {
-            path: '/jobs/:id',
+            path: '/jobs/:uuid',
             name: 'job',
             component: JobView,
         },
@@ -30,7 +30,7 @@ const router = createRouter({
             component: AddJobView,
         },
         {
-            path: '/jobs/edit/:id',
+            path: '/jobs/edit/:uuid',
             name: 'edit-job',
             component: EditJobView,
         },

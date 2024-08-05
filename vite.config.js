@@ -10,7 +10,7 @@ export default defineConfig({
     // port: 3001,
     proxy: {
       '/api': {
-        target: 'http://localhost:2000/jobs',
+        target: 'http://localhost:2000',
         changeOrigin: true,
         // regular expresion to take care of the proxying
         rewrite: (path) => path.replace(/^\/api/, ''),

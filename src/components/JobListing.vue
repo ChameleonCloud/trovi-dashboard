@@ -13,11 +13,11 @@ const toggleFullDescription = () => {
 };
 
 const truncatedDescription = computed(() => {
-    let description = props.job.description;
+    let long_description = props.job.long_description;
     if (!showFullDescription.value) {
-        description = description.substring(0, 90) + '...';
+        long_description = long_description.substring(0, 90) + '...';
     }
-    return description;
+    return long_description;
 });
 </script>
 
@@ -25,7 +25,7 @@ const truncatedDescription = computed(() => {
     <div class="bg-white rounded-xl shadow-md relative">
         <div class="p-4">
             <div class="mb-6">
-                <div class="text-gray-600 my-2">{{ job.type }}</div>
+                <!-- <div class="text-gray-600 my-2">{{ job.type }}</div> -->
                 <h3 class="text-xl font-bold">{{ job.title }}</h3>
             </div>
 
@@ -33,22 +33,22 @@ const truncatedDescription = computed(() => {
                 <div>
                     {{ truncatedDescription }}
                 </div>
-                <button @click="toggleFullDescription" class="text-green-500 hover:text-green-600 mb-5">
+                <button @click="toggleFullDescription" class="text-lime-600 hover:text-lime-800 mb-5">
                     {{ showFullDescription ? 'Less' : 'More' }}
                 </button>
             </div>
 
-            <h3 class="text-green-500 mb-2">{{ job.salary }} / Year</h3>
-
             <div class="border border-gray-100 mb-5"></div>
 
             <div class="flex flex-col lg:flex-row justify-between mb-4">
-                <div class="text-orange-700 mb-3">
-                    <i class="pi pi-map-marker text-orange-700"></i>
-                    {{ job.location }}
+                <div class="flex flex-wrap gap-2 mb-3">
+                    <div v-for="(tag, index) in job.tags" :key="index" class="flex items-center text-lime-600">
+                        <i class="pi pi-tag text-lime-600 mr-1"></i>
+                        {{ tag }}
+                    </div>
                 </div>
-                <RouterLink :to="'/jobs/' + job.id"
-                    class="h-[36px] bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-center text-sm">
+                <RouterLink :to="'/jobs/' + job.uuid"
+                    class="h-[36px] bg-lime-600 hover:bg-black text-white px-4 py-2 rounded-lg text-center text-sm">
                     Read More
                 </RouterLink>
             </div>
