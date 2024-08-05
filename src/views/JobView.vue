@@ -17,19 +17,20 @@ const state = reactive({
     isLoading: true,
 });
 
-const deleteJob = async () => {
-    try {
-        const confirm = window.confirm('Are you sure you want to delete this job?');
-        if (confirm) {
-            await axios.delete(`/api/jobs/${jobId}`);
-            toast.success('Job Deleted Successfully');
-            router.push('/jobs');
-        }
-    } catch (error) {
-        console.error('Error deleting job', error);
-        toast.error('Job Not Deleted');
-    }
-};
+
+// const deleteJob = async () => {
+//     try {
+//         const confirm = window.confirm('Are you sure you want to delete this job?');
+//         if (confirm) {
+//             await axios.delete(`/api/jobs/${jobId}`);
+//             toast.success('Job Deleted Successfully');
+//             router.push('/jobs');
+//         }
+//     } catch (error) {
+//         console.error('Error deleting job', error);
+//         toast.error('Job Not Deleted');
+//     }
+// };
 
 onMounted(async () => {
     try {
@@ -50,11 +51,11 @@ onMounted(async () => {
             <div class="grid grid-cols-1 md:grid-cols-70/30 w-full gap-6">
                 <main>
                     <div class="bg-white p-6 rounded-lg shadow-md text-center md:text-left">
-                        <div class="text-gray-500 mb-4">{{ state.job.title }}</div>
-                        <h1 class="text-3xl font-bold mb-4">{{ state.job.title }}</h1>
+                        <!-- <div class="text-gray-500 mb-4">{{ state.job.title }}</div> -->
+                        <!-- <h1 class="text-3xl font-bold mb-4">{{ state.job.title }}</h1> -->
                         <div class="text-gray-500 mb-4 flex align-middle justify-center md:justify-start">
                             <i class="pi pi-map-marker text-xl text-orange-700 mr-2"></i>
-                            <p class="text-orange-700">{{ state.job.long_description }}</p>
+                            <!-- <p class="text-orange-700">{{ state.job.long_description }}</p> -->
                         </div>
                     </div>
 
@@ -77,7 +78,7 @@ onMounted(async () => {
                 <aside>
                     <!-- Company Info -->
                     <div class="bg-white p-6 rounded-lg shadow-md">
-                        <h3 class="text-xl font-bold mb-6">Company Info</h3>
+                        <!-- <h3 class="text-xl font-bold mb-6">Company Info</h3> -->
 
                         <!-- <h2 class="text-2xl">{{ state.job.company.name }}</h2> -->
 
@@ -93,7 +94,7 @@ onMounted(async () => {
                             <!-- {{ state.job.company.contactEmail }} -->
                         </p>
 
-                        <h3 class="text-xl">Contact Phone:</h3>
+                        <!-- <h3 class="text-xl">Contact Phone:</h3> -->
 
                         <p class="my-2 bg-green-100 p-2 font-bold">
                             <!-- {{ state.job.company.contactPhone }} -->
@@ -104,8 +105,8 @@ onMounted(async () => {
                     <div class="bg-white p-6 rounded-lg shadow-md mt-6">
                         <h3 class="text-xl font-bold mb-6">Manage Job</h3>
                         <RouterLink :to="`/jobs/edit/${state.job.uuid}`"
-                            class="bg-green-500 hover:bg-green-600 text-white text-center font-bold py-2 px-4 rounded-full w-full focus:outline-none focus:shadow-outline mt-4 block">
-                            Edit Job</RouterLink>
+                            class="bg-lime-500 hover:bg-lime-700 text-white text-center font-bold py-2 px-4 rounded-full w-full focus:outline-none focus:shadow-outline mt-4 block">
+                            Open Artifact in GitHub</RouterLink>
                         <button @click="deleteJob"
                             class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-full w-full focus:outline-none focus:shadow-outline mt-4 block">
                             Delete Job

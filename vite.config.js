@@ -1,25 +1,22 @@
-import { fileURLToPath, URL } from 'node:url'
-
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
+import { fileURLToPath, URL } from 'node:url';
+import { defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue';
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [vue()],
   server: {
-    // port: 3001,
     proxy: {
       '/api': {
-        target: 'http://localhost:2000',
-        changeOrigin: true,
-        // regular expresion to take care of the proxying
-        rewrite: (path) => path.replace(/^\/api/, ''),
+        target: 'http://localhost:2000', // Backend server address
+        changeOrigin: true, // Needed for virtual hosted sites
+        rewrite: (path) => path.replace(/^\/api/, ''), // Rewrite API paths
       },
     },
   },
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      '@': fileURLToPath(new URL('./src', import.meta.url)), // Alias for '@' to 'src' directory
     },
   },
 });

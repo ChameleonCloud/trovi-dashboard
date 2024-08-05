@@ -29,11 +29,11 @@ const router = createRouter({
             name: 'add-job',
             component: AddJobView,
         },
-        {
-            path: '/jobs/edit/:uuid',
-            name: 'edit-job',
-            component: EditJobView,
-        },
+        // {
+        //     path: '/jobs/edit/:id',
+        //     name: 'edit-job',
+        //     component: EditJobView,
+        // },
         {
             path: '/:catchAll(.*)',
             name: 'not-found',
