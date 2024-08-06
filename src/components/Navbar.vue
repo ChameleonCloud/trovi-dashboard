@@ -15,7 +15,7 @@ const isActiveLink = (routePath) => {
         <div class="flex flex-1 items-center justify-center md:items-stretch md:justify-start">
           <!-- Logo -->
           <RouterLink class="flex flex-shrink-0 items-center mr-4" to="/">
-            <img class="h-10 w-auto" :src="logo" alt="Vue artifacts" />
+            <img class="h-10 w-auto" :src="logo" alt="Trovi Artifacts" />
             <span class="hidden md:block text-white text-2xl font-bold ml-2">Trovi</span>
           </RouterLink>
           <div class="md:ml-auto">

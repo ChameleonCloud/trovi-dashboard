@@ -7,6 +7,7 @@ const props = defineProps({
   artifact: Object,
 });
 
+
 const showFullDescription = ref(false);
 
 const toggleFullDescription = () => {
