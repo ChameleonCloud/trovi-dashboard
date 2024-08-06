@@ -1,10 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import HomeView from '@/views/HomeView.vue';
-import JobsView from '@/views/ArtifactsView.vue';
+import ArtifactsView from '@/views/ArtifactsView.vue';
 import NotFoundView from '@/views/NotFoundView.vue';
-import JobView from '@/views/ArtifactView.vue';
-import AddJobView from '@/views/AddArtifactView.vue';
-import EditJobView from '@/views/EditArtifactView.vue';
+import ArtifactView from '@/views/ArtifactView.vue';
+import AddArtifactView from '@/views/AddArtifactView.vue';
+import EditArtifactView from '@/views/EditArtifactView.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -17,22 +17,23 @@ const router = createRouter({
     {
       path: '/artifacts',
       name: 'artifacts',
-      component: JobsView,
+      component: ArtifactsView,
     },
+    // pull this from the json file
     {
-      path: '/artifacts/:id',
+      path: '/artifacts/:uuid',
       name: 'artifact',
-      component: JobView,
+      component: ArtifactView,
     },
     {
       path: '/artifacts/add',
       name: 'add-artifact',
-      component: AddJobView,
+      component: AddArtifactView,
     },
     {
-      path: '/artifacts/edit/:id',
-      name: 'edit-job',
-      component: EditJobView,
+      path: '/artifacts/edit/:uuid',
+      name: 'edit-artifact',
+      component: EditArtifactView,
     },
     {
       path: '/:catchAll(.*)',

@@ -1,6 +1,7 @@
+<!-- Here is where all the artifacts will show -->
 <script setup>
 import { RouterLink } from 'vue-router';
-import JobListing from './ArtifactListing.vue';
+import ArtifactListing from './ArtifactListing.vue';
 import { reactive, defineProps, onMounted } from 'vue';
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 import axios from 'axios';
@@ -21,7 +22,7 @@ const state = reactive({
 onMounted(async () => {
   try {
     const response = await axios.get('/api/artifacts');
-    state.jobs = response.data;
+    state.artifacts = response.data;
   } catch (error) {
     console.error('Error fetching artifacts', error);
   } finally {
@@ -41,9 +42,10 @@ onMounted(async () => {
         <PulseLoader />
       </div>
 
-      <!-- Shoe job listing when done loading -->
+      <!-- Show artifact listing when done loading -->
       <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <JobListing v-for="job in state.jobs.slice(0, limit || state.jobs.length)" :key="job.id" :job="job" />
+        <ArtifactListing v-for="artifact in state.artifacts.slice(0, limit || state.artifacts.length)"
+          :key="artifact.id" :artifact="artifact" />
       </div>
     </div>
   </section>

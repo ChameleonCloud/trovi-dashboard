@@ -21,7 +21,7 @@ const form = reactive({
 const toast = useToast();
 
 const handleSubmit = async () => {
-  const newJob = {
+  const newArtifact = {
     title: form.title,
     type: form.type,
     location: form.location,
@@ -36,7 +36,7 @@ const handleSubmit = async () => {
   };
 
   try {
-    const response = await axios.post('/api/artifacts', newJob);
+    const response = await axios.post('/api/artifacts', newArtifact);
     toast.success('Job Added Successfully');
     router.push(`/artifacts/${response.data.id}`);
   } catch (error) {
