@@ -46,6 +46,15 @@ const isActiveLink = (routePath) => {
                 'px-3',
                 'py-2',
                 'rounded-md',
+              ]">Add New Artifact</RouterLink>
+              <RouterLink to="/docs" :class="[
+                isActiveLink('/docs')
+                  ? 'bg-gray-900'
+                  : 'hover:bg-gray-900 hover:text-white',
+                'text-white',
+                'px-3',
+                'py-2',
+                'rounded-md',
               ]">Docs</RouterLink>
             </div>
           </div>

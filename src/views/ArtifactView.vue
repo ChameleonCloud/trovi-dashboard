@@ -3,7 +3,7 @@
 <script setup>
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 import BackButton from '@/components/BackButton.vue';
-import { reactive, onMounted } from 'vue';
+import { reactive, onMounted, computed } from 'vue';
 import { useRoute, RouterLink, useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import axios from 'axios';
@@ -32,6 +32,27 @@ const deleteArtifact = async () => {
     toast.error('Artifact Not Deleted');
   }
 };
+
+const latestVersion = computed(() => {
+  if (state.artifact.versions.length === 0) return null;
+
+  return state.artifact.versions.reduce((latest, version) =>
+    new Date(version.created_at) > new Date(latest.created_at) ? version : latest
+  );
+});
+
+const summedMetrics = computed(() => {
+  return state.artifact.versions.reduce((acc, version) => {
+    acc.access_count += version.metrics.access_count;
+    acc.unique_access_count += version.metrics.unique_access_count;
+    acc.unique_cell_execution_count += version.metrics.unique_cell_execution_count;
+    return acc;
+  }, {
+    access_count: 0,
+    unique_access_count: 0,
+    unique_cell_execution_count: 0
+  });
+});
 
 onMounted(async () => {
   try {
@@ -65,35 +86,28 @@ onMounted(async () => {
                 {{ state.artifact.visibility }}
               </span>
             </div>
-            <div class="mb-1">
-              <div class="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-4">
-                <span v-for="tag in state.artifact.tags" :key="tag" class="text-lime-600 flex items-center">
-                  <i class="pi pi-tag mr-2"></i> {{ tag }}
-                </span>
-              </div>
-              <div class="flex flex-wrap items-center justify-center md:justify-start gap-4">
-                <!-- Metrics Info -->
-                <div v-for="version in state.artifact.versions" :key="version.slug"
-                  class="text-gray-600 flex items-center">
-                  <i class="pi pi-eye mr-2"></i>
-                  <span>{{ version.metrics.access_count }}</span>
-                </div>
-                <div v-for="version in state.artifact.versions" :key="version.slug"
-                  class="text-gray-600 flex items-center">
-                  <i class="pi pi-user mr-2"></i>
-                  <span>{{ version.metrics.unique_access_count }}</span>
-                </div>
-                <div v-for="version in state.artifact.versions" :key="version.slug"
-                  class="text-gray-600 flex items-center">
-                  <i class="pi pi-desktop mr-2"></i>
-                  <span>{{ version.metrics.unique_cell_execution_count }}</span>
-                </div>
-              </div>
+
+
+            <!-- Metrics Section -->
+            <div class="text-gray-500 flex items-center gap-3 mt-4">
+              <i class="pi pi-eye text-gray-400 mr-1 ml-1"></i> {{ summedMetrics.access_count }}
+              <i class="pi pi-user text-gray-400 mr-1 ml-1"></i> {{ summedMetrics.unique_access_count }}
+              <i class="pi pi-desktop text-gray-400 mr-1 ml-1"></i> {{ summedMetrics.unique_cell_execution_count }}
+              <!-- Placeholder for future metric -->
+              <i class="pi pi-star text-gray-400 mr-1 ml-1"></i> {{ '10' }}
             </div>
+
           </div>
 
           <div class="bg-white p-6 rounded-lg shadow-md mt-6">
             <h3 class="text-lime-600 text-lg font-bold mb-2">About</h3>
+            <div class="mb-1">
+              <div class="flex flex-wrap items-center justify-center md:justify-start gap-2">
+                <span v-for="tag in state.artifact.tags" :key="tag" class="text-lime-600 flex items-center">
+                  <i class="pi pi-tag mr-2"></i> {{ tag }}
+                </span>
+              </div>
+            </div>
             <p class="my-1">
               {{ state.artifact.long_description }}
             </p>
@@ -105,9 +119,9 @@ onMounted(async () => {
           <!-- Versions Info -->
           <div class="bg-white p-6 rounded-lg shadow-md">
             <h3 class="text-xl font-bold mb-6">Versions</h3>
-            <div v-for="version in state.artifact.versions" :key="version.slug" class="mb-6">
-              <p><strong>Version:</strong> {{ version.slug }}</p>
-              <p><strong>Created At:</strong> {{ version.created_at }}</p>
+            <div v-if="latestVersion" class="mb-6">
+              <p><strong>Version:</strong> {{ latestVersion.slug }}</p>
+              <p><strong>Created At:</strong> {{ latestVersion.created_at }}</p>
             </div>
           </div>
 

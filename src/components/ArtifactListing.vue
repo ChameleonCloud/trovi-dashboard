@@ -29,7 +29,15 @@ const truncatedDescription = computed(() => {
         <div>
           <div class="text-gray-600 my-2">{{ artifact.uuid }}</div>
           <h3 class="text-xl font-bold">{{ artifact.title }}</h3>
+          <div class="mb-4">
+            <div class="flex flex-wrap gap-2">
+              <span v-for="tag in artifact.tags" :key="tag" class="text-lime-600 flex items-center">
+                <i class="pi pi-tag mr-2"></i> {{ tag }}
+              </span>
+            </div>
+          </div>
         </div>
+
         <button
           class="text-gray-400 border border-gray-300 hover:bg-gray-200 px-2 py-1 rounded-lg flex items-center text-sm">
           <i class="pi pi-star mr-1"></i> Start
@@ -45,13 +53,7 @@ const truncatedDescription = computed(() => {
         </button>
       </div>
 
-      <div class="mb-4">
-        <div class="flex flex-wrap gap-2">
-          <span v-for="tag in artifact.tags" :key="tag" class="text-lime-600 flex items-center">
-            <i class="pi pi-tag mr-2"></i> {{ tag }}
-          </span>
-        </div>
-      </div>
+
 
       <div class="border border-gray-100 mb-5"></div>
 
