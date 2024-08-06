@@ -1,5 +1,5 @@
 <script setup>
-import { defineProps } from 'vue';
+import { defineProps, ref } from 'vue';
 
 defineProps({
   title: {
@@ -11,6 +11,12 @@ defineProps({
     default: 'And an open platform for practical reproducibility.',
   },
 });
+
+const searchQuery = ref('');
+const handleSearch = () => {
+  // Implement search functionality here
+  console.log('Search query:', searchQuery.value);
+};
 </script>
 
 <template>
@@ -23,6 +29,11 @@ defineProps({
         <p class="my-4 text-xl text-white">
           {{ subtitle }}
         </p>
+        <!-- Search Bar -->
+        <div class="w-full max-w-md mx-auto">
+          <input type="text" v-model="searchQuery" @input="handleSearch" placeholder="Search artifacts..."
+            class="w-full px-4 py-2 text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-300" />
+        </div>
       </div>
     </div>
   </section>
