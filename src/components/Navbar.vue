@@ -15,7 +15,7 @@ const isActiveLink = (routePath) => {
         <div class="flex flex-1 items-center justify-center md:items-stretch md:justify-start">
           <!-- Logo -->
           <RouterLink class="flex flex-shrink-0 items-center mr-4" to="/">
-            <img class="h-10 w-auto" :src="logo" alt="Vue Jobs" />
+            <img class="h-10 w-auto" :src="logo" alt="Vue artifacts" />
             <span class="hidden md:block text-white text-2xl font-bold ml-2">Trovi</span>
           </RouterLink>
           <div class="md:ml-auto">
@@ -29,8 +29,8 @@ const isActiveLink = (routePath) => {
                 'py-2',
                 'rounded-md',
               ]">Home</RouterLink>
-              <RouterLink to="/jobs" :class="[
-                isActiveLink('/jobs')
+              <RouterLink to="/artifacts" :class="[
+                isActiveLink('/artifacts')
                   ? 'bg-gray-900'
                   : 'hover:bg-gray-900 hover:text-white',
                 'text-white',
@@ -38,8 +38,8 @@ const isActiveLink = (routePath) => {
                 'py-2',
                 'rounded-md',
               ]">Artifacts</RouterLink>
-              <RouterLink to="/jobs/add" :class="[
-                isActiveLink('/jobs/add')
+              <RouterLink to="/artifacts/add" :class="[
+                isActiveLink('/artifacts/add')
                   ? 'bg-gray-900'
                   : 'hover:bg-gray-900 hover:text-white',
                 'text-white',

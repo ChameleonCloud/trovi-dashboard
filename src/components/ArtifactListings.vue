@@ -1,6 +1,6 @@
 <script setup>
 import { RouterLink } from 'vue-router';
-import JobListing from './JobListing.vue';
+import JobListing from './ArtifactListing.vue';
 import { reactive, defineProps, onMounted } from 'vue';
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 import axios from 'axios';
@@ -14,16 +14,16 @@ defineProps({
 });
 
 const state = reactive({
-  jobs: [],
+  artifacts: [],
   isLoading: true,
 });
 
 onMounted(async () => {
   try {
-    const response = await axios.get('/api/jobs');
+    const response = await axios.get('/api/artifacts');
     state.jobs = response.data;
   } catch (error) {
-    console.error('Error fetching jobs', error);
+    console.error('Error fetching artifacts', error);
   } finally {
     state.isLoading = false;
   }
@@ -49,7 +49,8 @@ onMounted(async () => {
   </section>
 
   <section v-if="showButton" class="m-auto max-w-lg my-10 px-6">
-    <RouterLink to="/jobs" class="block bg-black text-white text-center py-4 px-6 rounded-xl hover:bg-lime-700">View All
-      Jobs</RouterLink>
+    <RouterLink to="/artifacts" class="block bg-black text-white text-center py-4 px-6 rounded-xl hover:bg-lime-700">
+      View All
+      artifacts</RouterLink>
   </section>
 </template>

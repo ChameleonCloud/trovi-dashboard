@@ -1,17 +1,107 @@
 {
-  "jobs": [
+  "artifacts": [
     {
-      "id": "1",
+      "id": "9efcf48d-3970-4279-a6dd-c0e3428c96f0",
+      "created_at": "2024-07-21T14:13UTC",
+      "updated_at": "2024-07-28T01:54UTC",
       "title": "Software RAID 0 (Disk Striping)",
-      "type": "Full-Time",
-      "location": "Boston, MA",
+      "short_description": "This courselet on Software RAID provides a comprehensive guide to creating, managing, and dismantling a RAID 0 array on Ubuntu, emphasizing its performance benefits and lack of redundancy.",
       "long_description": "RAID (Redundant Arrays of Independent Disks) combines multiple disks to improve performance or provide redundancy, managed either through hardware or software. This courselet focuses on Software RAID, guiding users through creating, managing, and benchmarking a RAID 0 array using mdadm on Ubuntu, highlighting both its high performance and lack of redundancy. It concludes with steps to create and mount a filesystem on the array, and then safely dismantling the RAID setup, ensuring users understand the full lifecycle of RAID array management.",
-      "salary": "$90K - $100K",
-      "company": {
-        "name": "NewTek Solutions",
-        "description": "NewTek Solutions is a leading technology company specializing in web development and digital solutions. We pride ourselves on delivering high-quality products and services to our clients while fostering a collaborative and innovative work environment.",
-        "contactEmail": "contact@teksolutions.com",
-        "contactPhone": "555-555-5555"
+      "tags": [
+        "storage",
+        "education"
+      ],
+      "authors": [
+        {
+          "full_name": "Tyler Estro",
+          "affiliation": "Stony Brook University",
+          "email": "testro@cs.stonybrook.edu"
+        },
+        {
+          "full_name": "Kamalnath Polakam",
+          "affiliation": "Stony Brook University",
+          "email": "kpolakam@cs.stonybrook.edu"
+        },
+        {
+          "full_name": "Erez Zadok",
+          "affiliation": "Stony Brook University",
+          "email": "ezk@cs.stonybrook.edu"
+        },
+        {
+          "full_name": "Deniz Bajin",
+          "affiliation": "Pomona College",
+          "email": "dbzv2022@mymail.pomona.edu"
+        }
+      ],
+      "owner_urn": "urn:trovi:user:chameleon:dbzv2022@mymail.pomona.edu",
+      "roles": [
+        {
+          "user": "urn:trovi:user:chameleon:dbzv2022@mymail.pomona.edu",
+          "role": "administrator"
+        },
+        {
+          "user": "urn:trovi:user:chameleon:dbzv2022@mymail.pomona.edu",
+          "role": "collaborator"
+        },
+        {
+          "user": "urn:trovi:user:chameleon:ezk@cs.stonybrook.edu",
+          "role": "administrator"
+        },
+        {
+          "user": "urn:trovi:user:chameleon:ezk@cs.stonybrook.edu",
+          "role": "collaborator"
+        },
+        {
+          "user": "urn:trovi:user:chameleon:kpolakam@cs.stonybrook.edu",
+          "role": "administrator"
+        },
+        {
+          "user": "urn:trovi:user:chameleon:kpolakam@cs.stonybrook.edu",
+          "role": "collaborator"
+        },
+        {
+          "user": "urn:trovi:user:chameleon:testro@cs.stonybrook.edu",
+          "role": "administrator"
+        },
+        {
+          "user": "urn:trovi:user:chameleon:testro@cs.stonybrook.edu",
+          "role": "collaborator"
+        },
+        {
+          "user": "urn:trovi:user:chameleon:testro@stonybrook.edu",
+          "role": "administrator"
+        },
+        {
+          "user": "urn:trovi:user:chameleon:testro@stonybrook.edu",
+          "role": "collaborator"
+        }
+      ],
+      "visibility": "public",
+      "linked_projects": [],
+      "reproducibility": {
+        "enable_requests": false,
+        "access_hours": null,
+        "requests": 0
+      },
+      "versions": [
+        {
+          "slug": "2024-07-21",
+          "created_at": "2024-07-21T14:13UTC",
+          "contents": {
+            "urn": "urn:trovi:contents:chameleon:d7b67385-42b8-4260-a855-7528d0120651"
+          },
+          "metrics": {
+            "access_count": 1,
+            "unique_access_count": 1,
+            "unique_cell_execution_count": 0
+          },
+          "links": []
+        }
+      ],
+      "metrics": {
+        "access_count": 1,
+        "unique_access_count": 1,
+        "unique_cell_execution_count": 0
       }
     }
   ]

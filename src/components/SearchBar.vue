@@ -1,6 +1,6 @@
 <template>
     <div class="search-bar">
-        <input v-model="searchQuery" type="text" placeholder="Search for jobs..." @input="onInput"
+        <input v-model="searchQuery" type="text" placeholder="Search for artifacts..." @input="onInput"
             class="search-input" />
         <button @click="performSearch" class="search-button">
             Search

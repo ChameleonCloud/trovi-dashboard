@@ -12,7 +12,7 @@ import Card from '@/components/Card.vue';
           <p class="mt-2 mb-4">
             Get started with our collection of shared artifacts.
           </p>
-          <RouterLink to="/jobs" class="inline-block bg-black text-white rounded-lg px-4 py-2 hover:bg-lime-700">
+          <RouterLink to="/artifacts" class="inline-block bg-black text-white rounded-lg px-4 py-2 hover:bg-lime-700">
             Explore Artifacts
           </RouterLink>
         </Card>
@@ -21,7 +21,8 @@ import Card from '@/components/Card.vue';
           <p class="mt-2 mb-4">
             Create a new artifact and share it with the community.
           </p>
-          <RouterLink to="/jobs/add" class="inline-block bg-black text-white rounded-lg px-4 py-2 hover:bg-lime-700">
+          <RouterLink to="/artifacts/add"
+            class="inline-block bg-black text-white rounded-lg px-4 py-2 hover:bg-lime-700">
             Add New Artifact
           </RouterLink>
         </Card>

@@ -5,7 +5,7 @@ import { RouterLink } from 'vue-router';
 <template>
   <section>
     <div class="container m-auto py-6 px-6">
-      <RouterLink to="/jobs" class="text-lime-600 hover:text-stone-900 flex items-center">
+      <RouterLink to="/artifacts" class="text-lime-600 hover:text-stone-900 flex items-center">
         <i class="pi pi-arrow-circle-left mr-3"></i> Back to Artifact Listings
       </RouterLink>
     </div>
