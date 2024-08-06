@@ -5,7 +5,7 @@ import { useToast } from 'vue-toastification';
 import axios from 'axios';
 
 const form = reactive({
-  type: 'Full-Time',
+  type: '',
   title: '',
   description: '',
   salary: '',
@@ -70,11 +70,12 @@ const handleSubmit = async () => {
 
           <div class="mb-4">
             <label for="type" class="block text-gray-700 font-bold mb-2">Artifact Type</label>
-            <select v-model="form.type" id="type" name="type" class="border rounded w-full py-2 px-3" required>
-              <option value="Full-Time">Full-Time</option>
-              <option value="Part-Time">Part-Time</option>
-              <option value="Remote">Remote</option>
-              <option value="Internship">Internship</option>
+            <select v-model="form.type" id="type" name="type" class="border rounded w-full py-2 px-3"
+              placeholder="fafaff" required>
+              <option value="Experiment-Pattern">Experiment Pattern</option>
+              <option value="Reproducible-Research">Reproducible Research</option>
+              <option value="Educational-Artifact">Educational Artifact</option>
+              <option value="Other">Other</option>
             </select>
           </div>
 
@@ -131,7 +132,7 @@ const handleSubmit = async () => {
 
           <div>
             <button
-              class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-full w-full focus:outline-none focus:shadow-outline"
+              class="bg-lime-600 hover:bg-black text-white font-bold py-2 px-4 rounded-full w-full focus:outline-none focus:shadow-outline"
               type="submit">
               Add Artifact
             </button>

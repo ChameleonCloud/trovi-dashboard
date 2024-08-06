@@ -40,7 +40,7 @@ const truncatedDescription = computed(() => {
 
         <button
           class="text-gray-400 border border-gray-300 hover:bg-gray-200 px-2 py-1 rounded-lg flex items-center text-sm">
-          <i class="pi pi-star mr-1"></i> Start
+          <i class="pi pi-star mr-1"></i> Star
         </button>
       </div>
 

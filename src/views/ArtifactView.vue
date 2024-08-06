@@ -73,11 +73,11 @@ onMounted(async () => {
       <div class="grid grid-cols-1 md:grid-cols-70/30 w-full gap-6">
         <main>
           <div class="bg-white p-6 rounded-lg shadow-md text-center md:text-left relative">
-            <!-- Start Button -->
+            <!-- Star Button -->
             <div class="absolute top-4 right-4">
               <button
                 class="text-gray-400 border border-gray-300 hover:bg-gray-200 px-3 py-1 ml-1 rounded-lg flex items-center text-sm">
-                <i class="pi pi-star mr-1"></i> Start
+                <i class="pi pi-star mr-1"></i> Star
               </button>
             </div>
             <div class="flex items-center justify-center md:justify-start mb-2 mt-5">
