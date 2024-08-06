@@ -1,31 +1,43 @@
-# [Trovi sharing portal](https://chameleoncloud.readthedocs.io/en/latest/technical/sharing.html)
+# Vue Jobs Project (YouTube)
 
-Trovi on Chameleon is an open-source service designed to enhance the practical reproducibility of computer science research.
+This is the jobs listing project from the [YouTube crash course](https://www.youtube.com/watch?v=VeNfHj6MhgA).
 
-Vue 3 in Vite
+<img src="public/screen.png" />
 
-## Recommended IDE Setup
+## Usage
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+This project uses JSON-Server for a mock backend.
 
-## Customize configuration
+### Install Dependencies
 
-See [Vite Configuration Reference](https://vitejs.dev/config/).
-
-## Project Setup
-
-```sh
+```bash
 npm install
 ```
 
-### Compile and Hot-Reload for Development
+### Run JSON Server
 
-```sh
+The server will run on http://localhost:8000
+
+```bash
+npm run server
+```
+
+### Run Vite Frontend
+
+Vue will run on http://localhost:3000
+
+```bash
 npm run dev
 ```
 
-### Compile and Minify for Production
+### Build for Production
 
-```sh
+```bash
 npm run build
+```
+
+### Preview Production Build
+
+```bash
+npm run preview
 ```
