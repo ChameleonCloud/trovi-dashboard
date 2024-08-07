@@ -4,7 +4,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Poppins', 'sans-serif'],
+        sans: ['Poppins', 'sans-serif', 'system-ui'],
       },
       gridTemplateColumns: {
         '70/30': '70% 28%',
