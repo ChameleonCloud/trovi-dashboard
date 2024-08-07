@@ -63,6 +63,8 @@ const truncatedDescription = computed(() => {
           <i class="pi pi-check text-orange-700 mr-2"></i>
           {{ artifact.updated_at }}
         </div>
+
+        <!-- this is when I click the button view and it takes to the detail on the artifact -->
         <RouterLink :to="'/artifacts/' + artifact.id"
           class="h-[36px] bg-lime-600 hover:bg-black text-white px-4 py-2 rounded-lg text-center text-sm">
           View

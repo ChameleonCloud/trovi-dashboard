@@ -109,7 +109,7 @@ onMounted(async () => {
               </div>
             </div>
             <p class="my-1">
-              {{ state.artifact.long_description }}
+              {{ state.artifact.short_description }}
             </p>
           </div>
         </main>
