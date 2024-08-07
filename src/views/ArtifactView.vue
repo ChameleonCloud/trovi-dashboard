@@ -80,6 +80,9 @@ onMounted(async () => {
                 <i class="pi pi-star mr-1"></i> Star
               </button>
             </div>
+            <!-- here is where testing of uuid happens -->
+            <span>{{ state.artifact.uuid }}</span>
+            <!-- here is where testing of uuid happens -->
             <div class="flex items-center justify-center md:justify-start mb-2 mt-5">
               <h1 class="text-3xl font-bold mr-2">{{ state.artifact.title }}</h1>
               <span class="text-sm text-gray-300 border border-gray-300 rounded-full px-2 ml-1">
@@ -120,7 +123,7 @@ onMounted(async () => {
           <div class="bg-white p-6 rounded-lg shadow-md">
             <h3 class="text-xl font-bold mb-6">Versions</h3>
             <div v-if="latestVersion" class="mb-6">
-              <p><strong>Version:</strong> {{ latestVersion.slug }}</p>
+              <p><strong>Latest Version:</strong> {{ latestVersion.slug }}</p>
               <p><strong>Created At:</strong> {{ latestVersion.created_at }}</p>
             </div>
           </div>
@@ -130,7 +133,7 @@ onMounted(async () => {
             <h3 class="text-xl font-bold mb-6">Manage Artifact</h3>
             <RouterLink :to="`/artifacts/edit/${state.artifact.uuid}`"
               class="bg-lime-600 hover:bg-black text-white text-center font-bold py-2 px-4 rounded-full w-full focus:outline-none focus:shadow-outline mt-4 block">
-              Open with GitHub</RouterLink>
+              Open with Chameleon</RouterLink>
             <button @click="deleteArtifact"
               class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-full w-full focus:outline-none focus:shadow-outline mt-4 block">
               Delete Artifact

@@ -53,7 +53,7 @@ const handleSubmit = async () => {
       },
     });
     toast.success('Artifact Added Successfully');
-    router.push(`/artifacts/${response.data.id}`);
+    router.push(`/artifacts/${response.data.uuid}`);
   } catch (error) {
     console.error('Error adding artifact', error);
     toast.error('Artifact Was Not Added');
