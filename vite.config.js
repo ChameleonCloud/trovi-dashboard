@@ -4,6 +4,7 @@ import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 
 // https://vitejs.dev/config/
+
 export default defineConfig({
   plugins: [vue()],
   server: {
@@ -12,6 +13,7 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8000',
         changeOrigin: true,
+        // What does this mean
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },

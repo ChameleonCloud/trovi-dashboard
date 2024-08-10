@@ -4,12 +4,15 @@ import { RouterLink } from 'vue-router';
 import { defineProps, ref, computed } from 'vue';
 
 const props = defineProps({
-  artifact: Object,
+  artifact: Object, // Expecting an object with the UUID
 });
 
+// Find the specific artifact using the UUID from the prop
+// const artifactData = data.artifacts.find(item => item.uuid === props.artifact.uuid);
+
+// const artifactData = data.artifact.find(item => item.uuid === props.artifact.uuid);
 
 const showFullDescription = ref(false);
-
 const toggleFullDescription = () => {
   showFullDescription.value = !showFullDescription.value;
 };
@@ -65,6 +68,7 @@ const truncatedDescription = computed(() => {
         </div>
 
         <!-- this is when I click the button view and it takes to the detail on the artifact -->
+
         <RouterLink :to="'/artifacts/' + artifact.id"
           class="h-[36px] bg-lime-600 hover:bg-black text-white px-4 py-2 rounded-lg text-center text-sm">
           View
