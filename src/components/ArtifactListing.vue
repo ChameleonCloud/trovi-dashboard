@@ -62,10 +62,10 @@ const truncatedDescription = computed(() => {
       <div class="border border-gray-100 mb-5"></div>
 
       <div class="flex flex-col lg:flex-row justify-between mb-4 items-center">
-        <div class="text-orange-700 mb-3 flex items-center">
+        <!-- <div class="text-orange-700 mb-3 flex items-center">
           <i class="pi pi-check text-orange-700 mr-2"></i>
-          {{ artifact.updated_at }}
-        </div>
+          {{ artifact.updated_at }} -->
+        <!-- </div> -->
 
         <!-- this is when I click the button view and it takes to the detail on the artifact -->
 
