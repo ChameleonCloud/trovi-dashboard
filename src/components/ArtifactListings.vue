@@ -1,11 +1,14 @@
 <script setup>
 import { RouterLink } from 'vue-router';
 import ArtifactListing from './ArtifactListing.vue';
-import { reactive, defineProps, onMounted } from 'vue';
+import { reactive, defineProps, onMounted, computed } from 'vue';
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
-import axios from 'axios';
 
-defineProps({
+import { useArtifactsStore } from '@/stores/artifact';
+const artifactsStore = useArtifactsStore();
+artifactsStore.fetchAllArtifacts();
+
+const props = defineProps({
   limit: Number,
   showButton: {
     type: Boolean,
@@ -18,13 +21,49 @@ const state = reactive({
   isLoading: true,
   selectedTags: [],
   allTags: [], // To hold all available tags for filtering
+  searchText: ""
 });
+
+const filteredArtifacts = computed(() => {
+  return state.artifacts.filter(a => {
+    if(state.searchText){
+      let searchString = state.searchText.toLowerCase()
+      let inArtifactFields = [ // check artifact fields
+          a.title?.toLowerCase(),
+          a.long_description?.toLowerCase(),
+          a.short_description?.toLowerCase(),
+        ].some(s => s?.includes(searchString))
+      let inAuthorFields = a.authors.some(author => // Check author fields
+        [
+          author.full_name?.toLowerCase(),
+          author.affiliation?.toLowerCase(),
+          author.email?.toLowerCase()
+        ].some(s => s?.includes(searchString))
+      )
+      console.log(inArtifactFields, inAuthorFields)
+      return inArtifactFields || inAuthorFields
+    }
+    return true
+  })
+  .filter(a => {
+    if(state.selectedTags.length > 0){
+      let filtered_tags = a.tags.filter(
+        t => state.selectedTags.indexOf(t) >= 0
+      )
+      console.log(filtered_tags)
+      return filtered_tags.length == state.selectedTags.length
+    }
+    return true
+  })
+  .slice(0, props.limit || state.artifacts.length)
+})
 
 onMounted(async () => {
   try {
-    const response = await axios.get('/api/artifacts');
-    state.artifacts = response.data;
+    state.artifacts = await artifactsStore.fetchAllArtifacts();
+
     // Extract tags from artifacts for filtering options
+    // TODO this should use the API
     state.allTags = [...new Set(state.artifacts.flatMap(artifact => artifact.tags))];
   } catch (error) {
     console.error('Error fetching artifacts', error);
@@ -32,14 +71,6 @@ onMounted(async () => {
     state.isLoading = false;
   }
 });
-
-function toggleTag(tag) {
-  if (state.selectedTags.includes(tag)) {
-    state.selectedTags = state.selectedTags.filter(t => t !== tag);
-  } else {
-    state.selectedTags.push(tag);
-  }
-}
 </script>
 
 <template>
@@ -51,17 +82,17 @@ function toggleTag(tag) {
 
       <!-- Search Bar -->
       <div class="mb-6">
-        <input type="text" placeholder="Search artifacts..."
+        <input v-model="state.searchText" type="text" placeholder="Search artifacts..."
           class="w-full px-4 py-3 border border-gray-500 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-lime-500 transition duration-100" />
       </div>
 
       <!-- Search by Tags -->
       <div class="mb-6">
-        <div class="text-lg font-medium mb-2">Search by:</div>
         <div class="flex flex-wrap gap-2">
+          <span>Tag:</span>
           <label v-for="tag in state.allTags" :key="tag" class="flex items-center cursor-pointer">
             <input type="checkbox" :value="tag" v-model="state.selectedTags"
-              class="mr-2 form-checkbox h-4 w-4 text-lime-600 border-gray-300 rounded" />
+              class="mr-1 form-checkbox h-4 w-4 text-lime-600 border-gray-300 rounded" />
             <span class="text-lg font-medium text-gray-700 hover:text-lime-600 transition duration-300">
               {{ tag }}
             </span>
@@ -76,7 +107,7 @@ function toggleTag(tag) {
 
       <!-- Show artifact listing when done loading -->
       <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <ArtifactListing v-for="artifact in state.artifacts.slice(0, limit || state.artifacts.length)"
+        <ArtifactListing v-for="artifact in filteredArtifacts"
           :key="artifact.uuid" :artifact="artifact" />
       </div>
     </div>

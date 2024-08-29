@@ -5,6 +5,7 @@ import NotFoundView from '@/views/NotFoundView.vue';
 import ArtifactView from '@/views/ArtifactView.vue';
 import AddArtifactView from '@/views/AddArtifactView.vue';
 import EditArtifactView from '@/views/EditArtifactView.vue';
+import AboutView from '@/views/AboutView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -35,6 +36,11 @@ const router = createRouter({
       path: '/artifacts/edit/:uuid',
       name: 'edit-artifact',
       component: EditArtifactView,
+    },
+    {
+      path: "/about",
+      name: "about",
+      component: AboutView,
     },
     {
       path: '/:catchAll(.*)',

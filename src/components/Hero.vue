@@ -1,3 +1,4 @@
+<!-- The banner on the main page -->
 <script setup>
 import { defineProps } from 'vue';
 
@@ -8,7 +9,7 @@ defineProps({
   },
   subtitle: {
     type: String,
-    default: 'And an open platform for practical reproducibility.',
+    default: 'An open platform for practical reproducibility.',
   },
 });
 </script>

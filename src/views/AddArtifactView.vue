@@ -47,7 +47,7 @@ const handleSubmit = async () => {
       formData.append('files[]', file);
     });
 
-    const response = await axios.post('/api/artifacts', formData, {
+    const response = await axios.post('/artifacts', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
