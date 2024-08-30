@@ -4,8 +4,7 @@ import { RouterView } from 'vue-router';
 
 import axios from 'axios';
 
-// TODO move this to env
-axios.defaults.baseURL = "https://trovi.chameleoncloud.org"
+axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL
 </script>
 
 <template>
