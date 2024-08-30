@@ -48,4 +48,4 @@ jobs:
           context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          target: release
+          target: production-stage
