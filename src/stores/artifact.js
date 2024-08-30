@@ -20,7 +20,7 @@ function processArtifact(artifact){
         unique_cell_execution_count: 0
     })
     artifact.computed.long_description_markup = marked(artifact.long_description ? artifact.long_description : "")
-    artifact.computed.chameleon_launch_url = `https://dev.chameleoncloud.org/experiment/share/${artifact.uuid}/launch`
+    artifact.computed.chameleon_launch_url = `https://chameleoncloud.org/experiment/share/${artifact.uuid}/launch`
     
     let v = artifact.versions.find(version => {
         return version.contents.urn.includes("github.com")
