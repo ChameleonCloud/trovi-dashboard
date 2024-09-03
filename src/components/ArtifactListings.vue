@@ -18,7 +18,6 @@ const props = defineProps({
 
 const state = reactive({
   artifacts: [],
-  isLoading: true,
   selectedTags: [],
   allTags: [], // To hold all available tags for filtering
   searchText: ""
@@ -58,19 +57,20 @@ const filteredArtifacts = computed(() => {
   .slice(0, props.limit || state.artifacts.length)
 })
 
+const isLoading = computed(() => {
+  return artifactsStore.loading
+})
+
 onMounted(async () => {
   try {
-    state.artifacts = await artifactsStore.fetchAllArtifacts();
+    state.artifacts = artifactsStore.artifacts;
 
     // Extract tags from artifacts for filtering options
     // TODO this should use the API
     state.allTags = [...new Set(state.artifacts.flatMap(artifact => artifact.tags))];
   } catch (error) {
     console.error('Error fetching artifacts', error);
-  } finally {
-    state.isLoading = false;
-  }
-});
+  }});
 </script>
 
 <template>
@@ -100,16 +100,17 @@ onMounted(async () => {
         </div>
       </div>
 
-      <!-- Show loading spinner while loading is true -->
-      <div v-if="state.isLoading" class="text-center text-gray-500 py-6">
-        <PulseLoader />
-      </div>
 
       <!-- Show artifact listing when done loading -->
-      <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <ArtifactListing v-for="artifact in filteredArtifacts"
           :key="artifact.uuid" :artifact="artifact" />
       </div>
+      <!-- Show loading spinner while loading is true -->
+      <div v-if="isLoading" class="text-center text-gray-500 py-6">
+        <PulseLoader />
+      </div>
+
     </div>
   </section>
 
