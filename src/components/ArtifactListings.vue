@@ -1,12 +1,14 @@
 <script setup>
 import { RouterLink } from 'vue-router';
 import ArtifactListing from './ArtifactListing.vue';
-import { reactive, defineProps, onMounted, computed } from 'vue';
+import Badge from '@/components/Badge.vue'
+import { reactive, onMounted, computed } from 'vue';
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 
 import { useArtifactsStore } from '@/stores/artifact';
 const artifactsStore = useArtifactsStore();
 artifactsStore.fetchAllArtifacts();
+artifactsStore.fetchTags();
 
 const props = defineProps({
   limit: Number,
@@ -19,7 +21,7 @@ const props = defineProps({
 const state = reactive({
   artifacts: [],
   selectedTags: [],
-  allTags: [], // To hold all available tags for filtering
+  selectedBadges: [],
   searchText: ""
 });
 
@@ -39,7 +41,6 @@ const filteredArtifacts = computed(() => {
           author.email?.toLowerCase()
         ].some(s => s?.includes(searchString))
       )
-      console.log(inArtifactFields, inAuthorFields)
       return inArtifactFields || inAuthorFields
     }
     return true
@@ -49,10 +50,14 @@ const filteredArtifacts = computed(() => {
       let filtered_tags = a.tags.filter(
         t => state.selectedTags.indexOf(t) >= 0
       )
-      console.log(filtered_tags)
       return filtered_tags.length == state.selectedTags.length
     }
     return true
+  })
+  .filter(a => {
+    return state.selectedBadges.length == 0 || state.selectedBadges.every(b => {
+      return a.badges.some(ab => ab.name == b)
+    })
   })
   .slice(0, props.limit || state.artifacts.length)
 })
@@ -64,10 +69,9 @@ const isLoading = computed(() => {
 onMounted(async () => {
   try {
     state.artifacts = artifactsStore.artifacts;
-
+    state.badges = artifactsStore.processed_badges.badges
     // Extract tags from artifacts for filtering options
     // TODO this should use the API
-    state.allTags = [...new Set(state.artifacts.flatMap(artifact => artifact.tags))];
   } catch (error) {
     console.error('Error fetching artifacts', error);
   }});
@@ -89,12 +93,22 @@ onMounted(async () => {
       <!-- Search by Tags -->
       <div class="mb-6">
         <div class="flex flex-wrap gap-2">
-          <span>Tag:</span>
-          <label v-for="tag in state.allTags" :key="tag" class="flex items-center cursor-pointer">
-            <input type="checkbox" :value="tag" v-model="state.selectedTags"
+          <span>Tags:</span>
+          <label v-for="(tag, index) in artifactsStore.tags" :key="index" class="flex items-center cursor-pointer">
+            <input type="checkbox" :value="tag.tag" v-model="state.selectedTags"
               class="mr-1 form-checkbox h-4 w-4 text-lime-600 border-gray-300 rounded" />
             <span class="text-lg font-medium text-gray-700 hover:text-lime-600 transition duration-300">
-              {{ tag }}
+              {{ tag.tag }}
+            </span>
+          </label>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <span>Badges:</span>
+          <label v-for="(badge, index) in state.badges" :key="index" class="flex items-center cursor-pointer">
+            <input type="checkbox" :value="badge.name" v-model="state.selectedBadges"
+              class="mr-1 form-checkbox h-4 w-4 text-lime-600 border-gray-300 rounded" />
+            <span class="inline-flex text-lg font-medium text-gray-700 hover:text-lime-600 transition duration-300">
+              <Badge :badge=badge :link="false"></Badge> {{ badge.name }}
             </span>
           </label>
         </div>
@@ -103,8 +117,8 @@ onMounted(async () => {
 
       <!-- Show artifact listing when done loading -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <ArtifactListing v-for="artifact in filteredArtifacts"
-          :key="artifact.uuid" :artifact="artifact" />
+        <ArtifactListing v-for="(artifact, index) in filteredArtifacts"
+          :key="index" :artifact="artifact" />
       </div>
       <!-- Show loading spinner while loading is true -->
       <div v-if="isLoading" class="text-center text-gray-500 py-6">

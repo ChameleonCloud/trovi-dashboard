@@ -1,6 +1,7 @@
 <script setup>
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 import BackButton from '@/components/BackButton.vue';
+import Badge from '@/components/Badge.vue'
 import { reactive, onMounted, computed } from 'vue';
 import { useRoute, RouterLink } from 'vue-router';
 
@@ -39,11 +40,14 @@ onMounted(async () => {
             <!-- UUID -->
             <!-- <span>{{ state.artifact.uuid }}</span> -->
             <!-- Title and Visibility -->
-            <div class="flex items-center justify-center md:justify-start mb-2 mt-5">
+            <div class="flex justify-between mb-2 mt-5">
               <h1 class="text-3xl font-bold mr-2">{{ state.artifact.title }}</h1>
               <!-- <span class="text-sm text-gray-300 border border-gray-300 rounded-full px-2 ml-1">
                 {{ state.artifact.visibility }}
               </span> -->
+              <span class="inline-flex">
+                <Badge :badge=badge v-for="badge in state.artifact.badges"/>
+              </span>
             </div>
 
             <!-- Metrics Section -->

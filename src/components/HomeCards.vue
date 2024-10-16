@@ -7,7 +7,7 @@ import Card from '@/components/Card.vue';
   <section class="py-4">
     <div class="container-xl lg:container m-auto">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-lg">
-        <Card bg="bg-gray-100">
+        <Card>
           <h2 class="text-2xl font-bold">Get Started</h2>
           <p class="mt-2 mb-4">
             Explore artifact that users have shared on Trovi.
@@ -16,7 +16,7 @@ import Card from '@/components/Card.vue';
             Explore Artifacts
           </RouterLink>
         </Card>
-        <Card bg="bg-gray-100">
+        <Card>
           <h2 class="text-2xl font-bold">Learn more</h2>
           <p class="mt-2 mb-4">
             Learn more about the Trovi platform.

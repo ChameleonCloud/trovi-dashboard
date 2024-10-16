@@ -1,7 +1,5 @@
 <!-- The banner on the main page -->
 <script setup>
-import { defineProps } from 'vue';
-
 defineProps({
   title: {
     type: String,

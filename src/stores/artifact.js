@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import axios from 'axios';
 import { marked } from 'marked';
 
-function processArtifact(artifact) {
+function processArtifact(store, artifact) {
     artifact.computed = {}
     artifact.computed.latestVersion = artifact.versions.reduce(
         (latest, version) => new Date(version.created_at) > new Date(latest.created_at) ? version : latest,
@@ -31,6 +31,14 @@ function processArtifact(artifact) {
         artifact.computed.github_url = `https://${match[0]}`
     }
 
+    if(store.processed_badges.artifact_badges[artifact.uuid]){
+        artifact.badges = Array.from(store.processed_badges.artifact_badges[artifact.uuid]).map(ab =>
+            store.processed_badges.badges[ab]
+        )
+    } else {
+        artifact.badges = []
+    }
+
     return artifact
 }
 
@@ -39,11 +47,39 @@ export const useArtifactsStore = defineStore('artifacts', {
         artifacts: [],
         artifactDetails: {},
         loading: false,
+        badges_loaded: false,
+        processed_badges: {
+            badges: {},
+            artifact_badges: {},
+        },
+        tags: [],
     }),
     actions: {
+        async fetchBadges() {
+            if(this.badges_loaded){
+                return
+            }
+            try {
+                const badge_data = await axios.get("https://chameleoncloud.org/experiment/share/api/badges")
+                badge_data.data.badges.forEach(badge => {
+                    this.processed_badges.badges[badge.name] = badge
+                })
+                badge_data.data.artifact_badges.forEach(artifact_badge => {
+                    if (!this.processed_badges.artifact_badges[artifact_badge.artifact_uuid]) {
+                        this.processed_badges.artifact_badges[artifact_badge.artifact_uuid] = new Set()
+                    }
+                    this.processed_badges.artifact_badges[artifact_badge.artifact_uuid].add(artifact_badge.badge)
+                })
+                this.badges_loaded = true
+            } catch (error) {
+                console.error('Failed to load badges:', error);
+            }
+        },
         async fetchAllArtifacts() {
+            await this.fetchBadges()
             this.loading = true;
             let after = null;
+
             do {
                 try {
                     const response = await axios.get('/artifacts', {
@@ -55,7 +91,7 @@ export const useArtifactsStore = defineStore('artifacts', {
                     let newArtifacts = response.data.artifacts.slice(after ? 1 : 0)
                     this.artifacts.push(...newArtifacts);
                     newArtifacts.forEach(artifact => {
-                        this.artifactDetails[artifact.uuid] = processArtifact(artifact)
+                        this.artifactDetails[artifact.uuid] = processArtifact(this, artifact)
                     })
 
                     // Update the `after` parameter for the next call
@@ -68,12 +104,17 @@ export const useArtifactsStore = defineStore('artifacts', {
             this.loading = false
         },
         async fetchArtifactById(uuid) {
+            await this.fetchBadges()
             // Check if the artifact is already in the cache
             if (!this.artifactDetails[uuid]) {
                 const response = await axios.get(`/artifacts/${uuid}`);
-                this.artifactDetails[uuid] = processArtifact(response.data);
+                this.artifactDetails[uuid] = processArtifact(this, response.data);
             }
             return this.artifactDetails[uuid];
-        }
+        },
+        async fetchTags() {
+            const response = await axios.get(`/meta/tags`);
+            this.tags = response.data.tags
+        },
     }
 });

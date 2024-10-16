@@ -1,7 +1,8 @@
 <!-- This is the individual artifact in the main landing page -->
 <script setup>
 import { RouterLink } from 'vue-router';
-import { defineProps, ref, computed } from 'vue';
+import { ref } from 'vue';
+import Badge from '@/components/Badge.vue'
 
 const props = defineProps({
   artifact: Object, // Expecting an object with the UUID
@@ -34,13 +35,15 @@ const toggleFullDescription = () => {
             </div>
           </div>
         </div>
-
-        <button v-if="artifact.computed.github_url"
-          class="text-gray-400 border border-gray-300 hover:bg-gray-200 px-2 py-1 rounded-lg flex items-center text-sm">
-          <a target="_blank" :href="artifact.computed.github_url">
-            <span><i class="pi pi-github mr-1"></i> GitHub</span>
-          </a>
-        </button>
+        <div class="h-full flex">
+          <Badge :badge=badge v-for="badge in artifact.badges"/>
+          <button v-if="artifact.computed.github_url"
+            class="text-gray-400 border border-gray-300 hover:bg-gray-200 px-1 py-1 my-3 rounded-lg flex items-center text-sm">
+            <a target="_blank" :href="artifact.computed.github_url">
+              <span><i class="pi pi-github mr-1"></i> GitHub</span>
+            </a>
+          </button>
+        </div>
       </div>
 
       <div class="mb-5">
