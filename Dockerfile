@@ -1,5 +1,5 @@
 # Stage 1: Build the Vue.js app with Vite
-FROM node:18-alpine AS build-stage
+FROM node:20-alpine AS build-stage
 
 # Set the working directory
 WORKDIR /app
