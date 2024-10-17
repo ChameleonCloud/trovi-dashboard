@@ -1,7 +1,7 @@
 <script setup>
 import { RouterLink } from 'vue-router';
 import ArtifactListing from './ArtifactListing.vue';
-import Badge from '@/components/Badge.vue'
+import ArtifactBadge from '@/components/ArtifactBadge.vue'
 import { reactive, onMounted, computed } from 'vue';
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 
@@ -108,7 +108,7 @@ onMounted(async () => {
             <input type="checkbox" :value="badge.name" v-model="state.selectedBadges"
               class="mr-1 form-checkbox h-4 w-4 text-lime-600 border-gray-300 rounded" />
             <span class="inline-flex text-lg font-medium text-gray-700 hover:text-lime-600 transition duration-300">
-              <Badge :badge=badge :link="false"></Badge> {{ badge.name }}
+              <ArtifactBadge :badge=badge :link="false" /> {{ badge.name }}
             </span>
           </label>
         </div>

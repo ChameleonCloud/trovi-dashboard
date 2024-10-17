@@ -1,5 +1,5 @@
 <script setup>
-import Navbar from '@/components/Navbar.vue';
+import NavBar from '@/components/NavBar.vue';
 import { RouterView } from 'vue-router';
 
 import axios from 'axios';
@@ -12,6 +12,6 @@ if(import.meta.env.PROD){
 </script>
 
 <template>
-  <Navbar />
+  <NavBar />
   <RouterView />
 </template>

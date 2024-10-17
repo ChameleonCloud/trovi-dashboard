@@ -1,9 +1,9 @@
 <script setup>
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 import BackButton from '@/components/BackButton.vue';
-import Badge from '@/components/Badge.vue'
-import { reactive, onMounted, computed } from 'vue';
-import { useRoute, RouterLink } from 'vue-router';
+import ArtifactBadge from '@/components/ArtifactBadge.vue'
+import { reactive, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
 
 import { useArtifactsStore } from '@/stores/artifact';
 
@@ -46,7 +46,9 @@ onMounted(async () => {
                 {{ state.artifact.visibility }}
               </span> -->
               <span class="inline-flex">
-                <Badge :badge=badge v-for="badge in state.artifact.badges"/>
+                <template v-for="(badge, index) in state.artifact.badges" :key="index">
+                  <ArtifactBadge :badge=badge />
+                </template>
               </span>
             </div>
 

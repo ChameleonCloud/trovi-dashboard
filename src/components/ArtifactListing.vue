@@ -2,16 +2,11 @@
 <script setup>
 import { RouterLink } from 'vue-router';
 import { ref } from 'vue';
-import Badge from '@/components/Badge.vue'
+import ArtifactBadge from '@/components/ArtifactBadge.vue'
 
 const props = defineProps({
-  artifact: Object, // Expecting an object with the UUID
+  artifact: Object,
 });
-
-// Find the specific artifact using the UUID from the prop
-// const artifactData = data.artifacts.find(item => item.uuid === props.artifact.uuid);
-
-// const artifactData = data.artifact.find(item => item.uuid === props.artifact.uuid);
 
 const showFullDescription = ref(false);
 const toggleFullDescription = () => {
@@ -24,22 +19,24 @@ const toggleFullDescription = () => {
     <div class="p-4">
       <div class="flex items-center justify-between mb-6">
         <div>
-          <RouterLink :to="'/artifacts/' + artifact.uuid">
-            <h3 class="text-xl font-bold">{{ artifact.title }}</h3>
+          <RouterLink :to="'/artifacts/' + props.artifact.uuid">
+            <h3 class="text-xl font-bold">{{ props.artifact.title }}</h3>
           </RouterLink>
           <div class="mb-4">
             <div class="flex flex-wrap gap-2">
-              <span v-for="tag in artifact.tags" :key="tag" class="text-lime-600 flex items-center">
+              <span v-for="tag in props.artifact.tags" :key="tag" class="text-lime-600 flex items-center">
                 <i class="pi pi-tag mr-2"></i> {{ tag }}
               </span>
             </div>
           </div>
         </div>
         <div class="h-full flex">
-          <Badge :badge=badge v-for="badge in artifact.badges"/>
-          <button v-if="artifact.computed.github_url"
+          <template v-for="(badge, index) in props.artifact.badges" :key="index">
+            <ArtifactBadge :badge=badge />
+          </template>
+          <button v-if="props.artifact.computed.github_url"
             class="text-gray-400 border border-gray-300 hover:bg-gray-200 px-1 py-1 my-3 rounded-lg flex items-center text-sm">
-            <a target="_blank" :href="artifact.computed.github_url">
+            <a target="_blank" :href="props.artifact.computed.github_url">
               <span><i class="pi pi-github mr-1"></i> GitHub</span>
             </a>
           </button>
