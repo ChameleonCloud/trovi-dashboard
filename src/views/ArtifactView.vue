@@ -79,11 +79,20 @@ onMounted(async () => {
         <aside>
           <div class="bg-white p-6 rounded-lg shadow-md">
             <h3 class="text-xl font-bold mb-2">Launch</h3>
-            <button class="text-black-400 border border-black-300 hover:bg-black-200 px-2 py-1 rounded-lg flex items-center text-sm">
+            <template v-if="state.artifact.environment_setup">
+              <button class="text-black-400 border border-black-300 hover:bg-black-200 px-2 py-1 rounded-lg flex items-center text-sm">
+                <a target="_blank" href="http://10.52.3.231:8888/lab/tree/power_management_experiment">
+                  <span>Chameleon Bare Metal</span>
+                </a>
+              </button>
+            </template>
+            <template v-else>
+              <button class="text-black-400 border border-black-300 hover:bg-black-200 px-2 py-1 rounded-lg flex items-center text-sm">
                 <a target="_blank" :href="state.artifact.computed.chameleon_launch_url">
                   <span>Chameleon</span>
                 </a>
               </button>
+            </template>
           </div>
 
           <div class="bg-white p-6 rounded-lg shadow-md mt-6">

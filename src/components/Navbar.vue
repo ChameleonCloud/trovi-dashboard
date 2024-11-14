@@ -38,7 +38,7 @@ const isActiveLink = (routePath) => {
                 'py-2',
                 'rounded-md',
               ]">Artifacts</RouterLink>
-              <!-- <RouterLink to="/artifacts/add" :class="[
+              <RouterLink to="/artifacts/add" :class="[
                 isActiveLink('/artifacts/add')
                   ? 'bg-gray-900'
                   : 'hover:bg-gray-900 hover:text-white',
@@ -46,7 +46,7 @@ const isActiveLink = (routePath) => {
                 'px-3',
                 'py-2',
                 'rounded-md',
-              ]">Add New Artifact</RouterLink> -->
+              ]">Import</RouterLink>
               <RouterLink to="/about" :class="[
                 isActiveLink('/about')
                   ? 'bg-gray-900'
