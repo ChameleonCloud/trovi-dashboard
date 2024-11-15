@@ -76,6 +76,10 @@ export const useArtifactsStore = defineStore('artifacts', {
             }
         },
         async fetchAllArtifacts() {
+            if (this.artifacts.length > 0){
+                return
+            }
+
             await this.fetchBadges()
             this.loading = true;
             let after = null;

@@ -92,15 +92,17 @@ onMounted(async () => {
 
       <!-- Search by Tags -->
       <div class="mb-6">
-        <div class="flex flex-wrap gap-2">
+        <div class="flex gap-2">
           <span>Tags:</span>
-          <label v-for="(tag, index) in artifactsStore.tags" :key="index" class="flex items-center cursor-pointer">
-            <input type="checkbox" :value="tag.tag" v-model="state.selectedTags"
-              class="mr-1 form-checkbox h-4 w-4 text-lime-600 border-gray-300 rounded" />
-            <span class="text-lg font-medium text-gray-700 hover:text-lime-600 transition duration-300">
-              {{ tag.tag }}
-            </span>
-          </label>
+          <div class="flex flex-wrap gap-2">
+            <label v-for="(tag, index) in artifactsStore.tags" :key="index" class="flex items-center cursor-pointer">
+              <input type="checkbox" :value="tag.tag" v-model="state.selectedTags"
+                class="mr-1 form-checkbox h-4 w-4 text-lime-600 border-gray-300 rounded" />
+              <span class="text-lg font-medium text-gray-700 hover:text-lime-600 transition duration-300">
+                {{ tag.tag }}
+              </span>
+            </label>
+          </div>
         </div>
         <div class="flex flex-wrap gap-2">
           <span>Badges:</span>
