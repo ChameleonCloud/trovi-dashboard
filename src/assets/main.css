@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-.marked a, .prose a  {
-    text-decoration: underline;
+.marked a,
+.prose a {
+  text-decoration: underline;
 }

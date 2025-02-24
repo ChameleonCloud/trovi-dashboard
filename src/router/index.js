@@ -1,11 +1,12 @@
-import { createRouter, createWebHistory } from 'vue-router';
-import HomeView from '@/views/HomeView.vue';
-import ArtifactsView from '@/views/ArtifactsView.vue';
-import NotFoundView from '@/views/NotFoundView.vue';
-import ArtifactView from '@/views/ArtifactView.vue';
-import AddArtifactView from '@/views/AddArtifactView.vue';
-import EditArtifactView from '@/views/EditArtifactView.vue';
+import { createRouter, createWebHistory } from 'vue-router'
+import HomeView from '@/views/HomeView.vue'
+import ArtifactsView from '@/views/ArtifactsView.vue'
+import NotFoundView from '@/views/NotFoundView.vue'
+import ArtifactView from '@/views/ArtifactView.vue'
+import AddArtifactView from '@/views/AddArtifactView.vue'
+import EditArtifactView from '@/views/EditArtifactView.vue'
 import AboutView from '@/views/AboutView.vue'
+import LoginView from '@/views/LoginView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -20,7 +21,6 @@ const router = createRouter({
       name: 'artifacts',
       component: ArtifactsView,
     },
-    // pull this from the json file
     {
       path: '/artifacts/:uuid',
       name: 'artifact',
@@ -30,17 +30,32 @@ const router = createRouter({
       path: '/artifacts/add',
       name: 'add-artifact',
       component: AddArtifactView,
+      meta: {
+        requiresAuth: true,
+      },
     },
 
     {
-      path: '/artifacts/edit/:uuid',
+      path: '/artifacts/:uuid/edit',
       name: 'edit-artifact',
       component: EditArtifactView,
+      meta: {
+        requiresAuth: true,
+      },
     },
     {
-      path: "/about",
-      name: "about",
+      path: '/about',
+      name: 'about',
       component: AboutView,
+    },
+    {
+      path: '/login',
+      name: 'login',
+      component: LoginView,
+      meta: {
+        requiresAuth: true,
+        transient: true,
+      },
     },
     {
       path: '/:catchAll(.*)',
@@ -48,7 +63,6 @@ const router = createRouter({
       component: NotFoundView,
     },
   ],
-});
+})
 
-export default router;
-
+export default router

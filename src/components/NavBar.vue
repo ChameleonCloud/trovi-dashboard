@@ -1,11 +1,14 @@
 <script setup>
-import { RouterLink, useRoute } from 'vue-router';
-import logo from '@/assets/img/logo.png';
+import { RouterLink, useRoute } from 'vue-router'
+import logo from '@/assets/img/logo.png'
+import { useAuthStore } from '@/stores/auth'
 
 const isActiveLink = (routePath) => {
-  const route = useRoute();
-  return route.path === routePath;
-};
+  const route = useRoute()
+  return route.path === routePath
+}
+
+const authStore = useAuthStore()
 </script>
 
 <template>
@@ -20,42 +23,68 @@ const isActiveLink = (routePath) => {
           </RouterLink>
           <div class="md:ml-auto">
             <div class="flex space-x-2">
-              <RouterLink to="/" :class="[
-                isActiveLink('/')
-                  ? 'bg-gray-900'
-                  : 'hover:bg-gray-900 hover:text-white',
-                'text-white',
-                'px-3',
-                'py-2',
-                'rounded-md',
-              ]">Home</RouterLink>
-              <RouterLink to="/artifacts" :class="[
-                isActiveLink('/artifacts')
-                  ? 'bg-gray-900'
-                  : 'hover:bg-gray-900 hover:text-white',
-                'text-white',
-                'px-3',
-                'py-2',
-                'rounded-md',
-              ]">Artifacts</RouterLink>
-              <!-- <RouterLink to="/artifacts/add" :class="[
-                isActiveLink('/artifacts/add')
-                  ? 'bg-gray-900'
-                  : 'hover:bg-gray-900 hover:text-white',
-                'text-white',
-                'px-3',
-                'py-2',
-                'rounded-md',
-              ]">Add New Artifact</RouterLink> -->
-              <RouterLink to="/about" :class="[
-                isActiveLink('/about')
-                  ? 'bg-gray-900'
-                  : 'hover:bg-gray-900 hover:text-white',
-                'text-white',
-                'px-3',
-                'py-2',
-                'rounded-md',
-              ]">About</RouterLink>
+              <RouterLink
+                to="/"
+                :class="[
+                  isActiveLink('/') ? 'bg-gray-900' : 'hover:bg-gray-900 hover:text-white',
+                  'text-white',
+                  'px-3',
+                  'py-2',
+                  'rounded-md',
+                ]"
+                >Home</RouterLink
+              >
+              <RouterLink
+                to="/about"
+                :class="[
+                  isActiveLink('/about') ? 'bg-gray-900' : 'hover:bg-gray-900 hover:text-white',
+                  'text-white',
+                  'px-3',
+                  'py-2',
+                  'rounded-md',
+                ]"
+                >About</RouterLink
+              >
+              <RouterLink
+                to="/artifacts"
+                :class="[
+                  isActiveLink('/artifacts') ? 'bg-gray-900' : 'hover:bg-gray-900 hover:text-white',
+                  'text-white',
+                  'px-3',
+                  'py-2',
+                  'rounded-md',
+                ]"
+                >Artifacts</RouterLink
+              >
+              <RouterLink
+                to="/artifacts/add"
+                :class="[
+                  isActiveLink('/artifacts/add')
+                    ? 'bg-gray-900'
+                    : 'hover:bg-gray-900 hover:text-white',
+                  'text-white',
+                  'px-3',
+                  'py-2',
+                  'rounded-md',
+                ]"
+                >Import</RouterLink
+              >
+              <RouterLink
+                to="/login"
+                :class="[
+                  isActiveLink('/login') ? 'bg-gray-900' : 'hover:bg-gray-900 hover:text-white',
+                  'text-white',
+                  'px-3',
+                  'py-2',
+                  'rounded-md',
+                ]"
+              >
+                {{
+                  authStore.isAuthenticated
+                    ? `Sign Out: ${authStore.userInfo.preferred_username}`
+                    : 'Log in'
+                }}
+              </RouterLink>
             </div>
           </div>
         </div>

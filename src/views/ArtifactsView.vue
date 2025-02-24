@@ -1,7 +1,7 @@
 <script setup>
-import JobListings from '@/components/ArtifactListings.vue';
+import ArtifactList from '@/components/artifact/ArtifactList.vue'
 </script>
 
 <template>
-  <JobListings />
+  <ArtifactList />
 </template>
