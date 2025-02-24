@@ -8,9 +8,6 @@ import vue from '@vitejs/plugin-vue'
 export default defineConfig(({ command }) => {
   return {
     plugins: [vue()],
-    define: {
-      'process.env': process.env, // optional, for compatibility with some libraries
-    },
     server: {
       port: 4000,
     },
