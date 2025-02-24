@@ -50,7 +50,10 @@ function processArtifact(store, artifact) {
     artifact.badges = []
   }
 
-  artifact.computed.isOwnedByUser = artifact.owner_urn === store.authStore.userInfo?.userUrn
+  artifact.computed.isOwnedByUser = function() {
+    // user info may change between when this was loaded & used
+    return artifact.owner_urn === store.authStore.userInfo?.userUrn
+  }
 
   return artifact
 }
@@ -126,9 +129,15 @@ export const useArtifactsStore = defineStore('artifacts', {
       this.loading = true
       let after = null
 
+      var token = undefined
+      if (this.authStore.isAuthenticated) {
+        token = await this.authStore.getTroviToken()
+      }
+      let tokenParam = token ? `?access_token=${token}` : ''
+
       do {
         try {
-          const response = await axios.get('/artifacts', {
+          const response = await axios.get(`/artifacts/${tokenParam}`, {
             params: { after, limit: 21 },
           })
 

@@ -5,11 +5,11 @@ import router from '@/router'
 const authStore = useAuthStore()
 if (!authStore.isAuthenticated) {
   authStore.initKeycloak().then((_res) => {
-    router.push({ path: '/' })
+    router.go(-1)
   })
 } else {
   authStore.logout().then((_res) => {
-    router.push({ path: '/' })
+    router.go(-1)
   })
 }
 </script>

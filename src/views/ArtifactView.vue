@@ -4,9 +4,10 @@ import BackButton from '@/components/BackButton.vue'
 import ArtifactBadge from '@/components/artifact/ArtifactBadge.vue'
 import { reactive, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-
 import { useArtifactsStore } from '@/stores/artifact'
+import { useToast } from 'vue-toastification'
 
+const toast = useToast()
 const route = useRoute()
 
 const artifactId = route.params.uuid
@@ -22,6 +23,8 @@ onMounted(async () => {
     state.artifact = await artifactsStore.fetchArtifactById(artifactId)
   } catch (error) {
     console.error('Error fetching artifact', error)
+    state.isLoading = false
+    toast.error("Couldn't fetch artifact. It may not exist, or you do not have permission.")
   } finally {
     state.isLoading = false
   }
@@ -42,7 +45,7 @@ onMounted(async () => {
             <div class="flex justify-between mb-2 mt-5">
               <h1 class="text-3xl font-bold mr-2">{{ state.artifact.title }}</h1>
               <span class="inline-flex">
-                <span v-if="state.artifact.visibility == 'private'" class="rounded-full px-2 ml-1">
+                <span v-if="state.artifact.visibility == 'private'" class="rounded-full">
                   <h1><i class="pi pi-eye-slash"></i></h1>
                 </span>
                 <template v-for="(badge, index) in state.artifact.badges" :key="index">
@@ -50,7 +53,7 @@ onMounted(async () => {
                 </template>
                 <RouterLink
                   :to="'/artifacts/' + state.artifact.uuid + '/edit'"
-                  v-if="state.artifact.computed.isOwnedByUser"
+                  v-if="state.artifact.computed.isOwnedByUser()"
                   class="h-[36px] bg-pink-600 hover:bg-black text-white px-4 py-2 rounded-lg text-center text-sm"
                 >
                   Edit

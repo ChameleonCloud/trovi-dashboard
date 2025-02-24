@@ -6,9 +6,9 @@ import { useToast } from 'vue-toastification'
 const toast = useToast()
 
 const keycloakConfig = {
-  url: 'https://auth.dev.chameleoncloud.org/auth',
-  realm: 'chameleon',
-  clientId: 'trovi-dashboard-dev',
+  url: import.meta.env.VITE_KEYCLOAK_URL,
+  realm: import.meta.env.VITE_KEYCLOAK_REALM,
+  clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID,
 }
 
 export const useAuthStore = defineStore('auth', {
@@ -18,11 +18,12 @@ export const useAuthStore = defineStore('auth', {
     userInfo: null,
     token: null,
     troviToken: null,
-    lastRoute: null,
   }),
   actions: {
     async initKeycloak(options = { onLoad: 'login-required' }) {
-      if (this.keycloak) return
+      if (this.keycloak) {
+        return
+      }
       this.keycloak = new Keycloak(keycloakConfig)
       try {
         const authenticated = await this.keycloak.init(options)
@@ -69,14 +70,24 @@ export const useAuthStore = defineStore('auth', {
         return undefined
       }
     },
-    logout() {
+    async logout() {
       if (this.keycloak) {
         this.keycloak.logout()
+        this.keycloak = undefined
         this.isAuthenticated = false
         this.userInfo = null
         this.token = null
         this.troviToken = null
       }
     },
+  },
+  persist: {
+    storage: localStorage,
+    pick: [
+      "isAuthenticated",
+      "userInfo",
+      "token",
+      "troviToken"
+    ]
   },
 })

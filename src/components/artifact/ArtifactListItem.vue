@@ -22,6 +22,9 @@ const toggleFullDescription = () => {
           <RouterLink :to="'/artifacts/' + props.artifact.uuid">
             <h3 class="text-xl font-bold">{{ props.artifact.title }}</h3>
           </RouterLink>
+          <span v-if="props.artifact.visibility == 'private'" class="rounded-full">
+            <h1><i class="pi pi-eye-slash"></i></h1>
+          </span>
           <div class="mb-4">
             <div class="flex flex-wrap gap-2">
               <span
@@ -74,7 +77,7 @@ const toggleFullDescription = () => {
         </RouterLink>
         <RouterLink
           :to="'/artifacts/' + artifact.uuid + '/edit'"
-          v-if="artifact.computed.isOwnedByUser"
+          v-if="artifact.computed.isOwnedByUser()"
           class="h-[36px] bg-pink-600 hover:bg-black text-white px-4 py-2 rounded-lg text-center text-sm"
         >
           Edit

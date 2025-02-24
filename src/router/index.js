@@ -8,6 +8,8 @@ import EditArtifactView from '@/views/EditArtifactView.vue'
 import AboutView from '@/views/AboutView.vue'
 import LoginView from '@/views/LoginView.vue'
 
+let lastRoute = null
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -52,10 +54,6 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: LoginView,
-      meta: {
-        requiresAuth: true,
-        transient: true,
-      },
     },
     {
       path: '/:catchAll(.*)',
@@ -64,5 +62,14 @@ const router = createRouter({
     },
   ],
 })
+
+router.beforeEach((to, from, next) => {
+  if (lastRoute?.name == "login" && to.meta.requiresAuth) {
+    router.push({ path: '/' })
+  }
+  lastRoute = to
+  next();
+});
+
 
 export default router
