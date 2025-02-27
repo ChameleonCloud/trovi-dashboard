@@ -1,29 +1,30 @@
-# Stage 1: Build the Vue.js app with Vite
 FROM node:20-alpine AS build-stage
 
-# Set the working directory
+ARG CONFIG_ENV=production
+
 WORKDIR /app
 
-# Copy the package.json and package-lock.json
+RUN apk add --no-cache curl && \
+    curl -Lo /usr/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 && \
+    chmod +x /usr/bin/yq
+
 COPY . ./
 
-# Install dependencies
+# Function to convert a YAML section to .env
+# This reads a section from config.yaml and outputs key-value pairs as VAR=VALUE
+RUN yq ".${CONFIG_ENV} | to_entries | .[] | \"\(.key)=\(.value)\"" /app/config.yaml > .env
+
 RUN npm install
 
-# Build the app for production
 RUN npm run build
 
-# Stage 2: Serve the app with Nginx
+# Serve with nginx
 FROM nginx:alpine AS production-stage
 
-# Copy the built files from the previous stage
 COPY --from=build-stage /app/dist /usr/share/nginx/html
 
-# Copy the custom Nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Expose port 80
 EXPOSE 80
 
-# Start Nginx
 CMD ["nginx", "-g", "daemon off;"]
