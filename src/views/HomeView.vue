@@ -1,6 +1,6 @@
 <script setup>
-import HomeCards from '@/components/HomeCards.vue';
-import JobListings from '@/components/ArtifactListings.vue';
+import HomeCards from '@/components/HomeCards.vue'
+import ArtifactList from '@/components/artifact/ArtifactList.vue'
 </script>
 
 <template>
@@ -10,12 +10,10 @@ import JobListings from '@/components/ArtifactListings.vue';
         <h1 class="text-4xl font-extrabold text-white sm:text-5xl md:text-6xl">
           A collection of shared artifacts
         </h1>
-        <p class="my-4 text-xl text-white">
-          An open platform for practical reproducibility.
-        </p>
+        <p class="my-4 text-xl text-white">An open platform for practical reproducibility.</p>
       </div>
     </div>
   </section>
   <HomeCards />
-  <JobListings :limit="6" :showButton="true" />
+  <ArtifactList :limit="6" :showButton="true" />
 </template>
