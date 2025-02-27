@@ -64,12 +64,11 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
-  if (lastRoute?.name == "login" && to.meta.requiresAuth) {
+  if (lastRoute?.name == 'login' && to.meta.requiresAuth) {
     router.push({ path: '/' })
   }
   lastRoute = to
-  next();
-});
-
+  next()
+})
 
 export default router

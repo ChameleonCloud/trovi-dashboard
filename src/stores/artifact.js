@@ -13,8 +13,9 @@ function processArtifact(store, artifact) {
       new Date(version.created_at) > new Date(latest.created_at) ? version : latest,
     artifact.versions[0],
   )
-  artifact.computed.nonLatestVersions =  artifact.versions.filter(
-    version => version.created_at !== artifact.computed.latestVersion.created_at);
+  artifact.computed.nonLatestVersions = artifact.versions.filter(
+    (version) => version.created_at !== artifact.computed.latestVersion.created_at,
+  )
 
   artifact.computed.summedMetrics = artifact.versions.reduce(
     (acc, version) => {
@@ -53,7 +54,7 @@ function processArtifact(store, artifact) {
     artifact.badges = []
   }
 
-  artifact.computed.isOwnedByUser = function() {
+  artifact.computed.isOwnedByUser = function () {
     // user info may change between when this was loaded & used
     return artifact.owner_urn === store.authStore.userInfo?.userUrn
   }
@@ -195,7 +196,7 @@ export const useArtifactsStore = defineStore('artifacts', {
       let token = await this.authStore.getTroviToken()
       if (token) {
         try {
-          var res;
+          var res
           if (uuid) {
             res = await axios.put(`/import/${uuid}/?access_token=${token}`, {
               github_url: githubRepo,

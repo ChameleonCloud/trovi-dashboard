@@ -83,11 +83,6 @@ export const useAuthStore = defineStore('auth', {
   },
   persist: {
     storage: localStorage,
-    pick: [
-      "isAuthenticated",
-      "userInfo",
-      "token",
-      "troviToken"
-    ]
+    pick: ['isAuthenticated', 'userInfo', 'token', 'troviToken'],
   },
 })
