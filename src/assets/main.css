@@ -4,5 +4,5 @@
 
 .marked a,
 .prose a {
-  text-decoration: underline;
+  @apply underline;
 }

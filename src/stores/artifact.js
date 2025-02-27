@@ -13,6 +13,9 @@ function processArtifact(store, artifact) {
       new Date(version.created_at) > new Date(latest.created_at) ? version : latest,
     artifact.versions[0],
   )
+  artifact.computed.nonLatestVersions =  artifact.versions.filter(
+    version => version.created_at !== artifact.computed.latestVersion.created_at);
+
   artifact.computed.summedMetrics = artifact.versions.reduce(
     (acc, version) => {
       acc.access_count += version.metrics.access_count
@@ -64,6 +67,8 @@ function errObjToMessage(errObj) {
     errObj.forEach((error) => {
       messages.push(error)
     })
+  } else if (errObj.detail) {
+    messages.push(errObj.detail)
   } else {
     for (const [field, errors] of Object.entries(errObj)) {
       if (Array.isArray(errors)) {
@@ -190,13 +195,20 @@ export const useArtifactsStore = defineStore('artifacts', {
       let token = await this.authStore.getTroviToken()
       if (token) {
         try {
-          let path = uuid ? `/artifacts/import/${uuid}/` : `/import/`
-          let res = await axios.post(`${path}?access_token=${token}`, {
-            github_url: githubRepo,
-          })
+          var res;
+          if (uuid) {
+            res = await axios.put(`/import/${uuid}/?access_token=${token}`, {
+              github_url: githubRepo,
+            })
+          } else {
+            res = await axios.post(`/import/?access_token=${token}`, {
+              github_url: githubRepo,
+            })
+          }
           if (res.status == 200) {
             toast.success('Imported artifact')
-            return res.data
+            this.artifactDetails[uuid] = processArtifact(this, response.data)
+            return this.artifactDetails[uuid]
           } else {
             let message = errObjToMessage(res.data)
             toast.error(`Could not import artifact. Is trovi.json file invalid?\n${message}`, {
@@ -205,12 +217,8 @@ export const useArtifactsStore = defineStore('artifacts', {
             return undefined
           }
         } catch (error) {
-          console.error(error)
-          if (error.response) {
-            toast.error(`Error ${error.message}\n${errObjToMessage(error.response.data)}`)
-          } else {
-            toast.error(`Error ${error.message}`)
-          }
+          console.log(error.response.data)
+          toast.error(`Error ${error.message}\n${errObjToMessage(error.response.data)}`)
         }
       } else {
         return undefined

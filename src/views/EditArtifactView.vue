@@ -77,10 +77,14 @@ const submitRoles = async () => {
 }
 
 const reimportArtifact = async () => {
-  let resArtifact = await artifactsStore.importArtifact(state.artifact.computed.github_url)
+  let resArtifact = await artifactsStore.importArtifact(
+    state.artifact.computed.github_url,
+    state.artifact.uuid,
+  )
   if (resArtifact) {
     state.artifact = resArtifact
   }
+  router.push({ path: `/artifacts/${state.artifact.uuid}` })
 }
 </script>
 
@@ -146,6 +150,7 @@ const reimportArtifact = async () => {
           Create a new version of this artifact from GitHub repo
           <a
             :href="state.artifact.computed.github_url"
+            target="_blank"
             class="bg-blue-500 text-white px-4 py-2 rounded"
           >
             {{ state.artifact.computed.github_repo }}

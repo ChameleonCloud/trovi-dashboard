@@ -157,6 +157,16 @@ onMounted(async () => {
             <div v-else>
               <p>This artifact has no versions.</p>
             </div>
+            <div>
+              <p v-if="state.artifact.computed.nonLatestVersions.length > 0">Other versions:</p>
+              <ul>
+                <li v-for="v in state.artifact.computed.nonLatestVersions">
+                  <p>
+                    <strong>{{ v.slug }}</strong> - {{ v.created_at }}
+                  </p>
+                </li>
+              </ul>
+            </div>
           </div>
         </aside>
       </div>
