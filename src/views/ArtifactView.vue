@@ -45,7 +45,10 @@ onMounted(async () => {
             <div class="flex justify-between mb-2 mt-5">
               <h1 class="text-3xl font-bold mr-2">{{ state.artifact.title }}</h1>
               <span class="inline-flex">
-                <span v-if="state.artifact.visibility == 'private'" class="rounded-full">
+                <span
+                  v-if="state.artifact.visibility == 'private' && !state.artifact.computed.hasDoi"
+                  class="rounded-full"
+                >
                   <h1><i class="pi pi-eye-slash"></i></h1>
                 </span>
                 <template v-for="(badge, index) in state.artifact.badges" :key="index">

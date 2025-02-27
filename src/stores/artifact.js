@@ -59,6 +59,8 @@ function processArtifact(store, artifact) {
     return artifact.owner_urn === store.authStore.userInfo?.userUrn
   }
 
+  artifact.computed.hasDoi = artifact.versions.some(v => v.contents.urn.includes("zenodo"))
+
   return artifact
 }
 

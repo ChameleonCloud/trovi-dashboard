@@ -22,7 +22,10 @@ const toggleFullDescription = () => {
           <RouterLink :to="'/artifacts/' + props.artifact.uuid">
             <h3 class="text-xl font-bold">{{ props.artifact.title }}</h3>
           </RouterLink>
-          <span v-if="props.artifact.visibility == 'private'" class="rounded-full">
+          <span
+            v-if="props.artifact.visibility == 'private' && !props.artifact.computed.hasDoi"
+            class="rounded-full"
+          >
             <h1><i class="pi pi-eye-slash"></i></h1>
           </span>
           <div class="mb-4">
