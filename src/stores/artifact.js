@@ -208,7 +208,7 @@ export const useArtifactsStore = defineStore('artifacts', {
           }
           if (res.status == 200) {
             toast.success('Imported artifact')
-            this.artifactDetails[uuid] = processArtifact(this, response.data)
+            this.artifactDetails[uuid] = processArtifact(this, res.data)
             return this.artifactDetails[uuid]
           } else {
             let message = errObjToMessage(res.data)

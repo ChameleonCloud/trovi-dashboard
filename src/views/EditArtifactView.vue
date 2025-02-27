@@ -3,6 +3,7 @@ import { reactive, onMounted } from 'vue'
 import { useArtifactsStore } from '@/stores/artifact'
 import { useAuthStore } from '@/stores/auth'
 import { useRoute } from 'vue-router'
+import router from '@/router'
 import { parseUrn, usernameToUrn } from '@/util'
 
 const route = useRoute()
@@ -29,7 +30,6 @@ onMounted(async () => {
     role: role.role,
   }))
   state.originalRoles = state.roles.map((r) => ({ ...r }))
-  console.log(state.originalRoles)
 })
 
 const updateVisibility = async () => {
