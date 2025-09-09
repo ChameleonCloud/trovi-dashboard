@@ -1,8 +1,11 @@
-<script setup></script>
+<script setup>
+import MainSection from '@/components/MainSection.vue'
+import Card from '@/components/Card.vue'
+</script>
 
 <template>
-  <section class="py-4">
-    <div class="container mx-auto max-w-3xl">
+  <MainSection>
+    <Card>
       <div class="prose">
         <h1 class="text-2xl font-bold mb-4">What is Trovi?</h1>
         <p class="mb-4">
@@ -63,6 +66,6 @@
           >
         </p>
       </div>
-    </div>
-  </section>
+    </Card>
+  </MainSection>
 </template>

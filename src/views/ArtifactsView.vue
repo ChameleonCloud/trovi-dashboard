@@ -3,5 +3,5 @@ import ArtifactList from '@/components/artifact/ArtifactList.vue'
 </script>
 
 <template>
-  <ArtifactList />
+    <ArtifactList />
 </template>
