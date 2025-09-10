@@ -24,6 +24,8 @@ const state = reactive({
   selectedTags: [],
   selectedBadges: [],
   searchText: '',
+  filterOwned: false,
+  filterPublic: false,
 })
 
 const filteredArtifacts = computed(() => {
@@ -66,6 +68,18 @@ const filteredArtifacts = computed(() => {
         })
       )
     })
+    .filter((a) => {
+      if (state.filterOwned) {
+        return a.computed.isOwnedByUser()
+      }
+      return true
+    })
+    .filter((a) => {
+      if (state.filterPublic) {
+        return a.visibility === 'public'
+      }
+      return true
+    })
     .slice(0, props.limit || state.artifacts.length)
 })
 
@@ -95,6 +109,8 @@ onMounted(async () => {
     <TagFilter
       :tags="artifactsStore.tags"
       :badges="state.badges"
+      v-model:filterOwned="state.filterOwned"
+      v-model:filterPublic="state.filterPublic"
       v-model:selected-tags="state.selectedTags"
       v-model:selected-badges="state.selectedBadges"
     />
