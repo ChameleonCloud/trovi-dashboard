@@ -7,7 +7,6 @@ import Card from '@/components/Card.vue'
 import ArtifactHeader from '@/components/artifact/ArtifactHeader.vue'
 import ArtifactAbout from '@/components/artifact/ArtifactAbout.vue'
 import ArtifactAuthors from '@/components/artifact/ArtifactAuthors.vue'
-import ArtifactSourceCode from '@/components/artifact/ArtifactSourceCode.vue'
 import ArtifactVersions from '@/components/artifact/ArtifactVersions.vue'
 
 import { reactive, onMounted } from 'vue'
@@ -25,11 +24,20 @@ const artifactsStore = useArtifactsStore()
 const state = reactive({
   artifact: {},
   isLoading: true,
+  selectedVersion: null,
 })
 
 onMounted(async () => {
   try {
     state.artifact = await artifactsStore.fetchArtifactById(artifactId)
+    let v = state.artifact?.versions.find((v) => {
+      return v.slug.trim() === route.params.version.trim()
+    })
+    if (v) {
+      state.selectedVersion = v
+    } else {
+      state.selectedVersion = state.artifact.versions[0]
+    }
   } catch (error) {
     console.error('Error fetching artifact', error)
     toast.error("Couldn't fetch artifact. It may not exist, or you do not have permission.")
@@ -50,13 +58,12 @@ onMounted(async () => {
         </main>
 
         <aside>
-          <Launch :artifact="state.artifact"></Launch>
+          <Launch :artifact="state.artifact" :version_slug="state.selectedVersion?.slug"></Launch>
           <ArtifactAuthors :authors="state.artifact.authors" />
-          <ArtifactSourceCode
-            v-if="state.artifact.computed?.github_url"
-            :url="state.artifact.computed.github_url"
+          <ArtifactVersions
+            :artifact="state.artifact"
+            :version_slug="state.selectedVersion?.slug"
           />
-          <ArtifactVersions :artifact="state.artifact" />
         </aside>
       </div>
       <div v-else class="text-center text-gray-500 dark:text-gray-400 py-6">

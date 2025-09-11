@@ -33,8 +33,12 @@ function processArtifact(store, artifact) {
   artifact.computed.long_description_markup = marked(
     artifact.long_description ? artifact.long_description : '',
   )
-  artifact.computed.chameleon_launch_url = `${import.meta.env.VITE_CHAMELEON_PORTAL_URL}/experiment/share/${artifact.uuid}/launch`
-  // artifact.computed.chameleon_launch_url = `https://chameleoncloud.org/experiment/share/${artifact.uuid}/launch`
+  artifact.computed.get_chameleon_launch_url = function (version_slug) {
+    return `${import.meta.env.VITE_CHAMELEON_PORTAL_URL}/experiment/share/${artifact.uuid}/version/${version_slug}/launch`
+  }
+  artifact.computed.get_chameleon_download_url = function (version_slug) {
+    return `${import.meta.env.VITE_CHAMELEON_PORTAL_URL}/experiment/share/${artifact.uuid}/version/${version_slug}/download`
+  }
 
   let v = artifact.versions.find((version) => {
     return version.contents.urn.includes('github.com')
@@ -172,7 +176,7 @@ export const useArtifactsStore = defineStore('artifacts', {
       } while (after !== null)
       this.loading = false
     },
-    async fetchArtifactById(uuid) {
+    async fetchArtifactById(uuid, version) {
       await this.fetchBadges()
       // Check if the artifact is already in the cache
       var token = undefined

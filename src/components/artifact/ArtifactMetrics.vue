@@ -16,5 +16,8 @@ const props = defineProps({ artifact: Object })
       <i class="pi pi-desktop text-gray-400 dark:text-gray-500 mr-1 ml-1"></i>
       {{ artifact.computed.summedMetrics.unique_cell_execution_count }}
     </span>
+    <span class="ml-8" v-tooltip.bottom="'Last updated'">
+      {{ artifact.updated_at }}
+    </span>
   </div>
 </template>
