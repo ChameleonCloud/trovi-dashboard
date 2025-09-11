@@ -176,7 +176,7 @@ export const useArtifactsStore = defineStore('artifacts', {
       } while (after !== null)
       this.loading = false
     },
-    async fetchArtifactById(uuid, version) {
+    async fetchArtifactById(uuid) {
       await this.fetchBadges()
       // Check if the artifact is already in the cache
       var token = undefined
