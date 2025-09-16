@@ -33,7 +33,12 @@ function processArtifact(store, artifact) {
   artifact.computed.long_description_markup = marked(
     artifact.long_description ? artifact.long_description : '',
   )
-  artifact.computed.chameleon_launch_url = `https://chameleoncloud.org/experiment/share/${artifact.uuid}/launch`
+  artifact.computed.get_chameleon_launch_url = function (version_slug) {
+    return `${import.meta.env.VITE_CHAMELEON_PORTAL_URL}/experiment/share/${artifact.uuid}/version/${version_slug}/launch`
+  }
+  artifact.computed.get_chameleon_download_url = function (version_slug) {
+    return `${import.meta.env.VITE_CHAMELEON_PORTAL_URL}/experiment/share/${artifact.uuid}/version/${version_slug}/download`
+  }
 
   let v = artifact.versions.find((version) => {
     return version.contents.urn.includes('github.com')
@@ -59,7 +64,7 @@ function processArtifact(store, artifact) {
     return artifact.owner_urn === store.authStore.userInfo?.userUrn
   }
 
-  artifact.computed.hasDoi = artifact.versions.some(v => v.contents.urn.includes("zenodo"))
+  artifact.computed.hasDoi = artifact.versions.some((v) => v.contents.urn.includes('zenodo'))
 
   return artifact
 }
@@ -111,7 +116,9 @@ export const useArtifactsStore = defineStore('artifacts', {
         return
       }
       try {
-        const badge_data = await axios.get('https://chameleoncloud.org/experiment/share/api/badges')
+        const badge_data = await axios.get(
+          `${import.meta.env.VITE_CHAMELEON_PORTAL_URL}/experiment/share/api/badges`,
+        )
         badge_data.data.badges.forEach((badge) => {
           this.processed_badges.badges[badge.name] = badge
         })

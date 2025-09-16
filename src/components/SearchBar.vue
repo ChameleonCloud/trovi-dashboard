@@ -1,31 +1,19 @@
+<script setup>
+defineProps({
+  modelValue: String,
+})
+
+defineEmits(['update:modelValue'])
+</script>
+
 <template>
-  <div class="search-bar">
+  <div class="mb-6">
     <input
-      v-model="searchQuery"
+      :value="modelValue"
+      @input="$emit('update:modelValue', $event.target.value)"
       type="text"
-      placeholder="Search for artifacts..."
-      @input="onInput"
-      class="search-input"
+      placeholder="Search artifacts..."
+      class="w-full px-4 py-3 border border-gray-500 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-lime-500 transition duration-100 bg-white dark:bg-stone-800 text-stone-900 dark:text-white"
     />
-    <button @click="performSearch" class="search-button">Search</button>
   </div>
 </template>
-
-<script>
-export default {
-  data() {
-    return {
-      searchQuery: '',
-    }
-  },
-  methods: {
-    onInput() {
-      // Handle input changes if needed
-    },
-    performSearch() {
-      // Handle the search functionality here
-      this.$emit('search', this.searchQuery)
-    },
-  },
-}
-</script>

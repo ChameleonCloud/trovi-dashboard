@@ -29,6 +29,11 @@ const router = createRouter({
       component: ArtifactView,
     },
     {
+      path: '/artifacts/:uuid/versions/:version',
+      name: 'artifactVersion',
+      component: ArtifactView,
+    },
+    {
       path: '/artifacts/add',
       name: 'add-artifact',
       component: AddArtifactView,

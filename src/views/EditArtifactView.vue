@@ -5,6 +5,8 @@ import { useAuthStore } from '@/stores/auth'
 import { useRoute } from 'vue-router'
 import router from '@/router'
 import { parseUrn, usernameToUrn } from '@/util'
+import MainSection from '@/components/MainSection.vue'
+import Card from '@/components/Card.vue'
 
 const route = useRoute()
 const artifactUUID = route.params.uuid
@@ -89,18 +91,20 @@ const reimportArtifact = async () => {
 </script>
 
 <template>
-  <section class="bg-green-50">
-    <div class="p-4">
+  <MainSection>
+    <Card>
       <RouterLink :to="'/artifacts/' + state.artifact.uuid">
-        <h2 class="text-2xl font-bold mb-4">Editing "{{ state.artifact.title }}"</h2>
+        <h2 class="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">
+          Editing "{{ state.artifact.title }}"
+        </h2>
       </RouterLink>
 
       <div class="mb-6">
-        <label class="flex items-center space-x-2">
+        <label class="flex items-center space-x-2 text-gray-800 dark:text-gray-200">
           Visibility:
           <select
             v-model="state.artifact.visibility"
-            class="border p-2 rounded"
+            class="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-2 rounded"
             @change="updateVisibility"
           >
             <template v-for="visOption in VISIBILITY_OPTIONS" :key="visOption">
@@ -111,55 +115,71 @@ const reimportArtifact = async () => {
       </div>
 
       <div class="mb-4">
-        <h3 class="text-xl font-semibold mb-2">Roles</h3>
+        <h3 class="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">Roles</h3>
 
         <div
           v-for="(role, index) in state.roles"
           :key="index"
-          class="mb-4 border p-4 rounded-lg shadow-md"
+          class="mb-4 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 rounded-lg shadow-md"
         >
           <div class="flex space-x-4">
             <input
               v-model="role.username"
               type="email"
               placeholder="User Email"
-              class="border p-2 rounded w-full"
+              class="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-2 rounded w-full"
             />
-            <select v-model="role.role" class="border p-2 rounded">
+            <select
+              v-model="role.role"
+              class="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-2 rounded"
+            >
               <template v-for="roleOption in ROLES" :key="roleOption">
                 <option :value="roleOption">{{ roleOption }}</option>
               </template>
             </select>
-            <button @click="removeRole(index)" class="text-red-600">Remove</button>
+            <button @click="removeRole(index)" class="text-red-600 dark:text-red-400">
+              Remove
+            </button>
           </div>
         </div>
 
-        <div class="m-4">
-          <button @click="addRole" class="bg-blue-500 text-white px-4 py-2 rounded">
+        <div class="m-4 space-x-2">
+          <button
+            @click="addRole"
+            class="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-4 py-2 rounded"
+          >
             Add Role
           </button>
-          <button @click="submitRoles" class="bg-green-500 text-white px-4 py-2 rounded">
+          <button
+            @click="submitRoles"
+            class="bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700 text-white px-4 py-2 rounded"
+          >
             Save Changes
           </button>
         </div>
       </div>
 
       <div v-if="state.artifact.computed?.github_url">
-        <h3 class="text-xl font-semibold mb-2">Import new version</h3>
-        <p>
+        <h3 class="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">
+          Import new version
+        </h3>
+        <p class="text-gray-800 dark:text-gray-200">
           Create a new version of this artifact from GitHub repo
           <a
             :href="state.artifact.computed.github_url"
             target="_blank"
-            class="bg-blue-500 text-white px-4 py-2 rounded"
+            class="inline-block mt-2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-4 py-2 rounded"
           >
             {{ state.artifact.computed.github_repo }}
           </a>
         </p>
-        <button @click="reimportArtifact" class="bg-blue-500 text-white px-4 py-2 rounded">
+        <button
+          @click="reimportArtifact"
+          class="mt-4 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-4 py-2 rounded"
+        >
           Import
         </button>
       </div>
-    </div>
-  </section>
+    </Card>
+  </MainSection>
 </template>
