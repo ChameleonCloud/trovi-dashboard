@@ -29,5 +29,6 @@ const props = defineProps({ artifact: Object, version_slug: String })
         </li>
       </ul>
     </div>
+    <div v-else class="text-gray-500 dark:text-gray-400">No versions available.</div>
   </div>
 </template>

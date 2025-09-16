@@ -49,6 +49,7 @@ onMounted(async () => {
   <BackButton />
   <MainSection>
     <Card>
+      {{ state.selectedVersion }}
       <div v-if="!state.isLoading" class="grid grid-cols-1 md:grid-cols-70/30 w-full gap-6">
         <main>
           <ArtifactHeader :artifact="state.artifact" />

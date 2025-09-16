@@ -3,7 +3,7 @@ const props = defineProps({ artifact: Object, version_slug: String })
 </script>
 
 <template>
-  <div>
+  <div v-if="version_slug">
     <h2 class="text-xl font-bold mb-2">Content</h2>
     <div>
       <button
