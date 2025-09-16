@@ -31,12 +31,10 @@ onMounted(async () => {
   try {
     state.artifact = await artifactsStore.fetchArtifactById(artifactId)
     let v = state.artifact?.versions.find((v) => {
-      return v.slug.trim() === route.params.version.trim()
+      return !route.params.version || v.slug.trim() === route.params.version.trim()
     })
     if (v) {
       state.selectedVersion = v
-    } else {
-      state.selectedVersion = state.artifact.versions[0]
     }
   } catch (error) {
     console.error('Error fetching artifact', error)
