@@ -3,9 +3,11 @@ production:
   VITE_KEYCLOAK_URL: https://auth.chameleoncloud.org/auth
   VITE_KEYCLOAK_REALM: chameleon
   VITE_KEYCLOAK_CLIENT_ID: trovi-dashboard
+  VITE_CHAMELEON_PORTAL_URL: https://chameleoncloud.org
 
 development:
   VITE_TROVI_BASE_URL: https://trovi-dev.chameleoncloud.org
   VITE_KEYCLOAK_URL: https://auth.dev.chameleoncloud.org/auth
   VITE_KEYCLOAK_REALM: chameleon
   VITE_KEYCLOAK_CLIENT_ID: trovi-dashboard-dev
+  VITE_CHAMELEON_PORTAL_URL: https://dev.chameleoncloud.org
