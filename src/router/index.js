@@ -17,16 +17,23 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomeView,
+      meta: {
+        title: 'Home - Trovi',
+      },
     },
     {
       path: '/artifacts',
       name: 'artifacts',
       component: ArtifactsView,
+      meta: {
+        title: 'Artifacts - Trovi',
+      },
     },
     {
       path: '/artifacts/:uuid',
       name: 'artifact',
       component: ArtifactView,
+      meta: {},
     },
     {
       path: '/artifacts/:uuid/versions/:version',
@@ -39,6 +46,7 @@ const router = createRouter({
       component: AddArtifactView,
       meta: {
         requiresAuth: true,
+        title: 'Add Artifact - Trovi',
       },
     },
 
@@ -54,16 +62,25 @@ const router = createRouter({
       path: '/about',
       name: 'about',
       component: AboutView,
+      meta: {
+        title: 'About - Trovi',
+      },
     },
     {
       path: '/login',
       name: 'login',
       component: LoginView,
+      meta: {
+        title: 'Login - Trovi',
+      },
     },
     {
       path: '/:catchAll(.*)',
       name: 'not-found',
       component: NotFoundView,
+      meta: {
+        title: 'Not Found - Trovi',
+      },
     },
   ],
 })
@@ -73,6 +90,13 @@ router.beforeEach((to, from, next) => {
     router.push({ path: '/' })
   }
   lastRoute = to
+  next()
+})
+
+router.beforeEach((to, from, next) => {
+  if (to.meta.title) {
+    document.title = to.meta.title
+  }
   next()
 })
 

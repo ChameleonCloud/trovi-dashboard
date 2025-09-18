@@ -30,6 +30,7 @@ const state = reactive({
 onMounted(async () => {
   try {
     state.artifact = await artifactsStore.fetchArtifactById(artifactId)
+    document.title = `${state.artifact.title} - Trovi`
     let v = state.artifact?.versions.find((v) => {
       return !route.params.version || v.slug.trim() === route.params.version.trim()
     })
