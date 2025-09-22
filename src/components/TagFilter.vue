@@ -7,9 +7,15 @@ defineProps({
   selectedTags: { type: Array, default: () => [] },
   selectedBadges: { type: Array, default: () => [] },
   filterOwned: { type: Boolean, default: false },
+  filterPublic: { type: Boolean, default: false },
 })
 
-defineEmits(['update:selectedTags', 'update:selectedBadges', 'update:filterOwned'])
+defineEmits([
+  'update:selectedTags',
+  'update:selectedBadges',
+  'update:filterOwned',
+  'update:filterPublic',
+])
 </script>
 
 <template>

@@ -20,7 +20,7 @@ const props = defineProps({ artifact: Object })
       </template>
       <RouterLink
         :to="'/artifacts/' + artifact.uuid + '/edit'"
-        v-if="artifact.computed.isOwnedByUser()"
+        v-if="artifact?.computed?.isOwnedByUser()"
         class="h-[36px] bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-lg text-sm"
       >
         Edit

@@ -3,7 +3,7 @@ const props = defineProps({ artifact: Object })
 </script>
 
 <template>
-  <div>
+  <div v-if="artifact">
     <span v-tooltip.bottom="'Total Launches'">
       <i class="pi pi-eye text-gray-400 dark:text-gray-500 mr-1 ml-1"></i>
       {{ artifact.computed.summedMetrics.access_count }}
