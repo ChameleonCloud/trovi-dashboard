@@ -8,18 +8,26 @@ const props = defineProps({
 </script>
 
 <template>
-  <div class="relative w-full h-full">
-    <!-- Default slot (your wrapped content) -->
-    <div v-if="!loading" :class="{ 'opacity-50 pointer-events-none': loading }">
+  <div class="relative-position full-size">
+    <!-- Wrapped content -->
+    <div :class="{ 'q-opacity-50 q-pointer-events-none': props.loading }">
       <slot />
     </div>
-    <div
-      v-else
-      class="absolute inset-0 flex items-center justify-center bg-white/70 dark:bg-black/50"
-    >
-      <div
-        class="animate-spin rounded-full h-10 w-10 border-4 border-gray-300 border-t-blue-500"
-      ></div>
-    </div>
+
+    <!-- Loading overlay -->
+    <q-overlay v-if="props.loading" class="flex flex-center" :persistent="true">
+      <q-spinner color="primary" size="50px" />
+    </q-overlay>
   </div>
 </template>
+
+<style scoped>
+.relative-position {
+  position: relative;
+}
+.full-size {
+  width: 100%;
+  height: 100%;
+  min-height: 100px; /* optional fallback height if parent has no height */
+}
+</style>

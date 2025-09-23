@@ -10,6 +10,9 @@ import { createApp } from 'vue'
 import App from './components/App.vue'
 import { createPinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
+import { Quasar } from 'quasar'
+import '@quasar/extras/material-icons/material-icons.css'
+import 'quasar/src/css/index.sass'
 
 const app = createApp(App)
 
@@ -23,6 +26,9 @@ app.use(PrimeVue, {
   theme: {
     preset: Aura,
   },
+})
+app.use(Quasar, {
+  plugins: {}, // import Quasar plugins and add here
 })
 app.directive('tooltip', Tooltip)
 

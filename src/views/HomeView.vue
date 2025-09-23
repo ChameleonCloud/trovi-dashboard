@@ -1,19 +1,24 @@
 <script setup>
-import HomeCards from '@/components/HomeCards.vue'
+import CardItem from '@/components/CardItem.vue'
+import MainSection from '@/components/MainSection.vue'
 import ArtifactList from '@/components/artifact/ArtifactList.vue'
 </script>
 
 <template>
-  <section class="bg-lime-600 py-20">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center">
-      <div class="text-center">
-        <h1 class="text-4xl font-extrabold text-white sm:text-5xl md:text-6xl">
-          A collection of shared artifacts
-        </h1>
-        <p class="my-4 text-xl text-white">An open platform for practical reproducibility.</p>
-      </div>
-    </div>
+  <section class="column justify-center items-center text-center q-pa-lg chameleon-lime">
+    <h1 class="text-h2 q-mb-md text-bold">A collection of shared artifacts</h1>
+    <p class="text-subtitle1 q-mb-lg text-bold">An open platform for practical reproducibility.</p>
   </section>
-  <HomeCards />
+  <MainSection>
+    <div class="q-pa-md row items-start justify-center q-gutter-md">
+      <CardItem title="Get Started" to="/artifacts" to_label="Explore Artifacts" class="col">
+        Explore artifacts that users have shared on Trovi.
+      </CardItem>
+      <CardItem title="Learn More" to="/about" to_label="About" class="col">
+        Learn more about the Trovi platform.
+      </CardItem>
+    </div>
+  </MainSection>
+
   <ArtifactList :limit="6" :showButton="true" />
 </template>

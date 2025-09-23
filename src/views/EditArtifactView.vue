@@ -6,13 +6,13 @@ import { useRoute } from 'vue-router'
 import router from '@/router'
 import { parseUrn, usernameToUrn } from '@/util'
 import MainSection from '@/components/MainSection.vue'
-import Card from '@/components/Card.vue'
 import Loading from '@/components/Loading.vue'
 
 const route = useRoute()
 const artifactUUID = route.params.uuid
-
 const artifactsStore = useArtifactsStore()
+const authStore = useAuthStore()
+authStore.initKeycloak()
 
 const state = reactive({
   artifact: {},
@@ -23,9 +23,7 @@ const state = reactive({
 })
 
 const VISIBILITY_OPTIONS = ['public', 'private']
-
-const authStore = useAuthStore()
-authStore.initKeycloak()
+const ROLES = ['collaborator', 'administrator']
 
 onMounted(async () => {
   state.artifact = await artifactsStore.fetchArtifactById(artifactUUID)
@@ -46,16 +44,9 @@ const updateVisibility = async () => {
   await artifactsStore.updateArtifactVisibility(state.artifact.uuid, state.artifact.visibility)
 }
 
-const ROLES = ['collaborator', 'administrator']
-const addRole = () => {
-  state.roles.push({ username: '', role: ROLES[0] })
-}
+const addRole = () => state.roles.push({ username: '', role: ROLES[0] })
+const removeRole = (index) => state.roles.splice(index, 1)[0]
 
-const removeRole = (index) => {
-  state.roles.splice(index, 1)[0]
-}
-
-// Sync Roles
 const submitRoles = async () => {
   state.roles.forEach((role) => {
     role.user = usernameToUrn(role.username)
@@ -74,37 +65,27 @@ const submitRoles = async () => {
         (newRole) => newRole.username === oldRole.username && newRole.role === oldRole.role,
       ),
   )
+
   await artifactsStore.updateArtifactRoles(
     state.artifact.uuid,
-    addedRoles.map((r) => {
-      return { role: r.role, user: r.user }
-    }),
-    removedRoles.map((r) => {
-      return { role: r.role, user: r.user }
-    }),
+    addedRoles.map((r) => ({ role: r.role, user: r.user })),
+    removedRoles.map((r) => ({ role: r.role, user: r.user })),
   )
+
   state.originalRoles = state.roles.map((r) => ({ ...r }))
 }
 
-const removeVersion = (index) => {
-  state.versions.splice(index, 1)[0]
-}
-
+const removeVersion = (index) => state.versions.splice(index, 1)[0]
 const submitVersions = async () => {
-  const removedRoles = state.artifact.versions.filter(
-    (version) => !state.versions.some((v) => v.slug === version.slug),
-  )
-  // TODO call API here
+  /* TODO API call */
 }
 
 const reimportArtifact = async () => {
-  let resArtifact = await artifactsStore.importArtifact(
+  const resArtifact = await artifactsStore.importArtifact(
     state.artifact.computed.github_url,
     state.artifact.uuid,
   )
-  if (resArtifact) {
-    state.artifact = resArtifact
-  }
+  if (resArtifact) state.artifact = resArtifact
   router.push({ path: `/artifacts/${state.artifact.uuid}` })
 }
 </script>
@@ -112,112 +93,74 @@ const reimportArtifact = async () => {
 <template>
   <Loading :loading="state.loading">
     <MainSection>
-      <Card>
-        <RouterLink :to="'/artifacts/' + state.artifact.uuid">
-          <h2 class="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">
-            Editing "{{ state.artifact.title }}"
-          </h2>
-        </RouterLink>
+      <q-card class="q-mb-md">
+        <q-card-section>
+          <RouterLink :to="'/artifacts/' + state.artifact.uuid">
+            <h2 class="text-h5 q-mb-md">Editing "{{ state.artifact.title }}"</h2>
+          </RouterLink>
 
-        <div class="mb-6">
-          <label class="flex items-center space-x-2 text-gray-800 dark:text-gray-200">
-            Visibility:
-            <select
-              v-model="state.artifact.visibility"
-              class="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-2 rounded"
-              @change="updateVisibility"
-            >
-              <template v-for="visOption in VISIBILITY_OPTIONS" :key="visOption">
-                <option :value="visOption">{{ visOption }}</option>
-              </template>
-            </select>
-          </label>
-        </div>
-
-        <div
-          class="mb-4 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 rounded-lg shadow-md"
-        >
-          <h3 class="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">Roles</h3>
-
-          <div v-for="(role, index) in state.roles" :key="index" class="mb-4">
-            <div class="flex space-x-4">
-              <input
-                v-model="role.username"
-                type="email"
-                placeholder="User Email"
-                class="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-2 rounded w-full"
+          <q-card class="q-pa-md q-mb-md">
+            <div>
+              <q-select
+                v-model="state.artifact.visibility"
+                :options="VISIBILITY_OPTIONS"
+                label="Visibility"
+                @update:model-value="updateVisibility"
+                dense
               />
-              <select
-                v-model="role.role"
-                class="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-2 rounded"
-              >
-                <template v-for="roleOption in ROLES" :key="roleOption">
-                  <option :value="roleOption">{{ roleOption }}</option>
-                </template>
-              </select>
-              <button @click="removeRole(index)" class="text-red-600 dark:text-red-400">
-                Remove
-              </button>
             </div>
-          </div>
+          </q-card>
 
-          <div class="m-4 space-x-2">
-            <button
-              @click="addRole"
-              class="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-4 py-2 rounded"
+          <q-card class="q-pa-md q-mb-md">
+            <h3 class="text-h6 q-mb-sm">Roles</h3>
+            <div
+              v-for="(role, index) in state.roles"
+              :key="index"
+              class="q-mb-sm row items-center q-gutter-sm"
             >
-              Add Role
-            </button>
-            <button
-              @click="submitRoles"
-              class="bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700 text-white px-4 py-2 rounded"
+              <q-input v-model="role.username" type="email" label="User Email" dense class="col" />
+              <q-select v-model="role.role" :options="ROLES" dense class="col-3" />
+              <q-btn color="negative" flat icon="delete" @click="removeRole(index)" round dense />
+            </div>
+            <div class="row q-gutter-sm q-mt-md">
+              <q-btn label="Add Role" color="primary" @click="addRole" />
+              <q-btn label="Save Changes" color="positive" @click="submitRoles" />
+            </div>
+          </q-card>
+
+          <!-- Versions -->
+          <q-card class="q-pa-md q-mb-md">
+            <h3 class="text-h6 q-mb-sm">Versions</h3>
+
+            <div
+              v-if="state.artifact.computed?.github_url"
+              class="row items-center justify-between q-mb-md"
             >
-              Save Changes
-            </button>
-          </div>
-        </div>
+              <div>
+                <span>Create a new version from GitHub repo </span>
+                <a :href="state.artifact.computed.github_url" target="_blank">{{
+                  state.artifact.computed.github_repo
+                }}</a>
+              </div>
+              <q-btn label="Import" color="primary" @click="reimportArtifact" />
+            </div>
 
-        <div
-          class="mb-4 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 rounded-lg shadow-md"
-        >
-          <h3 class="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">Versions</h3>
-
-          <div v-if="state.artifact.computed?.github_url" class="mt-4 mb-4 flex justify-between">
-            <p class="text-gray-800 dark:text-gray-200">
-              Create a new version of this artifact from GitHub repo
-              <a :href="state.artifact.computed.github_url" target="_blank" class="underline">
-                {{ state.artifact.computed.github_repo }}
-              </a>
-            </p>
-            <button
-              @click="reimportArtifact"
-              class="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-4 py-2 rounded"
+            <div
+              v-for="(version, index) in state.versions"
+              :key="index"
+              class="row justify-between items-center q-mb-sm"
             >
-              Import
-            </button>
-          </div>
-
-          <div v-for="(version, index) in state.versions" :key="index" class="mb-4">
-            <div class="flex justify-between">
               <div>{{ version.slug }}</div>
               <div>{{ version.created_at }}</div>
-              <div>
-                <button @click="removeVersion(index)" class="text-red-600 dark:text-red-400">
-                  Remove
-                </button>
-              </div>
+              <q-btn color="negative" icon="delete" @click="removeVersion(index)" label="Delete" />
             </div>
-          </div>
-          <div class="m-4 space-x-2">
-            <button
-              @click="submitVersions"
-              class="bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700 text-white px-4 py-2 rounded"
-            >
-              Save Changes
-            </button>
-          </div>
-        </div>
-      </Card>
+
+            <div class="q-mt-md">
+              <q-btn label="Save Changes" color="positive" @click="submitVersions" />
+            </div>
+          </q-card>
+        </q-card-section>
+      </q-card>
     </MainSection>
   </Loading>
 </template>

@@ -17,8 +17,6 @@ if (!authStore.isAuthenticated) {
 
 <template>
   <MainSection>
-    <p class="text-gray-800 dark:text-gray-200">
-      Please wait while you are redirected to Chameleon's Login server
-    </p>
+    <p>Please wait while you are redirected to Chameleon's Login server</p>
   </MainSection>
 </template>

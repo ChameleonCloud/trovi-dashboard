@@ -1,8 +1,23 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+.section {
+  background-color: #f0fdf4;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  transition-property: background-color, color;
+  transition-duration: 300ms;
+}
 
-.marked a,
-.prose a {
-  @apply underline;
+.container {
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.chameleon-lime {
+  background-color: oklch(64.8% 0.2 131.684);
+  color: white;
 }
