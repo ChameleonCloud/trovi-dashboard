@@ -28,7 +28,10 @@ app.use(PrimeVue, {
   },
 })
 app.use(Quasar, {
-  plugins: {}, // import Quasar plugins and add here
+  plugins: {},
+  config: {
+    dark: 'auto',
+  },
 })
 app.directive('tooltip', Tooltip)
 

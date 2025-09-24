@@ -1,6 +1,6 @@
 <template>
-  <section class="section">
-    <div class="container">
+  <section class="row justify-center q-py-md">
+    <div class="col-10">
       <slot></slot>
     </div>
   </section>

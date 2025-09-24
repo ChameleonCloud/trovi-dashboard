@@ -15,9 +15,9 @@ const props = defineProps({
     </div>
 
     <!-- Loading overlay -->
-    <q-overlay v-if="props.loading" class="flex flex-center" :persistent="true">
+    <q-inner-loading :showing="props.loading">
       <q-spinner color="primary" size="50px" />
-    </q-overlay>
+    </q-inner-loading>
   </div>
 </template>
 

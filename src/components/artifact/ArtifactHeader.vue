@@ -4,8 +4,8 @@ const props = defineProps({ artifact: Object })
 </script>
 
 <template>
-  <div class="row items-center justify-between q-mb-md q-mt-lg">
-    <h1 class="text-h4 text-primary q-mr-sm">
+  <div class="row items-center justify-between q-mb-md q-my-sm">
+    <h1 class="text-h3 text-primary q-mr-sm">
       {{ artifact.title }}
     </h1>
 

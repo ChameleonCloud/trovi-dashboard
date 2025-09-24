@@ -20,7 +20,7 @@ const props = defineProps({
       <QSpinnerDots size="40px" color="primary" />
     </div>
 
-    <div v-if="!isLoading && artifacts.length === 0" class="text-center text-grey-7 q-my-md">
+    <div v-if="!isLoading && artifacts.length === 0" class="text-center q-my-md">
       No artifacts found.
     </div>
   </div>

@@ -15,7 +15,7 @@ const toggleFullDescription = () => {
 </script>
 
 <template>
-  <q-card flat bordered class="bg-white dark:bg-grey-9 q-pa-md full-height">
+  <q-card flat bordered class="q-pa-md full-height">
     <div class="flex flex-column full-height">
       <div class="row justify-between items-start q-mb-md">
         <div class="column">
@@ -50,7 +50,6 @@ const toggleFullDescription = () => {
             v-if="props.artifact.computed.github_url"
             flat
             outline
-            color="grey-7"
             class="q-pa-xs"
             :href="props.artifact.computed.github_url"
             target="_blank"
@@ -69,7 +68,6 @@ const toggleFullDescription = () => {
               ? props.artifact.computed.long_description_markup
               : props.artifact.short_description
           "
-          class="text-dark"
         ></div>
       </div>
       <q-btn flat class="q-mb-md" @click="toggleFullDescription">

@@ -5,7 +5,7 @@ import ArtifactList from '@/components/artifact/ArtifactList.vue'
 </script>
 
 <template>
-  <section class="column justify-center items-center text-center q-pa-lg chameleon-lime">
+  <section class="column justify-center items-center text-center q-pa-lg chameleon-header">
     <h1 class="text-h2 q-mb-md text-bold">A collection of shared artifacts</h1>
     <p class="text-subtitle1 q-mb-lg text-bold">An open platform for practical reproducibility.</p>
   </section>
