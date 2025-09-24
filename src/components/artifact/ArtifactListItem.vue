@@ -70,9 +70,11 @@ const toggleFullDescription = () => {
           "
         ></div>
       </div>
-      <q-btn flat class="q-mb-md" @click="toggleFullDescription">
-        {{ showFullDescription ? 'Less' : 'More' }}
-      </q-btn>
+      <div class="row justify-end">
+        <q-btn flat class="q-mb-md" @click="toggleFullDescription">
+          {{ showFullDescription ? 'Less' : 'More' }}
+        </q-btn>
+      </div>
 
       <q-separator class="q-mb-md" />
 

@@ -10,9 +10,8 @@ import Loading from '@/components/Loading.vue'
 import { reactive, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useArtifactsStore } from '@/stores/artifact'
-import { useToast } from 'vue-toastification'
+import { Notify } from 'quasar'
 
-const toast = useToast()
 const route = useRoute()
 const artifactId = route.params.uuid
 const artifactsStore = useArtifactsStore()
@@ -33,7 +32,10 @@ onMounted(async () => {
     if (v) state.selectedVersion = v
   } catch (error) {
     console.error('Error fetching artifact', error)
-    toast.error("Couldn't fetch artifact. It may not exist, or you do not have permission.")
+    Notify.create({
+      type: 'negative',
+      message: "Couldn't fetch artifact. It may not exist, or you do not have permission.",
+    })
   } finally {
     state.isLoading = false
   }

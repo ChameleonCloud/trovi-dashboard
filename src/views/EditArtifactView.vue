@@ -77,7 +77,13 @@ const submitRoles = async () => {
 
 const removeVersion = (index) => state.versions.splice(index, 1)[0]
 const submitVersions = async () => {
-  /* TODO API call */
+  const removedVersions = state.artifact.versions.filter(
+    (oldVersion) => !state.versions.some((newVersion) => newVersion.slug === oldVersion.slug),
+  )
+  await artifactsStore.deleteArtifactVersions(
+    state.artifact.uuid,
+    removedVersions.map((v) => v.slug),
+  )
 }
 
 const reimportArtifact = async () => {

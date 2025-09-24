@@ -2,9 +2,7 @@ import { defineStore } from 'pinia'
 import axios from 'axios'
 import { marked } from 'marked'
 import { useAuthStore } from '@/stores/auth'
-import { useToast } from 'vue-toastification'
-
-const toast = useToast()
+import { Notify } from 'quasar'
 
 function processArtifact(store, artifact) {
   artifact.computed = {}
@@ -187,7 +185,10 @@ export const useArtifactsStore = defineStore('artifacts', {
       if (!this.artifactDetails[uuid]) {
         const response = await axios.get(`/artifacts/${uuid}/${tokenParam}`)
         if (response.status != 200) {
-          toast.error(`Error fetching artifact: ${response.status}`)
+          Notify.create({
+            type: 'negative',
+            message: `Error fetching artifact: ${response.status}`,
+          })
         } else {
           this.artifactDetails[uuid] = processArtifact(this, response.data)
         }
@@ -216,19 +217,23 @@ export const useArtifactsStore = defineStore('artifacts', {
             })
           }
           if (res.status == 200) {
-            toast.success('Imported artifact')
+            Notify.create({ type: 'positive', message: 'Imported artifact' })
             this.artifactDetails[uuid] = processArtifact(this, res.data)
             return this.artifactDetails[uuid]
           } else {
             let message = errObjToMessage(res.data)
-            toast.error(`Could not import artifact. Is trovi.json file invalid?\n${message}`, {
-              timeout: false,
+            Notify.create({
+              type: 'negative',
+              message: `Could not import artifact. Is trovi.json file invalid?\n${message}`,
             })
             return undefined
           }
         } catch (error) {
           console.log(error.response.data)
-          toast.error(`Error ${error.message}\n${errObjToMessage(error.response.data)}`)
+          Notify.create({
+            type: 'negative',
+            message: `Error ${error.message}\n${errObjToMessage(error.response.data)}`,
+          })
         }
       } else {
         return undefined
@@ -262,13 +267,16 @@ export const useArtifactsStore = defineStore('artifacts', {
         } catch (error) {
           console.error(error)
           if (error.response) {
-            toast.error(`Error ${error.message}\n${error.response.data.detail}`)
+            Notify.create({
+              type: 'negative',
+              message: `Error ${error.message}\n${error.response.data.detail}`,
+            })
           } else {
-            toast.error(`Error ${error.message}`)
+            Notify.create({ type: 'negative', message: `Error ${error.message}` })
           }
         }
       }
-      toast.success('Updated roles')
+      Notify.create({ type: 'positive', message: 'Updated roles' })
     },
     async updateArtifactVisibility(uuid, visibility) {
       if (!this.authStore.isAuthenticated) {
@@ -287,18 +295,21 @@ export const useArtifactsStore = defineStore('artifacts', {
             ],
           })
           if (response.status == 200) {
-            toast.success(`Updated visibility to ${visibility}`)
+            Notify.create({ type: 'positive', message: `Updated visibility to ${visibility}` })
             this.artifactDetails[uuid] = processArtifact(this, response.data)
           } else {
             let message = errObjToMessage(response.data)
-            toast.error(`Failed to update visibility:\n${message}`, { timeout: false })
+            Notify.create({ type: 'negative', message: `Failed to update visibility:\n${message}` })
           }
         } catch (error) {
           console.error(error)
           if (error.response) {
-            toast.error(`Error ${error.message}\n${error.response.data.detail}`)
+            Notify.create({
+              type: 'negative',
+              message: `Error ${error.message}\n${error.response.data.detail}`,
+            })
           } else {
-            toast.error(`Error ${error.message}`)
+            Notify.create({ type: 'negative', message: `Error ${error.message}` })
           }
         }
       }
