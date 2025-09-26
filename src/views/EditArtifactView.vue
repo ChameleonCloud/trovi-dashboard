@@ -7,7 +7,7 @@ import router from '@/router'
 import { parseUrn, usernameToUrn } from '@/util'
 import MainSection from '@/components/MainSection.vue'
 import Loading from '@/components/Loading.vue'
-import { Notify } from 'quasar'
+import { Dialog, Notify } from 'quasar'
 
 const route = useRoute()
 const artifactUUID = route.params.uuid
@@ -135,6 +135,34 @@ const submitVersions = async () => {
     state.artifact.uuid,
     removedVersions.map((v) => v.slug),
   )
+  // update original copy
+  state.originalArtifact.versions = state.artifact.versions.map((v) => ({ ...v }))
+  // Handle DOI requests
+  const versionsToRequestDOI = state.artifact.versions.filter((v) => v.doi_request)
+  for (const version of versionsToRequestDOI) {
+    await artifactsStore.migrateArtifactVersion(state.artifact.uuid, version.slug)
+    version.doi_request = false // reset flag
+  }
+  // TODO we don't know the DOI unless we wait a while and refetch
+}
+
+const confirmDelete = () => {
+  Dialog.create({
+    title: 'Confirm Deletion',
+    message: `Are you sure you want to delete artifact "${state.artifact.title}"? This action cannot be undone.`,
+    cancel: true,
+    persistent: true,
+    ok: { label: 'Delete', color: 'negative' },
+    cancel: { label: 'Cancel' },
+  }).onOk(async () => {
+    try {
+      await artifactsStore.deleteArtifact(state.artifact.uuid)
+      Notify.create({ type: 'positive', message: 'Artifact deleted' })
+      router.push('/artifacts')
+    } catch (err) {
+      Notify.create({ type: 'negative', message: `Failed to delete: ${err.message}` })
+    }
+  })
 }
 
 const reimportArtifact = async () => {
@@ -296,24 +324,38 @@ const reimportArtifact = async () => {
             >
               <div>{{ version.slug }}</div>
               <div>{{ version.created_at }}</div>
-              <div v-if="!version.computed?.doi" class="row q-gutter-sm">
-                <q-btn color="secondary" label="Request DOI" />
+              <div class="row q-gutter-sm">
                 <q-btn
+                  v-if="!version.computed?.doi && !version.doi_request"
+                  color="secondary"
+                  label="Request DOI"
+                  @click="version.doi_request = true"
+                />
+                <span v-else-if="version.doi_request">Will Request DOI</span>
+                <div v-else-if="version.computed?.doi">
+                  <a :href="version.computed.doi_url" target="_blank">{{ version.computed.doi }}</a>
+                </div>
+                <q-btn
+                  v-if="!version.computed?.doi"
                   color="negative"
                   icon="delete"
                   @click="state.artifact.versions.splice(index, 1)"
                   label="Delete"
                 />
               </div>
-              <div v-else>
-                <a :href="version.computed.doi_url" target="_blank">
-                  {{ version.computed.doi }}
-                </a>
-              </div>
             </div>
 
             <div class="row q-gutter-sm q-mt-md">
               <q-btn label="Save Versions" color="positive" @click="submitVersions" />
+            </div>
+            <div>
+              <q-btn
+                label="Delete Artifact and All Versions"
+                color="negative"
+                icon="delete"
+                @click="confirmDelete"
+                class="q-mt-md"
+              />
             </div>
           </q-card>
         </q-card-section>

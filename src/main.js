@@ -8,7 +8,7 @@ import { createApp } from 'vue'
 import App from './components/App.vue'
 import { createPinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
-import { Quasar, Notify } from 'quasar'
+import { Quasar, Notify, Dialog } from 'quasar'
 import '@quasar/extras/material-icons/material-icons.css'
 import 'quasar/src/css/index.sass'
 
@@ -27,6 +27,7 @@ app.use(PrimeVue, {
 app.use(Quasar, {
   plugins: {
     Notify,
+    Dialog,
   },
   config: {
     dark: 'auto',

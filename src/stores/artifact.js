@@ -247,7 +247,7 @@ export const useArtifactsStore = defineStore('artifacts', {
             return undefined
           }
         } catch (error) {
-          console.log(error.response.data)
+          console.error(error.response.data)
           Notify.create({
             type: 'negative',
             message: `Error ${error.message}\n${errObjToMessage(error.response.data)}`,
@@ -335,6 +335,44 @@ export const useArtifactsStore = defineStore('artifacts', {
         })
       }
     },
+    async migrateArtifactVersion(uuid, slug, backed = 'zenodo') {
+      if (!this.authStore.isAuthenticated) {
+        await this.authStore.initKeycloak()
+      }
+      const token = await this.authStore.getTroviToken()
+      if (!token) {
+        Notify.create({
+          type: 'negative',
+          message: 'Could not request DOI, try refreshing the page.',
+        })
+      }
+
+      try {
+        const response = await axios.post(
+          `/artifacts/${uuid}/versions/${slug}/migration/?access_token=${token}`,
+          { backend: backed },
+        )
+
+        if (response.status !== 201) {
+          Notify.create({
+            type: 'negative',
+            message: `DOI request failed: ${response.status} ${response.statusText}`,
+          })
+          return null
+        }
+        Notify.create({
+          type: 'positive',
+          message: `DOI request accepted, please check back momentarily.`,
+        })
+        return response.data
+      } catch (err) {
+        Notify.create({
+          type: 'negative',
+          message: `DOI request failed: ${err.message}`,
+        })
+        throw err
+      }
+    },
     async updateArtifactMetadata(uuid, patch) {
       if (!this.authStore.isAuthenticated) {
         await this.authStore.initKeycloak()
@@ -372,6 +410,45 @@ export const useArtifactsStore = defineStore('artifacts', {
         } else {
           Notify.create({ type: 'negative', message: `Error ${error.message}` })
         }
+      }
+    },
+    async deleteArtifact(uuid) {
+      if (!this.authStore.isAuthenticated) {
+        await this.authStore.initKeycloak()
+      }
+      const token = await this.authStore.getTroviToken()
+      if (!token) return false
+
+      try {
+        const response = await axios.delete(`/artifacts/${uuid}/?access_token=${token}`, {})
+
+        if (response.status === 204) {
+          Notify.create({
+            type: 'positive',
+            message: `Deleted artifact successfully`,
+          })
+          this.artifacts = this.artifacts.filter((a) => a.uuid !== uuid)
+          delete this.artifactDetails[uuid]
+          return true
+        } else {
+          let message = errObjToMessage(response.data)
+          Notify.create({
+            type: 'negative',
+            message: `Failed to delete artifact:\n${message}`,
+          })
+          return false
+        }
+      } catch (error) {
+        console.error(error)
+        if (error.response) {
+          Notify.create({
+            type: 'negative',
+            message: `Error ${error.message}\n${error.response.data.detail}`,
+          })
+        } else {
+          Notify.create({ type: 'negative', message: `Error ${error.message}` })
+        }
+        return false
       }
     },
   },
