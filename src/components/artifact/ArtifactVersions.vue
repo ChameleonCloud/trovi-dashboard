@@ -14,8 +14,22 @@ const props = defineProps({ artifact: Object, version_slug: String })
           :to="`/artifacts/${artifact.uuid}/versions/${version.slug}`"
         >
           <q-item-section>
-            <div class="text-subtitle2">{{ version.slug }}</div>
-            <div class="text-caption">{{ version.created_at }}</div>
+            <div class="row">
+              <div class="col-7">
+                <div class="text-subtitle2">{{ version.slug }}</div>
+                <div class="text-caption">{{ version.created_at }}</div>
+              </div>
+              <div v-if="version.computed.doi" class="col text-caption">
+                <a
+                  :href="version.computed.doi_url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  @click.stop
+                >
+                  {{ version.computed.doi }}
+                </a>
+              </div>
+            </div>
           </q-item-section>
         </q-item>
       </q-list>

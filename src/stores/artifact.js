@@ -3,8 +3,12 @@ import axios from 'axios'
 import { marked } from 'marked'
 import { useAuthStore } from '@/stores/auth'
 import { Notify } from 'quasar'
+import { parseUrn, parseDoi } from '@/util'
 
 function processArtifact(store, artifact) {
+  /**
+   * Generate computed properties for an artifact
+   */
   artifact.computed = {}
   artifact.computed.latestVersion = artifact.versions.reduce(
     (latest, version) =>
@@ -37,6 +41,9 @@ function processArtifact(store, artifact) {
   artifact.computed.get_chameleon_download_url = function (version_slug) {
     return `${import.meta.env.VITE_CHAMELEON_PORTAL_URL}/experiment/share/${artifact.uuid}/version/${version_slug}/download`
   }
+  artifact.computed.get_chameleon_daypass_url = function () {
+    return `${import.meta.env.VITE_CHAMELEON_PORTAL_URL}/experiment/share/${artifact.uuid}/share`
+  }
 
   let v = artifact.versions.find((version) => {
     return version.contents.urn.includes('github.com')
@@ -62,7 +69,15 @@ function processArtifact(store, artifact) {
     return artifact.owner_urn === store.authStore.userInfo?.userUrn
   }
 
-  artifact.computed.hasDoi = artifact.versions.some((v) => v.contents.urn.includes('zenodo'))
+  artifact.computed.hasDoi = false
+  artifact.versions.forEach((v) => {
+    v.computed = {}
+    if (v.contents.urn.includes('zenodo')) {
+      v.computed.doi = parseDoi(v.contents.urn)
+      v.computed.doi_url = `https://doi.org/${v.computed.doi}`
+      artifact.computed.hasDoi = true
+    }
+  })
 
   return artifact
 }
@@ -196,8 +211,11 @@ export const useArtifactsStore = defineStore('artifacts', {
       return this.artifactDetails[uuid]
     },
     async fetchTags() {
+      if (this.tags.length > 0) {
+        return
+      }
       const response = await axios.get(`/meta/tags`)
-      this.tags = response.data.tags
+      this.tags = response.data.tags.map((t) => t.tag)
     },
     async importArtifact(githubRepo, uuid = undefined) {
       if (!this.authStore.isAuthenticated) {
@@ -275,32 +293,29 @@ export const useArtifactsStore = defineStore('artifacts', {
             Notify.create({ type: 'negative', message: `Error ${error.message}` })
           }
         }
+        Notify.create({ type: 'positive', message: 'Updated roles' })
+      } else {
+        Notify.create({
+          type: 'negative',
+          message: 'Could not update roles, try refreshing the page.',
+        })
       }
-      Notify.create({ type: 'positive', message: 'Updated roles' })
     },
-    async updateArtifactVisibility(uuid, visibility) {
+    async updateArtifactVersions(uuid, versionsToRemove) {
       if (!this.authStore.isAuthenticated) {
         await this.authStore.initKeycloak()
       }
       let token = await this.authStore.getTroviToken()
       if (token) {
         try {
-          const response = await axios.patch(`/artifacts/${uuid}/?access_token=${token}`, {
-            patch: [
-              {
-                op: 'replace',
-                path: '/visibility',
-                value: visibility,
-              },
-            ],
+          versionsToRemove.forEach(async (version_slug) => {
+            const response = await axios.delete(
+              `/artifacts/${uuid}/versions/${version_slug}/?access_token=${token}`,
+            )
+            if (response.status !== 204) {
+              throw new Error(`Failed to add role ${role}`)
+            }
           })
-          if (response.status == 200) {
-            Notify.create({ type: 'positive', message: `Updated visibility to ${visibility}` })
-            this.artifactDetails[uuid] = processArtifact(this, response.data)
-          } else {
-            let message = errObjToMessage(response.data)
-            Notify.create({ type: 'negative', message: `Failed to update visibility:\n${message}` })
-          }
         } catch (error) {
           console.error(error)
           if (error.response) {
@@ -311,6 +326,51 @@ export const useArtifactsStore = defineStore('artifacts', {
           } else {
             Notify.create({ type: 'negative', message: `Error ${error.message}` })
           }
+        }
+        Notify.create({ type: 'positive', message: 'Updated versions' })
+      } else {
+        Notify.create({
+          type: 'negative',
+          message: 'Could not update versions, try refreshing the page.',
+        })
+      }
+    },
+    async updateArtifactMetadata(uuid, patch) {
+      if (!this.authStore.isAuthenticated) {
+        await this.authStore.initKeycloak()
+      }
+      const token = await this.authStore.getTroviToken()
+      if (!token) return
+
+      try {
+        const response = await axios.put(
+          `/artifacts/${uuid}/?access_token=${token}&partial=true`,
+          { patch },
+          { headers: { 'Content-Type': 'application/json' } },
+        )
+
+        if (response.status === 200) {
+          Notify.create({
+            type: 'positive',
+            message: `Updated metadata successfully`,
+          })
+          this.artifactDetails[uuid] = processArtifact(this, response.data)
+        } else {
+          let message = errObjToMessage(response.data)
+          Notify.create({
+            type: 'negative',
+            message: `Failed to update metadata:\n${message}`,
+          })
+        }
+      } catch (error) {
+        console.error(error)
+        if (error.response) {
+          Notify.create({
+            type: 'negative',
+            message: `Error ${error.message}\n${error.response.data.detail}`,
+          })
+        } else {
+          Notify.create({ type: 'negative', message: `Error ${error.message}` })
         }
       }
     },

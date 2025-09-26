@@ -7,6 +7,7 @@ import router from '@/router'
 import { parseUrn, usernameToUrn } from '@/util'
 import MainSection from '@/components/MainSection.vue'
 import Loading from '@/components/Loading.vue'
+import { Notify } from 'quasar'
 
 const route = useRoute()
 const artifactUUID = route.params.uuid
@@ -14,55 +15,106 @@ const artifactsStore = useArtifactsStore()
 const authStore = useAuthStore()
 authStore.initKeycloak()
 
-const state = reactive({
-  artifact: {},
-  roles: [],
-  versions: [],
-  originalRoles: [],
-  loading: true,
-})
-
 const VISIBILITY_OPTIONS = ['public', 'private']
 const ROLES = ['collaborator', 'administrator']
 
+const state = reactive({
+  artifact: null, // editable artifact
+  originalArtifact: null, // keep original for comparison if needed
+  loading: true,
+  availableTags: [],
+})
+
+// helper to make a plain editable copy without cloning computed properties
+function makeEditableArtifact(raw) {
+  return reactive({
+    uuid: raw.uuid,
+    title: raw.title || '',
+    short_description: raw.short_description || '',
+    long_description: raw.long_description || '',
+    visibility: raw.visibility || 'private',
+    tags: raw.tags ? [...raw.tags] : [],
+    authors: raw.authors ? raw.authors.map((a) => ({ ...a })) : [],
+    roles: raw.roles
+      ? raw.roles.map((r) => ({
+          username: parseUrn(r.user).username,
+          role: r.role,
+          user: r.user,
+        }))
+      : [],
+    versions: raw.versions.map((v) => v),
+    computed: raw.computed, // keep as reference, do NOT clone
+  })
+}
+
 onMounted(async () => {
-  state.artifact = await artifactsStore.fetchArtifactById(artifactUUID)
-  state.roles = state.artifact.roles.map((role) => ({
-    username: parseUrn(role.user).username,
-    user: role.user,
-    role: role.role,
-  }))
-  state.versions = state.artifact.versions.map((version) => ({
-    slug: version.slug,
-    created_at: version.created_at,
-  }))
-  state.originalRoles = state.roles.map((r) => ({ ...r }))
+  const rawArtifact = await artifactsStore.fetchArtifactById(artifactUUID)
+  state.originalArtifact = rawArtifact
+  state.artifact = makeEditableArtifact(rawArtifact)
+  await artifactsStore.fetchTags()
+  state.availableTags = artifactsStore.tags
   state.loading = false
 })
 
-const updateVisibility = async () => {
-  await artifactsStore.updateArtifactVisibility(state.artifact.uuid, state.artifact.visibility)
+/* --------- Metadata ---------- */
+const submitMetadata = async () => {
+  const patch = []
+
+  const original = state.originalArtifact
+  const edited = state.artifact
+
+  // compare primitive fields
+  if (edited.title !== original.title) {
+    patch.push({ op: 'replace', path: '/title', value: edited.title })
+  }
+  if (edited.short_description !== original.short_description) {
+    patch.push({ op: 'replace', path: '/short_description', value: edited.short_description })
+  }
+  if (edited.long_description !== original.long_description) {
+    patch.push({ op: 'replace', path: '/long_description', value: edited.long_description })
+  }
+  if (edited.visibility !== original.visibility) {
+    patch.push({ op: 'replace', path: '/visibility', value: edited.visibility })
+  }
+
+  // compare tags array (shallow)
+  if (JSON.stringify(edited.tags) !== JSON.stringify(original.tags)) {
+    patch.push({ op: 'replace', path: '/tags', value: edited.tags })
+  }
+
+  // compare authors array (shallow, by JSON.stringify)
+  if (JSON.stringify(edited.authors) !== JSON.stringify(original.authors)) {
+    patch.push({ op: 'replace', path: '/authors', value: edited.authors })
+  }
+
+  if (patch.length > 0) {
+    await artifactsStore.updateArtifactMetadata(edited.uuid, patch)
+  } else {
+    Notify.create({
+      type: 'info',
+      message: 'No changes to save',
+    })
+  }
 }
 
-const addRole = () => state.roles.push({ username: '', role: ROLES[0] })
-const removeRole = (index) => state.roles.splice(index, 1)[0]
-
+/* --------- Roles ---------- */
 const submitRoles = async () => {
-  state.roles.forEach((role) => {
+  // compute role changes
+  state.artifact.roles.forEach((role) => {
     role.user = usernameToUrn(role.username)
   })
-
-  const addedRoles = state.roles.filter(
+  const addedRoles = state.artifact.roles.filter(
     (newRole) =>
-      !state.originalRoles.some(
-        (oldRole) => oldRole.username === newRole.username && oldRole.role === newRole.role,
+      !state.originalArtifact.roles.some(
+        (oldRole) =>
+          parseUrn(oldRole.user).username === newRole.username && oldRole.role === newRole.role,
       ),
   )
-
-  const removedRoles = state.originalRoles.filter(
+  const removedRoles = state.originalArtifact.roles.filter(
     (oldRole) =>
-      !state.roles.some(
-        (newRole) => newRole.username === oldRole.username && newRole.role === oldRole.role,
+      !state.artifact.roles.some(
+        (newRole) =>
+          parseUrn(oldRole.user).username === newRole.username && oldRole.role === newRole.role,
       ),
   )
 
@@ -71,16 +123,15 @@ const submitRoles = async () => {
     addedRoles.map((r) => ({ role: r.role, user: r.user })),
     removedRoles.map((r) => ({ role: r.role, user: r.user })),
   )
-
-  state.originalRoles = state.roles.map((r) => ({ ...r }))
 }
 
-const removeVersion = (index) => state.versions.splice(index, 1)[0]
+/* --------- Versions ---------- */
 const submitVersions = async () => {
-  const removedVersions = state.artifact.versions.filter(
-    (oldVersion) => !state.versions.some((newVersion) => newVersion.slug === oldVersion.slug),
+  const removedVersions = state.originalArtifact.versions.filter(
+    (oldVersion) =>
+      !state.artifact.versions.some((newVersion) => newVersion.slug === oldVersion.slug),
   )
-  await artifactsStore.deleteArtifactVersions(
+  await artifactsStore.updateArtifactVersions(
     state.artifact.uuid,
     removedVersions.map((v) => v.slug),
   )
@@ -91,7 +142,9 @@ const reimportArtifact = async () => {
     state.artifact.computed.github_url,
     state.artifact.uuid,
   )
-  if (resArtifact) state.artifact = resArtifact
+  if (resArtifact) {
+    state.artifact = resArtifact
+  }
   router.push({ path: `/artifacts/${state.artifact.uuid}` })
 }
 </script>
@@ -99,70 +152,168 @@ const reimportArtifact = async () => {
 <template>
   <Loading :loading="state.loading">
     <MainSection>
-      <q-card class="q-mb-md">
+      <q-card v-if="state.artifact" class="q-mb-md">
         <q-card-section>
-          <RouterLink :to="'/artifacts/' + state.artifact.uuid">
-            <h2 class="text-h5 q-mb-md">Editing "{{ state.artifact.title }}"</h2>
-          </RouterLink>
+          <h2 class="text-h5 q-mb-md">
+            Editing
+            <RouterLink :to="'/artifacts/' + state.artifact.uuid">
+              "{{ state.artifact.title }}"
+            </RouterLink>
+          </h2>
 
+          <!-- Metadata -->
           <q-card class="q-pa-md q-mb-md">
-            <div>
-              <q-select
-                v-model="state.artifact.visibility"
-                :options="VISIBILITY_OPTIONS"
-                label="Visibility"
-                @update:model-value="updateVisibility"
+            <h3 class="text-h6 q-mb-sm">Metadata</h3>
+            <q-input
+              v-model="state.artifact.title"
+              label="Title"
+              dense
+              class="q-mb-sm"
+              :rules="[(val) => val.length <= 140 || 'Please use maximum 140 characters']"
+              hint="Max 140 characters"
+            />
+            <q-input
+              v-model="state.artifact.short_description"
+              type="textarea"
+              autogrow
+              label="Short Description"
+              dense
+              class="q-mb-sm"
+              :rules="[(val) => val.length <= 200 || 'Please use maximum 200 characters']"
+              hint="Max 200 characters"
+            />
+            <q-input
+              v-model="state.artifact.long_description"
+              type="textarea"
+              autogrow
+              label="Long Description"
+              class="q-mb-sm"
+            />
+            <q-select
+              v-model="state.artifact.tags"
+              :options="artifactsStore.tags"
+              label="Tags"
+              multiple
+              use-chips
+              dense
+              class="q-mb-sm"
+            />
+            <q-select
+              v-model="state.artifact.visibility"
+              :options="VISIBILITY_OPTIONS"
+              label="Visibility"
+              dense
+              class="q-mb-sm"
+            />
+            <h3 class="text-h6 q-mb-sm">Authors</h3>
+            <div
+              v-for="(author, index) in state.artifact.authors"
+              :key="index"
+              class="q-mb-sm row items-center q-gutter-sm"
+            >
+              <q-input v-model="author.full_name" label="Full Name" dense class="col" />
+              <q-input v-model="author.institution" label="Institution" dense class="col" />
+              <q-input v-model="author.email" type="email" label="Email" dense class="col" />
+              <q-btn
+                color="negative"
+                flat
+                icon="delete"
+                @click="state.artifact.authors.splice(index, 1)"
+                round
                 dense
               />
             </div>
+            <div class="row q-gutter-sm q-mt-md">
+              <q-btn
+                label="Add Author"
+                color="primary"
+                @click="state.artifact.authors.push({ full_name: '', institution: '', email: '' })"
+              />
+            </div>
+            <div class="row q-gutter-sm q-mt-md">
+              <q-btn
+                label="Configure Daypass"
+                color="primary"
+                :href="state.artifact.computed?.get_chameleon_daypass_url()"
+              />
+              <q-btn label="Save Metadata" color="positive" @click="submitMetadata" />
+            </div>
           </q-card>
 
+          <!-- Roles -->
           <q-card class="q-pa-md q-mb-md">
             <h3 class="text-h6 q-mb-sm">Roles</h3>
             <div
-              v-for="(role, index) in state.roles"
+              v-for="(role, index) in state.artifact.roles"
               :key="index"
               class="q-mb-sm row items-center q-gutter-sm"
             >
               <q-input v-model="role.username" type="email" label="User Email" dense class="col" />
               <q-select v-model="role.role" :options="ROLES" dense class="col-3" />
-              <q-btn color="negative" flat icon="delete" @click="removeRole(index)" round dense />
+              <q-btn
+                color="negative"
+                flat
+                icon="delete"
+                @click="state.artifact.roles.splice(index, 1)"
+                round
+                dense
+              />
             </div>
             <div class="row q-gutter-sm q-mt-md">
-              <q-btn label="Add Role" color="primary" @click="addRole" />
-              <q-btn label="Save Changes" color="positive" @click="submitRoles" />
+              <q-btn
+                label="Add Role"
+                color="primary"
+                @click="state.artifact.roles.push({ username: '', role: ROLES[0] })"
+              />
+              <q-btn label="Save Roles" color="positive" @click="submitRoles" />
             </div>
           </q-card>
 
           <!-- Versions -->
           <q-card class="q-pa-md q-mb-md">
             <h3 class="text-h6 q-mb-sm">Versions</h3>
-
             <div
               v-if="state.artifact.computed?.github_url"
               class="row items-center justify-between q-mb-md"
             >
               <div>
                 <span>Create a new version from GitHub repo </span>
-                <a :href="state.artifact.computed.github_url" target="_blank">{{
-                  state.artifact.computed.github_repo
-                }}</a>
+                <a :href="state.artifact.computed.github_url" target="_blank">
+                  {{ state.artifact.computed.github_repo }}
+                </a>
               </div>
+              <q-btn label="Import" color="primary" @click="reimportArtifact" />
+            </div>
+            <div v-else class="row items-center justify-between q-mb-md">
+              <span>Create a new version from Git</span>
               <q-btn label="Import" color="primary" @click="reimportArtifact" />
             </div>
 
             <div
-              v-for="(version, index) in state.versions"
+              v-for="(version, index) in state.artifact.versions"
               :key="index"
               class="row justify-between items-center q-mb-sm"
             >
               <div>{{ version.slug }}</div>
               <div>{{ version.created_at }}</div>
-              <q-btn color="negative" icon="delete" @click="removeVersion(index)" label="Delete" />
+              <div v-if="!version.computed?.doi" class="row q-gutter-sm">
+                <q-btn color="secondary" label="Request DOI" />
+                <q-btn
+                  color="negative"
+                  icon="delete"
+                  @click="state.artifact.versions.splice(index, 1)"
+                  label="Delete"
+                />
+              </div>
+              <div v-else>
+                <a :href="version.computed.doi_url" target="_blank">
+                  {{ version.computed.doi }}
+                </a>
+              </div>
             </div>
 
-            <div class="q-mt-md">
-              <q-btn label="Save Changes" color="positive" @click="submitVersions" />
+            <div class="row q-gutter-sm q-mt-md">
+              <q-btn label="Save Versions" color="positive" @click="submitVersions" />
             </div>
           </q-card>
         </q-card-section>

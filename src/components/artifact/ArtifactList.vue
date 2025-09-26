@@ -27,6 +27,7 @@ const state = reactive({
   searchText: '',
   filterOwned: false,
   filterPublic: false,
+  filterDoi: false,
 })
 
 const filteredArtifacts = computed(() => {
@@ -61,6 +62,7 @@ const filteredArtifacts = computed(() => {
     })
     .filter((a) => !state.filterOwned || a.computed.isOwnedByUser())
     .filter((a) => !state.filterPublic || a.visibility === 'public')
+    .filter((a) => !state.filterDoi || a.computed.hasDoi)
     .slice(0, props.limit || state.artifacts.length)
 })
 
@@ -89,6 +91,7 @@ onMounted(async () => {
       v-model:filterPublic="state.filterPublic"
       v-model:selectedTags="state.selectedTags"
       v-model:selectedBadges="state.selectedBadges"
+      v-model:filterDoi="state.filterDoi"
     />
 
     <ArtifactGrid :artifacts="filteredArtifacts" :is-loading="isLoading" />

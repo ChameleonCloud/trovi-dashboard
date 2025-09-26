@@ -32,3 +32,13 @@ export function parseUrn(urn) {
       throw new Error(`Unknown URN type ${parts[2]}`)
   }
 }
+
+export function parseDoi(urn) {
+  let parts = urn.split(':')
+  if (parts.length != 5) {
+    throw new Error('Invalid DOI URN: Must have 5 parts')
+  } else if (!urn.startsWith('urn:trovi:contents:zenodo')) {
+    throw new Error('Invalid DOI URN: does not start with urn:trovi:contents:zenodo')
+  }
+  return parts[4]
+}

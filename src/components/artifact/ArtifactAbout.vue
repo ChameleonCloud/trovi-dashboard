@@ -16,7 +16,5 @@ const props = defineProps({ artifact: Object })
 
   <h2 class="text-h6 text-primary q-mb-md">About</h2>
 
-  <p class="text-body1 q-mb-md">
-    {{ artifact.long_description }}
-  </p>
+  <p class="text-body1 q-mb-md" v-html="artifact.computed.long_description_markup"></p>
 </template>

@@ -8,6 +8,7 @@ defineProps({
   selectedBadges: { type: Array, default: () => [] },
   filterOwned: { type: Boolean, default: false },
   filterPublic: { type: Boolean, default: false },
+  filterDoi: { type: Boolean, default: false },
 })
 
 defineEmits([
@@ -15,6 +16,7 @@ defineEmits([
   'update:selectedBadges',
   'update:filterOwned',
   'update:filterPublic',
+  'update:filterDoi',
 ])
 </script>
 
@@ -28,18 +30,18 @@ defineEmits([
         <q-checkbox
           v-for="(tag, index) in tags"
           :key="index"
-          :val="tag.tag"
-          :model-value="selectedTags.includes(tag.tag)"
+          :val="tag"
+          :model-value="selectedTags.includes(tag)"
           @update:model-value="
             (checked) => {
               const newTags = checked
-                ? [...selectedTags, tag.tag]
-                : selectedTags.filter((t) => t !== tag.tag)
+                ? [...selectedTags, tag]
+                : selectedTags.filter((t) => t !== tag)
               $emit('update:selectedTags', newTags)
             }
           "
           label-class="text-subtitle2"
-          :label="tag.tag"
+          :label="tag"
           dense
         />
       </div>
@@ -84,12 +86,19 @@ defineEmits([
           dense
         />
       </div>
-
       <div class="col-auto">
         <q-checkbox
           :model-value="filterPublic"
           @update:model-value="$emit('update:filterPublic', $event)"
           label="Public"
+          dense
+        />
+      </div>
+      <div class="col-auto">
+        <q-checkbox
+          :model-value="filterDoi"
+          @update:model-value="$emit('update:filterDoi', $event)"
+          label="Has DOI"
           dense
         />
       </div>
