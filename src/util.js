@@ -2,6 +2,10 @@ export function usernameToUrn(username) {
   return `urn:trovi:user:chameleon:${username}`
 }
 
+export function gitToUrn(gitRepo, ref) {
+  return `urn:trovi:contents:git:${gitRepo}@${ref}`
+}
+
 export function parseUrn(urn) {
   let parts = urn.split(':')
   if (parts.length < 4) {

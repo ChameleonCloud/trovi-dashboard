@@ -1,13 +1,14 @@
 <script setup>
-import { reactive, onMounted } from 'vue'
+import { reactive, onMounted, ref, watch } from 'vue'
 import { useArtifactsStore } from '@/stores/artifact'
 import { useAuthStore } from '@/stores/auth'
 import { useRoute } from 'vue-router'
 import router from '@/router'
-import { parseUrn, usernameToUrn } from '@/util'
+import { parseUrn, usernameToUrn, gitToUrn } from '@/util'
 import MainSection from '@/components/MainSection.vue'
 import Loading from '@/components/Loading.vue'
-import { Dialog, Notify } from 'quasar'
+import { Dialog, Notify, QSpinner } from 'quasar'
+import axios from 'axios'
 
 const route = useRoute()
 const artifactUUID = route.params.uuid
@@ -55,7 +56,68 @@ onMounted(async () => {
   await artifactsStore.fetchTags()
   state.availableTags = artifactsStore.tags
   state.loading = false
+
+  gitForm.gitUrl = state.artifact.computed?.github_url || ''
 })
+
+const gitDialog = ref(false)
+const gitForm = reactive({
+  gitUrl: '',
+  selectedOption: null,
+  loadingOptions: false,
+  submitting: false,
+})
+const gitOptions = ref([])
+let rawGitOptions = []
+
+// Fetch options when Git URL changes
+watch(
+  () => gitForm.gitUrl,
+  async (newUrl) => {
+    gitForm.selectedOption = null
+    gitOptions.value = []
+    if (!newUrl) return
+    gitForm.loadingOptions = true
+    try {
+      // Call the portal API to list remote branches/tags/commits
+      const res = await axios.get(
+        `${import.meta.env.VITE_CHAMELEON_PORTAL_URL}/experiment/share/api/git/`,
+        {
+          params: { remote_url: newUrl },
+        },
+      )
+      rawGitOptions = res.data.result.map((i) => i)
+      gitOptions.value = rawGitOptions.map(([value, label]) => ({ value, label }))
+      // gitOptions.value = (res.data.result || []).map(([value, label]) => ({ value, label }))
+    } catch (err) {
+      Notify.create({ type: 'negative', message: `Failed to fetch options: ${err.message}` })
+    } finally {
+      gitForm.loadingOptions = false
+    }
+  },
+)
+
+const onGitFilter = async function (val, update) {
+  const needle = val.toLowerCase()
+  // gitOptions.value = stringOptions.filter((v) => v.toLowerCase().indexOf(needle) > -1)
+  update(() => {
+    gitOptions.value = rawGitOptions
+      .filter(([value, label]) => label.toLowerCase().indexOf(needle) > -1)
+      .map(([value, label]) => ({ value, label }))
+  })
+}
+
+const submitGitVersion = async () => {
+  if (!gitForm.gitUrl || !gitForm.selectedOption) {
+    Notify.create({ type: 'negative', message: 'Please fill in both fields' })
+    return
+  }
+  gitForm.submitting = true
+  let contents_urn = gitToUrn(gitForm.gitUrl, gitForm.selectedOption)
+  artifactsStore.createVersion(artifactUUID, { contents: { urn: contents_urn } })
+  gitForm.submitting = false
+  gitDialog.value = false
+}
 
 /* --------- Metadata ---------- */
 const submitMetadata = async () => {
@@ -173,8 +235,8 @@ const reimportArtifact = async () => {
   )
   if (resArtifact) {
     state.artifact = resArtifact
+    router.push({ path: `/artifacts/${state.artifact.uuid}` })
   }
-  router.push({ path: `/artifacts/${state.artifact.uuid}` })
 }
 </script>
 
@@ -255,7 +317,7 @@ const reimportArtifact = async () => {
               class="q-mb-sm row items-center q-gutter-sm"
             >
               <q-input v-model="author.full_name" label="Full Name" dense class="col" />
-              <q-input v-model="author.institution" label="Institution" dense class="col" />
+              <q-input v-model="author.affiliation" label="Affiliation" dense class="col" />
               <q-input v-model="author.email" type="email" label="Email" dense class="col" />
               <q-btn
                 color="negative"
@@ -270,7 +332,7 @@ const reimportArtifact = async () => {
               <q-btn
                 label="Add Author"
                 color="primary"
-                @click="state.artifact.authors.push({ full_name: '', institution: '', email: '' })"
+                @click="state.artifact.authors.push({ full_name: '', affiliation: '', email: '' })"
               />
             </div>
             <div class="row q-gutter-sm q-mt-md">
@@ -320,17 +382,21 @@ const reimportArtifact = async () => {
               class="row items-center justify-between q-mb-md"
             >
               <div>
-                <span>Create a new version from GitHub repo </span>
-                <a :href="state.artifact.computed.github_url" target="_blank">
-                  {{ state.artifact.computed.github_repo }}
-                </a>
+                <span
+                  >Import latest changes from the linked GitHub repo
+                  <a :href="state.artifact.computed.github_url" target="_blank">
+                    {{ state.artifact.computed.github_repo }}
+                  </a>
+                  (requires a <a href="/artifacts/add">trovi.json</a>)
+                </span>
               </div>
-              <q-btn label="Import" color="primary" @click="reimportArtifact" />
+              <q-btn label="Import Version" color="primary" @click="reimportArtifact" />
             </div>
-            <div v-else class="row items-center justify-between q-mb-md">
-              <span>Create a new version from Git</span>
-              <q-btn label="Import" color="primary" @click="reimportArtifact" />
+            <div class="row items-center justify-between q-mb-md">
+              <span>Create a new version from Git repo</span>
+              <q-btn label="Create Version" color="primary" @click="gitDialog = true" />
             </div>
+            <q-separator />
 
             <div
               v-for="(version, index) in state.artifact.versions"
@@ -375,6 +441,51 @@ const reimportArtifact = async () => {
           </q-card>
         </q-card-section>
       </q-card>
+
+      <q-dialog v-model="gitDialog" persistent>
+        <q-card style="min-width: 400px; max-width: 600px">
+          <q-card-section>
+            <h3 class="text-h6 q-mb-md">Create Version from Git</h3>
+            <p>
+              Enter the Git repository URL and select a branch, tag, or commit to create a new
+              artifact version.
+            </p>
+            <q-input
+              filled
+              v-model="gitForm.gitUrl"
+              label="Git Clone URL"
+              type="url"
+              placeholder="https://github.com/owner/repo.git"
+              class="q-mb-md"
+              clearable
+            />
+            <q-select
+              v-model="gitForm.selectedOption"
+              :options="gitOptions"
+              label="Select Git Branch/Tag"
+              dense
+              emit-value
+              map-options
+              use-input
+              class="q-mb-md"
+              @filter="onGitFilter"
+            >
+              <template v-slot:append>
+                <QSpinner v-if="gitForm.loadingOptions" size="24px" />
+              </template>
+            </q-select>
+          </q-card-section>
+          <q-card-actions align="right">
+            <q-btn flat label="Cancel" color="secondary" v-close-popup />
+            <q-btn
+              label="Create Version"
+              color="primary"
+              :loading="gitForm.submitting"
+              @click="submitGitVersion"
+            />
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
     </MainSection>
   </Loading>
 </template>

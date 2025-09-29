@@ -17,7 +17,7 @@ const isActiveLink = (routePath) => route.path === routePath
       class="row items-center q-mr-lg"
       style="text-decoration: none; color: inherit"
     >
-      <img :src="logo" alt="Trovi Artifacts" style="height: 32px" />
+      <!-- <img :src="logo" alt="Trovi Artifacts" style="height: 32px" /> -->
       <span class="text-h6 q-ml-sm">Trovi</span>
     </router-link>
 
@@ -32,7 +32,7 @@ const isActiveLink = (routePath) => route.path === routePath
     />
     <q-btn
       flat
-      label="Import"
+      label="Create"
       to="/artifacts/add"
       :class="{ 'text-bold': isActiveLink('/artifacts/add') }"
     />

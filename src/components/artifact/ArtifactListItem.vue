@@ -79,17 +79,14 @@ const toggleFullDescription = () => {
       <q-separator class="q-mb-md" />
 
       <div class="row justify-between items-center q-gutter-sm q-mt-auto">
-        <q-btn color="primary" @click="router.push(`/artifacts/${props.artifact.uuid}`)">
-          View
-        </q-btn>
+        <q-btn color="primary" :to="`/artifacts/${props.artifact.uuid}`" label="View" />
 
         <q-btn
           v-if="props.artifact.computed.isOwnedByUser()"
           color="secondary"
-          @click="router.push(`/artifacts/${props.artifact.uuid}/edit`)"
-        >
-          Edit
-        </q-btn>
+          :to="`/artifacts/${props.artifact.uuid}/edit`"
+          label="Edit"
+        />
       </div>
     </div>
   </q-card>

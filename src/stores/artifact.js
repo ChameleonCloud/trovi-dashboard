@@ -3,7 +3,7 @@ import axios from 'axios'
 import { marked } from 'marked'
 import { useAuthStore } from '@/stores/auth'
 import { Notify } from 'quasar'
-import { parseUrn, parseDoi } from '@/util'
+import { parseDoi } from '@/util'
 
 function processArtifact(store, artifact) {
   /**
@@ -106,9 +106,14 @@ function errObjToMessage(errObj) {
             messages.push(`${field.replace(/_/g, ' ')}: ${error}`)
           } else if (typeof error === 'object') {
             for (const [nestedField, nestedErrors] of Object.entries(error)) {
-              nestedErrors.forEach((nestedError) => {
-                messages.push(`${field} (${nestedField}): ${nestedError}`)
-              })
+              if (typeof nestedErrors === 'string') {
+                messages.push(`${field} (${nestedField}): ${nestedErrors}`)
+                continue
+              } else {
+                nestedErrors.forEach((nestedError) => {
+                  messages.push(`${field} (${nestedField}): ${nestedError}`)
+                })
+              }
             }
           }
         })
@@ -267,6 +272,39 @@ export const useArtifactsStore = defineStore('artifacts', {
         return undefined
       }
     },
+    async createArtifact(artifact_obj) {
+      if (!this.authStore.isAuthenticated) {
+        await this.authStore.initKeycloak()
+      }
+      let token = await this.authStore.getTroviToken()
+      if (token) {
+        try {
+          let res = await axios.post(`/artifacts/?access_token=${token}`, artifact_obj)
+          if (res.status == 201) {
+            Notify.create({ type: 'positive', message: 'Created artifact' })
+            let artifact = processArtifact(this, res.data)
+            this.artifacts.push(artifact)
+            this.artifactDetails[artifact.uuid] = artifact
+            return artifact
+          } else {
+            let message = errObjToMessage(res.data)
+            Notify.create({
+              type: 'negative',
+              message: `Could not create artifact.\n${message}`,
+            })
+            return undefined
+          }
+        } catch (error) {
+          console.error(error)
+          Notify.create({
+            type: 'negative',
+            message: `Error ${error.message}\n${errObjToMessage(error.response.data)}`,
+          })
+        }
+      } else {
+        return undefined
+      }
+    },
     async updateArtifactRoles(uuid, rolesToAdd, rolesToRemove) {
       if (!this.authStore.isAuthenticated) {
         await this.authStore.initKeycloak()
@@ -379,6 +417,44 @@ export const useArtifactsStore = defineStore('artifacts', {
         Notify.create({
           type: 'negative',
           message: `DOI request failed: ${err.message}`,
+        })
+        throw err
+      }
+    },
+    async createVersion(uuid, version_obj) {
+      if (!this.authStore.isAuthenticated) {
+        await this.authStore.initKeycloak()
+      }
+      const token = await this.authStore.getTroviToken()
+      if (!token) {
+        Notify.create({
+          type: 'negative',
+          message: 'Could not create version, try refreshing the page.',
+        })
+      }
+
+      try {
+        const response = await axios.post(
+          `/artifacts/${uuid}/versions/?access_token=${token}`,
+          version_obj,
+        )
+
+        if (response.status !== 201) {
+          Notify.create({
+            type: 'negative',
+            message: `Version create failed: ${response.status} ${response.statusText}`,
+          })
+          return null
+        }
+        Notify.create({
+          type: 'positive',
+          message: `New version created.`,
+        })
+        return response.data
+      } catch (err) {
+        Notify.create({
+          type: 'negative',
+          message: `Version create failed: ${err.message}`,
         })
         throw err
       }
