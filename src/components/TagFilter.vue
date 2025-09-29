@@ -1,28 +1,98 @@
 <script setup>
+import { reactive, watch, toRefs } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import ArtifactBadge from '@/components/artifact/ArtifactBadge.vue'
 
-defineProps({
+const props = defineProps({
   tags: { type: Array, default: () => [] },
   badges: { type: Object, default: () => {} },
-  selectedTags: { type: Array, default: () => [] },
-  selectedBadges: { type: Array, default: () => [] },
-  filterOwned: { type: Boolean, default: false },
-  filterPublic: { type: Boolean, default: false },
-  filterDoi: { type: Boolean, default: false },
 })
-
-defineEmits([
+const emit = defineEmits([
   'update:selectedTags',
   'update:selectedBadges',
   'update:filterOwned',
   'update:filterPublic',
   'update:filterDoi',
+  'update:searchText',
 ])
+
+const route = useRoute()
+const router = useRouter()
+
+// Local reactive state synced with query params
+const state = reactive({
+  selectedTags: route.query.tags ? route.query.tags.split(',') : [],
+  selectedBadges: route.query.badges ? route.query.badges.split(',') : [],
+  filterOwned: route.query.owned === '1',
+  filterPublic: route.query.public === '1',
+  filterDoi: route.query.doi === '1',
+  searchText: route.query.q || '',
+})
+
+// Watchers to emit events and update query params
+watch(
+  () => state.selectedTags,
+  (val) => {
+    emit('update:selectedTags', val)
+    updateQuery({ tags: val.join(',') })
+  },
+  { deep: true },
+)
+
+watch(
+  () => state.selectedBadges,
+  (val) => {
+    emit('update:selectedBadges', val)
+    updateQuery({ badges: val.join(',') })
+  },
+  { deep: true },
+)
+
+watch(
+  () => state.filterOwned,
+  (val) => {
+    emit('update:filterOwned', val)
+    updateQuery({ owned: val ? '1' : undefined })
+  },
+)
+watch(
+  () => state.filterPublic,
+  (val) => {
+    emit('update:filterPublic', val)
+    updateQuery({ public: val ? '1' : undefined })
+  },
+)
+watch(
+  () => state.filterDoi,
+  (val) => {
+    emit('update:filterDoi', val)
+    updateQuery({ doi: val ? '1' : undefined })
+  },
+)
+watch(
+  () => state.searchText,
+  (val) => {
+    emit('update:searchText', val)
+    updateQuery({ q: val || undefined })
+  },
+)
+
+function updateQuery(newParams) {
+  router.replace({ query: { ...route.query, ...newParams } })
+}
 </script>
 
 <template>
   <div class="q-pa-xs q-gutter-xs">
     <div class="row items-center q-gutter-sm">
+      <q-input
+        filled
+        v-model="state.searchText"
+        placeholder="Search artifacts..."
+        clearable
+        class="full-width"
+      />
+
       <div class="col-auto">
         <span>Tags:</span>
       </div>
@@ -31,15 +101,7 @@ defineEmits([
           v-for="(tag, index) in tags"
           :key="index"
           :val="tag"
-          :model-value="selectedTags.includes(tag)"
-          @update:model-value="
-            (checked) => {
-              const newTags = checked
-                ? [...selectedTags, tag]
-                : selectedTags.filter((t) => t !== tag)
-              $emit('update:selectedTags', newTags)
-            }
-          "
+          v-model="state.selectedTags"
           label-class="text-subtitle2"
           :label="tag"
           dense
@@ -56,15 +118,7 @@ defineEmits([
           v-for="(badge, index) in badges"
           :key="index"
           :val="badge.name"
-          :model-value="selectedBadges.includes(badge.name)"
-          @update:model-value="
-            (checked) => {
-              const newBadges = checked
-                ? [...selectedBadges, badge.name]
-                : selectedBadges.filter((b) => b !== badge.name)
-              $emit('update:selectedBadges', newBadges)
-            }
-          "
+          v-model="state.selectedBadges"
           dense
         >
           <ArtifactBadge :badge="badge" :link="false" />
@@ -79,28 +133,13 @@ defineEmits([
       </div>
 
       <div class="col-auto">
-        <q-checkbox
-          :model-value="filterOwned"
-          @update:model-value="$emit('update:filterOwned', $event)"
-          label="My Artifacts"
-          dense
-        />
+        <q-checkbox v-model="state.filterOwned" label="My Artifacts" dense />
       </div>
       <div class="col-auto">
-        <q-checkbox
-          :model-value="filterPublic"
-          @update:model-value="$emit('update:filterPublic', $event)"
-          label="Public"
-          dense
-        />
+        <q-checkbox v-model="state.filterPublic" label="Public" dense />
       </div>
       <div class="col-auto">
-        <q-checkbox
-          :model-value="filterDoi"
-          @update:model-value="$emit('update:filterDoi', $event)"
-          label="Has DOI"
-          dense
-        />
+        <q-checkbox v-model="state.filterDoi" label="Has DOI" dense />
       </div>
     </div>
   </div>
