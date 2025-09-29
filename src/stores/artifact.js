@@ -361,7 +361,7 @@ export const useArtifactsStore = defineStore('artifacts', {
               `/artifacts/${uuid}/versions/${version_slug}/?access_token=${token}`,
             )
             if (response.status !== 204) {
-              throw new Error(`Failed to add role ${role}`)
+              throw new Error(`Failed to remove version ${version_slug}`)
             }
           })
         } catch (error) {
