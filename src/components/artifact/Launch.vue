@@ -1,5 +1,13 @@
 <script setup>
+import { computed } from 'vue'
 const props = defineProps({ artifact: Object, version_slug: String })
+
+const sharingKey = computed(() => {
+  if (typeof window !== 'undefined') {
+    return new URLSearchParams(window.location.search).get('sharing_key')
+  }
+  return null
+})
 </script>
 
 <template>
@@ -10,7 +18,7 @@ const props = defineProps({ artifact: Object, version_slug: String })
       <q-btn
         color="primary"
         label="Launch on Chameleon"
-        :href="artifact.computed.get_chameleon_launch_url(version_slug)"
+        :href="artifact.computed.get_chameleon_launch_url(version_slug, sharingKey)"
         target="_blank"
         class="full-width"
       />
@@ -20,7 +28,7 @@ const props = defineProps({ artifact: Object, version_slug: String })
       <q-btn
         color="primary"
         label="Download Archive"
-        :href="artifact.computed.get_chameleon_download_url(version_slug)"
+        :href="artifact.computed.get_chameleon_download_url(version_slug, sharingKey)"
         target="_blank"
         class="full-width"
       />

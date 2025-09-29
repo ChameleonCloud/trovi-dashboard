@@ -24,7 +24,10 @@ const state = reactive({
 
 onMounted(async () => {
   try {
-    state.artifact = await artifactsStore.fetchArtifactById(artifactId)
+    state.artifact = await artifactsStore.fetchArtifactById(
+      artifactId,
+      new URLSearchParams(window.location.search).get('sharing_key'),
+    )
     document.title = `${state.artifact.title} - Trovi`
     const v = state.artifact?.versions.find(
       (v) => !route.params.version || v.slug.trim() === route.params.version.trim(),

@@ -44,6 +44,7 @@ function makeEditableArtifact(raw) {
       : [],
     versions: raw.versions.map((v) => v),
     computed: raw.computed, // keep as reference, do NOT clone
+    sharing_key: raw.sharing_key,
   })
 }
 
@@ -233,6 +234,20 @@ const reimportArtifact = async () => {
               dense
               class="q-mb-sm"
             />
+            <p>
+              <RouterLink
+                v-if="state.artifact.visibility === 'private'"
+                :to="
+                  '/artifacts/' +
+                  state.artifact.uuid +
+                  '/?sharing_key=' +
+                  state.artifact.sharing_key
+                "
+              >
+                Shareable Secret Link
+              </RouterLink>
+            </p>
+
             <h3 class="text-h6 q-mb-sm">Authors</h3>
             <div
               v-for="(author, index) in state.artifact.authors"

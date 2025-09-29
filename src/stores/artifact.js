@@ -35,11 +35,19 @@ function processArtifact(store, artifact) {
   artifact.computed.long_description_markup = marked(
     artifact.long_description ? artifact.long_description : '',
   )
-  artifact.computed.get_chameleon_launch_url = function (version_slug) {
-    return `${import.meta.env.VITE_CHAMELEON_PORTAL_URL}/experiment/share/${artifact.uuid}/version/${version_slug}/launch`
+  artifact.computed.get_chameleon_launch_url = function (version_slug, sharing_key) {
+    let sharing_key_param = ''
+    if (sharing_key) {
+      sharing_key_param = `&${sharing_key}`
+    }
+    return `${import.meta.env.VITE_CHAMELEON_PORTAL_URL}/experiment/share/${artifact.uuid}/version/${version_slug}/launch?${sharing_key_param}`
   }
-  artifact.computed.get_chameleon_download_url = function (version_slug) {
-    return `${import.meta.env.VITE_CHAMELEON_PORTAL_URL}/experiment/share/${artifact.uuid}/version/${version_slug}/download`
+  artifact.computed.get_chameleon_download_url = function (version_slug, sharing_key) {
+    let sharing_key_param = ''
+    if (sharing_key) {
+      sharing_key_param = `&${sharing_key}`
+    }
+    return `${import.meta.env.VITE_CHAMELEON_PORTAL_URL}/experiment/share/${artifact.uuid}/version/${version_slug}/download?${sharing_key_param}`
   }
   artifact.computed.get_chameleon_daypass_url = function () {
     return `${import.meta.env.VITE_CHAMELEON_PORTAL_URL}/experiment/share/${artifact.uuid}/share`
@@ -189,16 +197,18 @@ export const useArtifactsStore = defineStore('artifacts', {
       } while (after !== null)
       this.loading = false
     },
-    async fetchArtifactById(uuid) {
+    async fetchArtifactById(uuid, sharing_key) {
       await this.fetchBadges()
       // Check if the artifact is already in the cache
       var token = undefined
       if (this.authStore.isAuthenticated) {
         token = await this.authStore.getTroviToken()
       }
-      let tokenParam = token ? `?access_token=${token}` : ''
+      let tokenParam = token ? `access_token=${token}` : ''
       if (!this.artifactDetails[uuid]) {
-        const response = await axios.get(`/artifacts/${uuid}/${tokenParam}`)
+        const response = await axios.get(
+          `/artifacts/${uuid}/?${tokenParam}&sharing_key=${sharing_key}`,
+        )
         if (response.status != 200) {
           Notify.create({
             type: 'negative',

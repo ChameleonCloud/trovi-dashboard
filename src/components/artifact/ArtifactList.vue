@@ -93,8 +93,10 @@ onMounted(async () => {
       v-model:selectedBadges="state.selectedBadges"
       v-model:filterDoi="state.filterDoi"
     />
-
-    <ArtifactGrid :artifacts="filteredArtifacts" :is-loading="isLoading" />
+    <ArtifactGrid
+      :artifacts="filteredArtifacts"
+      :is-loading="(!props.limit || state.artifacts.length < props.limit) && isLoading"
+    />
   </MainSection>
 
   <section v-if="showButton" class="q-mx-auto q-my-xl q-pa-md" style="max-width: 32rem">
