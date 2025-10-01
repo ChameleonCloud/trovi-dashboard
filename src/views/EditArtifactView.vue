@@ -387,7 +387,7 @@ const reimportArtifact = async () => {
                   <a :href="state.artifact.computed.github_url" target="_blank">
                     {{ state.artifact.computed.github_repo }}
                   </a>
-                  (requires a <a href="/artifacts/add">trovi.json</a>)
+                  (requires a <a href="/dashboard/artifacts/add">trovi.json</a>)
                 </span>
               </div>
               <q-btn label="Import Version" color="primary" @click="reimportArtifact" />
