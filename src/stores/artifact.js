@@ -2,11 +2,13 @@ import { defineStore } from 'pinia'
 import axios from 'axios'
 import { marked } from 'marked'
 import { useAuthStore } from '@/stores/auth'
-import { useToast } from 'vue-toastification'
-
-const toast = useToast()
+import { Notify } from 'quasar'
+import { parseDoi } from '@/util'
 
 function processArtifact(store, artifact) {
+  /**
+   * Generate computed properties for an artifact
+   */
   artifact.computed = {}
   artifact.computed.latestVersion = artifact.versions.reduce(
     (latest, version) =>
@@ -33,11 +35,22 @@ function processArtifact(store, artifact) {
   artifact.computed.long_description_markup = marked(
     artifact.long_description ? artifact.long_description : '',
   )
-  artifact.computed.get_chameleon_launch_url = function (version_slug) {
-    return `${import.meta.env.VITE_CHAMELEON_PORTAL_URL}/experiment/share/${artifact.uuid}/version/${version_slug}/launch`
+  artifact.computed.get_chameleon_launch_url = function (version_slug, sharing_key) {
+    let sharing_key_param = ''
+    if (sharing_key) {
+      sharing_key_param = `&${sharing_key}`
+    }
+    return `${import.meta.env.VITE_CHAMELEON_PORTAL_URL}/experiment/share/${artifact.uuid}/version/${version_slug}/launch?${sharing_key_param}`
   }
-  artifact.computed.get_chameleon_download_url = function (version_slug) {
-    return `${import.meta.env.VITE_CHAMELEON_PORTAL_URL}/experiment/share/${artifact.uuid}/version/${version_slug}/download`
+  artifact.computed.get_chameleon_download_url = function (version_slug, sharing_key) {
+    let sharing_key_param = ''
+    if (sharing_key) {
+      sharing_key_param = `&${sharing_key}`
+    }
+    return `${import.meta.env.VITE_CHAMELEON_PORTAL_URL}/experiment/share/${artifact.uuid}/version/${version_slug}/download?${sharing_key_param}`
+  }
+  artifact.computed.get_chameleon_daypass_url = function () {
+    return `${import.meta.env.VITE_CHAMELEON_PORTAL_URL}/experiment/share/${artifact.uuid}/share`
   }
 
   let v = artifact.versions.find((version) => {
@@ -64,7 +77,15 @@ function processArtifact(store, artifact) {
     return artifact.owner_urn === store.authStore.userInfo?.userUrn
   }
 
-  artifact.computed.hasDoi = artifact.versions.some((v) => v.contents.urn.includes('zenodo'))
+  artifact.computed.hasDoi = false
+  artifact.versions.forEach((v) => {
+    v.computed = {}
+    if (v.contents.urn.includes('zenodo')) {
+      v.computed.doi = parseDoi(v.contents.urn)
+      v.computed.doi_url = `https://doi.org/${v.computed.doi}`
+      artifact.computed.hasDoi = true
+    }
+  })
 
   return artifact
 }
@@ -85,9 +106,14 @@ function errObjToMessage(errObj) {
             messages.push(`${field.replace(/_/g, ' ')}: ${error}`)
           } else if (typeof error === 'object') {
             for (const [nestedField, nestedErrors] of Object.entries(error)) {
-              nestedErrors.forEach((nestedError) => {
-                messages.push(`${field} (${nestedField}): ${nestedError}`)
-              })
+              if (typeof nestedErrors === 'string') {
+                messages.push(`${field} (${nestedField}): ${nestedErrors}`)
+                continue
+              } else {
+                nestedErrors.forEach((nestedError) => {
+                  messages.push(`${field} (${nestedField}): ${nestedError}`)
+                })
+              }
             }
           }
         })
@@ -176,18 +202,23 @@ export const useArtifactsStore = defineStore('artifacts', {
       } while (after !== null)
       this.loading = false
     },
-    async fetchArtifactById(uuid) {
+    async fetchArtifactById(uuid, sharing_key) {
       await this.fetchBadges()
       // Check if the artifact is already in the cache
       var token = undefined
       if (this.authStore.isAuthenticated) {
         token = await this.authStore.getTroviToken()
       }
-      let tokenParam = token ? `?access_token=${token}` : ''
+      let tokenParam = token ? `access_token=${token}` : ''
       if (!this.artifactDetails[uuid]) {
-        const response = await axios.get(`/artifacts/${uuid}/${tokenParam}`)
+        const response = await axios.get(
+          `/artifacts/${uuid}/?${tokenParam}&sharing_key=${sharing_key}`,
+        )
         if (response.status != 200) {
-          toast.error(`Error fetching artifact: ${response.status}`)
+          Notify.create({
+            type: 'negative',
+            message: `Error fetching artifact: ${response.status}`,
+          })
         } else {
           this.artifactDetails[uuid] = processArtifact(this, response.data)
         }
@@ -195,8 +226,11 @@ export const useArtifactsStore = defineStore('artifacts', {
       return this.artifactDetails[uuid]
     },
     async fetchTags() {
+      if (this.tags.length > 0) {
+        return
+      }
       const response = await axios.get(`/meta/tags`)
-      this.tags = response.data.tags
+      this.tags = response.data.tags.map((t) => t.tag)
     },
     async importArtifact(githubRepo, uuid = undefined) {
       if (!this.authStore.isAuthenticated) {
@@ -216,19 +250,56 @@ export const useArtifactsStore = defineStore('artifacts', {
             })
           }
           if (res.status == 200) {
-            toast.success('Imported artifact')
+            Notify.create({ type: 'positive', message: 'Imported artifact' })
             this.artifactDetails[uuid] = processArtifact(this, res.data)
             return this.artifactDetails[uuid]
           } else {
             let message = errObjToMessage(res.data)
-            toast.error(`Could not import artifact. Is trovi.json file invalid?\n${message}`, {
-              timeout: false,
+            Notify.create({
+              type: 'negative',
+              message: `Could not import artifact. Is trovi.json file invalid?\n${message}`,
             })
             return undefined
           }
         } catch (error) {
-          console.log(error.response.data)
-          toast.error(`Error ${error.message}\n${errObjToMessage(error.response.data)}`)
+          console.error(error.response.data)
+          Notify.create({
+            type: 'negative',
+            message: `Error ${error.message}\n${errObjToMessage(error.response.data)}`,
+          })
+        }
+      } else {
+        return undefined
+      }
+    },
+    async createArtifact(artifact_obj) {
+      if (!this.authStore.isAuthenticated) {
+        await this.authStore.initKeycloak()
+      }
+      let token = await this.authStore.getTroviToken()
+      if (token) {
+        try {
+          let res = await axios.post(`/artifacts/?access_token=${token}`, artifact_obj)
+          if (res.status == 201) {
+            Notify.create({ type: 'positive', message: 'Created artifact' })
+            let artifact = processArtifact(this, res.data)
+            this.artifacts.push(artifact)
+            this.artifactDetails[artifact.uuid] = artifact
+            return artifact
+          } else {
+            let message = errObjToMessage(res.data)
+            Notify.create({
+              type: 'negative',
+              message: `Could not create artifact.\n${message}`,
+            })
+            return undefined
+          }
+        } catch (error) {
+          console.error(error)
+          Notify.create({
+            type: 'negative',
+            message: `Error ${error.message}\n${errObjToMessage(error.response.data)}`,
+          })
         }
       } else {
         return undefined
@@ -262,45 +333,208 @@ export const useArtifactsStore = defineStore('artifacts', {
         } catch (error) {
           console.error(error)
           if (error.response) {
-            toast.error(`Error ${error.message}\n${error.response.data.detail}`)
+            Notify.create({
+              type: 'negative',
+              message: `Error ${error.message}\n${error.response.data.detail}`,
+            })
           } else {
-            toast.error(`Error ${error.message}`)
+            Notify.create({ type: 'negative', message: `Error ${error.message}` })
           }
         }
+        Notify.create({ type: 'positive', message: 'Updated roles' })
+      } else {
+        Notify.create({
+          type: 'negative',
+          message: 'Could not update roles, try refreshing the page.',
+        })
       }
-      toast.success('Updated roles')
     },
-    async updateArtifactVisibility(uuid, visibility) {
+    async updateArtifactVersions(uuid, versionsToRemove) {
       if (!this.authStore.isAuthenticated) {
         await this.authStore.initKeycloak()
       }
       let token = await this.authStore.getTroviToken()
       if (token) {
         try {
-          const response = await axios.patch(`/artifacts/${uuid}/?access_token=${token}`, {
-            patch: [
-              {
-                op: 'replace',
-                path: '/visibility',
-                value: visibility,
-              },
-            ],
+          versionsToRemove.forEach(async (version_slug) => {
+            const response = await axios.delete(
+              `/artifacts/${uuid}/versions/${version_slug}/?access_token=${token}`,
+            )
+            if (response.status !== 204) {
+              throw new Error(`Failed to remove version ${version_slug}`)
+            }
           })
-          if (response.status == 200) {
-            toast.success(`Updated visibility to ${visibility}`)
-            this.artifactDetails[uuid] = processArtifact(this, response.data)
-          } else {
-            let message = errObjToMessage(response.data)
-            toast.error(`Failed to update visibility:\n${message}`, { timeout: false })
-          }
         } catch (error) {
           console.error(error)
           if (error.response) {
-            toast.error(`Error ${error.message}\n${error.response.data.detail}`)
+            Notify.create({
+              type: 'negative',
+              message: `Error ${error.message}\n${error.response.data.detail}`,
+            })
           } else {
-            toast.error(`Error ${error.message}`)
+            Notify.create({ type: 'negative', message: `Error ${error.message}` })
           }
         }
+        Notify.create({ type: 'positive', message: 'Updated versions' })
+      } else {
+        Notify.create({
+          type: 'negative',
+          message: 'Could not update versions, try refreshing the page.',
+        })
+      }
+    },
+    async migrateArtifactVersion(uuid, slug, backed = 'zenodo') {
+      if (!this.authStore.isAuthenticated) {
+        await this.authStore.initKeycloak()
+      }
+      const token = await this.authStore.getTroviToken()
+      if (!token) {
+        Notify.create({
+          type: 'negative',
+          message: 'Could not request DOI, try refreshing the page.',
+        })
+      }
+
+      try {
+        const response = await axios.post(
+          `/artifacts/${uuid}/versions/${slug}/migration/?access_token=${token}`,
+          { backend: backed },
+        )
+
+        if (response.status !== 201) {
+          Notify.create({
+            type: 'negative',
+            message: `DOI request failed: ${response.status} ${response.statusText}`,
+          })
+          return null
+        }
+        Notify.create({
+          type: 'positive',
+          message: `DOI request accepted, please check back momentarily.`,
+        })
+        return response.data
+      } catch (err) {
+        Notify.create({
+          type: 'negative',
+          message: `DOI request failed: ${err.message}`,
+        })
+        throw err
+      }
+    },
+    async createVersion(uuid, version_obj) {
+      if (!this.authStore.isAuthenticated) {
+        await this.authStore.initKeycloak()
+      }
+      const token = await this.authStore.getTroviToken()
+      if (!token) {
+        Notify.create({
+          type: 'negative',
+          message: 'Could not create version, try refreshing the page.',
+        })
+      }
+
+      try {
+        const response = await axios.post(
+          `/artifacts/${uuid}/versions/?access_token=${token}`,
+          version_obj,
+        )
+
+        if (response.status !== 201) {
+          Notify.create({
+            type: 'negative',
+            message: `Version create failed: ${response.status} ${response.statusText}`,
+          })
+          return null
+        }
+        Notify.create({
+          type: 'positive',
+          message: `New version created.`,
+        })
+        return response.data
+      } catch (err) {
+        Notify.create({
+          type: 'negative',
+          message: `Version create failed: ${err.message}`,
+        })
+        throw err
+      }
+    },
+    async updateArtifactMetadata(uuid, patch) {
+      if (!this.authStore.isAuthenticated) {
+        await this.authStore.initKeycloak()
+      }
+      const token = await this.authStore.getTroviToken()
+      if (!token) return
+
+      try {
+        const response = await axios.put(
+          `/artifacts/${uuid}/?access_token=${token}&partial=true`,
+          { patch },
+          { headers: { 'Content-Type': 'application/json' } },
+        )
+
+        if (response.status === 200) {
+          Notify.create({
+            type: 'positive',
+            message: `Updated metadata successfully`,
+          })
+          this.artifactDetails[uuid] = processArtifact(this, response.data)
+        } else {
+          let message = errObjToMessage(response.data)
+          Notify.create({
+            type: 'negative',
+            message: `Failed to update metadata:\n${message}`,
+          })
+        }
+      } catch (error) {
+        console.error(error)
+        if (error.response) {
+          Notify.create({
+            type: 'negative',
+            message: `Error ${error.message}\n${error.response.data.detail}`,
+          })
+        } else {
+          Notify.create({ type: 'negative', message: `Error ${error.message}` })
+        }
+      }
+    },
+    async deleteArtifact(uuid) {
+      if (!this.authStore.isAuthenticated) {
+        await this.authStore.initKeycloak()
+      }
+      const token = await this.authStore.getTroviToken()
+      if (!token) return false
+
+      try {
+        const response = await axios.delete(`/artifacts/${uuid}/?access_token=${token}`, {})
+
+        if (response.status === 204) {
+          Notify.create({
+            type: 'positive',
+            message: `Deleted artifact successfully`,
+          })
+          this.artifacts = this.artifacts.filter((a) => a.uuid !== uuid)
+          delete this.artifactDetails[uuid]
+          return true
+        } else {
+          let message = errObjToMessage(response.data)
+          Notify.create({
+            type: 'negative',
+            message: `Failed to delete artifact:\n${message}`,
+          })
+          return false
+        }
+      } catch (error) {
+        console.error(error)
+        if (error.response) {
+          Notify.create({
+            type: 'negative',
+            message: `Error ${error.message}\n${error.response.data.detail}`,
+          })
+        } else {
+          Notify.create({ type: 'negative', message: `Error ${error.message}` })
+        }
+        return false
       }
     },
   },

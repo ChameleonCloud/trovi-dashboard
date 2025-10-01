@@ -4,23 +4,17 @@ const props = defineProps({ artifact: Object })
 </script>
 
 <template>
-  <div class="flex justify-between items-center">
+  <div class="row items-center justify-between q-mb-md">
     <ArtifactMetrics :artifact="artifact" />
 
-    <div v-if="artifact.tags?.length" class="flex flex-wrap gap-2 mb-4 mt-4">
-      <span
-        v-for="tag in artifact.tags"
-        :key="tag"
-        class="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-full text-sm"
-      >
+    <div v-if="artifact.tags?.length" class="row q-gutter-sm q-mt-md q-mb-md">
+      <q-chip v-for="tag in artifact.tags" :key="tag" class="text-body2">
         {{ tag }}
-      </span>
+      </q-chip>
     </div>
   </div>
 
-  <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">About</h2>
+  <h2 class="text-h6 text-primary q-mb-md">About</h2>
 
-  <p class="text-gray-700 dark:text-gray-300 whitespace-pre-line">
-    {{ artifact.long_description }}
-  </p>
+  <p class="text-body1 q-mb-md" v-html="artifact.computed.long_description_markup"></p>
 </template>

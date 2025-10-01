@@ -1,108 +1,145 @@
 <script setup>
+import { reactive, watch, toRefs } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import ArtifactBadge from '@/components/artifact/ArtifactBadge.vue'
 
-defineProps({
+const props = defineProps({
   tags: { type: Array, default: () => [] },
   badges: { type: Object, default: () => {} },
-  selectedTags: { type: Array, default: () => [] },
-  selectedBadges: { type: Array, default: () => [] },
-  filterOwned: { type: Boolean, default: false },
+})
+const emit = defineEmits([
+  'update:selectedTags',
+  'update:selectedBadges',
+  'update:filterOwned',
+  'update:filterPublic',
+  'update:filterDoi',
+  'update:searchText',
+])
+
+const route = useRoute()
+const router = useRouter()
+
+// Local reactive state synced with query params
+const state = reactive({
+  selectedTags: route.query.tags ? route.query.tags.split(',') : [],
+  selectedBadges: route.query.badges ? route.query.badges.split(',') : [],
+  filterOwned: route.query.owned === '1',
+  filterPublic: route.query.public === '1',
+  filterDoi: route.query.doi === '1',
+  searchText: route.query.q || '',
 })
 
-defineEmits(['update:selectedTags', 'update:selectedBadges', 'update:filterOwned'])
+// Watchers to emit events and update query params
+watch(
+  () => state.selectedTags,
+  (val) => {
+    emit('update:selectedTags', val)
+    updateQuery({ tags: val.join(',') })
+  },
+  { deep: true },
+)
+
+watch(
+  () => state.selectedBadges,
+  (val) => {
+    emit('update:selectedBadges', val)
+    updateQuery({ badges: val.join(',') })
+  },
+  { deep: true },
+)
+
+watch(
+  () => state.filterOwned,
+  (val) => {
+    emit('update:filterOwned', val)
+    updateQuery({ owned: val ? '1' : undefined })
+  },
+)
+watch(
+  () => state.filterPublic,
+  (val) => {
+    emit('update:filterPublic', val)
+    updateQuery({ public: val ? '1' : undefined })
+  },
+)
+watch(
+  () => state.filterDoi,
+  (val) => {
+    emit('update:filterDoi', val)
+    updateQuery({ doi: val ? '1' : undefined })
+  },
+)
+watch(
+  () => state.searchText,
+  (val) => {
+    emit('update:searchText', val)
+    updateQuery({ q: val || undefined })
+  },
+)
+
+function updateQuery(newParams) {
+  router.replace({ query: { ...route.query, ...newParams } })
+}
 </script>
 
 <template>
-  <div class="mb-6 space-y-4">
-    <div class="flex gap-2">
-      <span class="text-stone-800 dark:text-stone-200">Tags:</span>
-      <div class="flex flex-wrap gap-2">
-        <label v-for="(tag, index) in tags" :key="index" class="flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            :value="tag.tag"
-            :checked="selectedTags.includes(tag.tag)"
-            @change="
-              $emit(
-                'update:selectedTags',
-                $event.target.checked
-                  ? [...selectedTags, tag.tag]
-                  : selectedTags.filter((t) => t !== tag.tag),
-              )
-            "
-            class="mr-1 form-checkbox h-4 w-4 text-lime-600 border-gray-300 dark:border-gray-600 rounded"
-          />
-          <span
-            class="text-lg font-medium text-gray-700 dark:text-stone-300 hover:text-lime-600 transition duration-300"
-          >
-            {{ tag.tag }}
-          </span>
-        </label>
+  <div class="q-pa-xs q-gutter-xs">
+    <div class="row items-center q-gutter-sm">
+      <q-input
+        filled
+        v-model="state.searchText"
+        placeholder="Search artifacts..."
+        clearable
+        class="full-width"
+      />
+
+      <div class="col-auto">
+        <span>Tags:</span>
+      </div>
+      <div class="col q-gutter-sm row wrap">
+        <q-checkbox
+          v-for="(tag, index) in tags"
+          :key="index"
+          :val="tag"
+          v-model="state.selectedTags"
+          label-class="text-subtitle2"
+          :label="tag"
+          dense
+        />
       </div>
     </div>
 
-    <div class="flex gap-2">
-      <span class="text-stone-800 dark:text-stone-200">Badges:</span>
-      <div class="flex flex-wrap gap-2">
-        <label
+    <div class="row items-center q-gutter-sm">
+      <div class="col-auto">
+        <span>Badges:</span>
+      </div>
+      <div class="col q-gutter-sm row wrap">
+        <q-checkbox
           v-for="(badge, index) in badges"
           :key="index"
-          class="flex items-center cursor-pointer"
+          :val="badge.name"
+          v-model="state.selectedBadges"
+          dense
         >
-          <input
-            type="checkbox"
-            :value="badge.name"
-            :checked="selectedBadges.includes(badge.name)"
-            @change="
-              $emit(
-                'update:selectedBadges',
-                $event.target.checked
-                  ? [...selectedBadges, badge.name]
-                  : selectedBadges.filter((b) => b !== badge.name),
-              )
-            "
-            class="mr-1 form-checkbox h-4 w-4 text-lime-600 border-gray-300 dark:border-gray-600 rounded"
-          />
-          <span
-            class="inline-flex text-lg font-medium text-gray-700 dark:text-stone-300 hover:text-lime-600 transition duration-300"
-          >
-            <ArtifactBadge :badge="badge" :link="false" /> {{ badge.name }}
-          </span>
-        </label>
+          <ArtifactBadge :badge="badge" :link="false" />
+        </q-checkbox>
       </div>
     </div>
 
-    <div class="flex gap-2">
-      <span class="text-stone-800 dark:text-stone-200">Filter:</span>
-      <div class="flex flex-wrap gap-2">
-        <label class="flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            :checked="filterOwned"
-            @change="$emit('update:filterOwned', $event.target.checked)"
-            class="mr-1 form-checkbox h-4 w-4 text-lime-600 border-gray-300 dark:border-gray-600 rounded"
-          />
-          <span
-            class="text-lg font-medium text-gray-700 dark:text-stone-300 hover:text-lime-600 transition duration-300"
-          >
-            My Artifacts
-          </span>
-        </label>
+    <!-- Filters -->
+    <div class="row items-center q-gutter-sm">
+      <div class="col-auto">
+        <span>Filter:</span>
       </div>
-      <div class="flex flex-wrap gap-2">
-        <label class="flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            :checked="filterPublic"
-            @change="$emit('update:filterPublic', $event.target.checked)"
-            class="mr-1 form-checkbox h-4 w-4 text-lime-600 border-gray-300 dark:border-gray-600 rounded"
-          />
-          <span
-            class="text-lg font-medium text-gray-700 dark:text-stone-300 hover:text-lime-600 transition duration-300"
-          >
-            Public
-          </span>
-        </label>
+
+      <div class="col-auto">
+        <q-checkbox v-model="state.filterOwned" label="My Artifacts" dense />
+      </div>
+      <div class="col-auto">
+        <q-checkbox v-model="state.filterPublic" label="Public" dense />
+      </div>
+      <div class="col-auto">
+        <q-checkbox v-model="state.filterDoi" label="Has DOI" dense />
       </div>
     </div>
   </div>

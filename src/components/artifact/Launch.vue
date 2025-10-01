@@ -1,36 +1,47 @@
 <script setup>
+import { computed } from 'vue'
 const props = defineProps({ artifact: Object, version_slug: String })
+
+const sharingKey = computed(() => {
+  if (typeof window !== 'undefined') {
+    return new URLSearchParams(window.location.search).get('sharing_key')
+  }
+  return null
+})
 </script>
 
 <template>
-  <div>
-    <h2 class="text-xl font-bold mb-2">Content</h2>
-    <div>
-      <button
-        class="inline-block bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm"
-      >
-        <a target="_blank" :href="artifact.computed.get_chameleon_launch_url(version_slug)">
-          <span>Launch on Chameleon</span>
-        </a>
-      </button>
+  <div v-if="version_slug">
+    <h2 class="text-h6 text-primary">Content</h2>
+
+    <div class="q-mb-sm">
+      <q-btn
+        color="primary"
+        label="Launch on Chameleon"
+        :href="artifact.computed.get_chameleon_launch_url(version_slug, sharingKey)"
+        target="_blank"
+        class="full-width"
+      />
     </div>
-    <div class="mt-4">
-      <button
-        class="inline-block bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm"
-      >
-        <a target="_blank" :href="artifact.computed.get_chameleon_download_url(version_slug)">
-          <span>Download Archive</span>
-        </a>
-      </button>
+
+    <div class="q-mb-sm">
+      <q-btn
+        color="primary"
+        label="Download Archive"
+        :href="artifact.computed.get_chameleon_download_url(version_slug, sharingKey)"
+        target="_blank"
+        class="full-width"
+      />
     </div>
-    <div class="mt-4" v-if="artifact.computed.github_url">
-      <a
+
+    <div v-if="artifact.computed.github_url" class="q-mb-sm">
+      <q-btn
+        color="primary"
+        label="View on GitHub"
         :href="artifact.computed.github_url"
         target="_blank"
-        class="inline-block bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm"
-      >
-        View on GitHub
-      </a>
+        class="full-width"
+      />
     </div>
   </div>
 </template>

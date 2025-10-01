@@ -9,5 +9,7 @@ axios.defaults.baseURL = import.meta.env.VITE_TROVI_BASE_URL
 
 <template>
   <NavBar />
-  <RouterView />
+  <div class="chameleon-body">
+    <RouterView />
+  </div>
 </template>

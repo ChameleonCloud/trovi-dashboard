@@ -1,9 +1,7 @@
 import { defineStore } from 'pinia'
 import Keycloak from 'keycloak-js'
 import axios from 'axios'
-import { useToast } from 'vue-toastification'
-
-const toast = useToast()
+import { Notify } from 'quasar'
 
 const keycloakConfig = {
   url: import.meta.env.VITE_KEYCLOAK_URL,
@@ -66,7 +64,10 @@ export const useAuthStore = defineStore('auth', {
         this.troviToken = res.data.access_token
         return this.troviToken
       } else {
-        toast.error(`Could not get token. If this issue persists, please try to relog.`)
+        Notify.create({
+          type: 'negative',
+          message: 'Could not get token. If this issue persists, please try to relog.',
+        })
         return undefined
       }
     },

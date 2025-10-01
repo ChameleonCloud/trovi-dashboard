@@ -1,6 +1,6 @@
 <template>
-  <section class="bg-green-50 dark:bg-stone-900 px-4 py-10 transition-colors duration-300">
-    <div class="container-xl lg:container m-auto">
+  <section class="row justify-center q-py-md">
+    <div class="col-10">
       <slot></slot>
     </div>
   </section>

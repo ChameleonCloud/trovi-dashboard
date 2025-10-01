@@ -1,8 +1,19 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+.chameleon-body {
+  background-color: #f0fdf4;
+}
 
-.marked a,
-.prose a {
-  @apply underline;
+.chameleon-header {
+  background-color: oklch(64.8% 0.2 131.684);
+  color: white;
+}
+
+@media (prefers-color-scheme: dark) {
+  .chameleon-body {
+    background-color: #052e16; /* dark green tone opposite of #f0fdf4 */
+  }
+
+  .chameleon-header {
+    background-color: oklch(35% 0.2 131.684); /* darker variant of the green */
+    color: white;
+  }
 }

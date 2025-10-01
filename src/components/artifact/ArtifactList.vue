@@ -1,12 +1,14 @@
 <script setup>
 import { reactive, onMounted, computed } from 'vue'
-import SearchBar from '@/components/SearchBar.vue'
 import TagFilter from '@/components/TagFilter.vue'
 import ArtifactGrid from '@/components/artifact/ArtifactGrid.vue'
-import LinkButton from '@/components/LinkButton.vue'
 import MainSection from '@/components/MainSection.vue'
 
 import { useArtifactsStore } from '@/stores/artifact'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+
 const artifactsStore = useArtifactsStore()
 artifactsStore.fetchAllArtifacts()
 artifactsStore.fetchTags()
@@ -21,104 +23,100 @@ const props = defineProps({
 
 const state = reactive({
   artifacts: [],
-  selectedTags: [],
-  selectedBadges: [],
-  searchText: '',
-  filterOwned: false,
-  filterPublic: false,
+  badges: [],
+  selectedTags: route.query.tags ? route.query.tags.split(',') : [],
+  selectedBadges: route.query.badges ? route.query.badges.split(',') : [],
+  searchText: route.query.q || '',
+  filterOwned: route.query.owned === '1',
+  filterPublic: route.query.public === '1',
+  filterDoi: route.query.doi === '1',
 })
 
 const filteredArtifacts = computed(() => {
   return state.artifacts
     .filter((a) => {
       if (state.searchText) {
-        let searchString = state.searchText.toLowerCase()
-        let inArtifactFields = [
-          // check artifact fields
-          a.title?.toLowerCase(),
-          a.long_description?.toLowerCase(),
-          a.short_description?.toLowerCase(),
-        ].some((s) => s?.includes(searchString))
-        let inAuthorFields = a.authors.some(
-          (
-            author, // Check author fields
-          ) =>
-            [
-              author.full_name?.toLowerCase(),
-              author.affiliation?.toLowerCase(),
-              author.email?.toLowerCase(),
-            ].some((s) => s?.includes(searchString)),
+        const search = state.searchText.toLowerCase()
+        const inArtifact = [a.title, a.long_description, a.short_description].some((f) =>
+          f?.toLowerCase().includes(search),
         )
-        return inArtifactFields || inAuthorFields
+        const inAuthors = a.authors.some((author) =>
+          [author.full_name, author.affiliation, author.email].some((f) =>
+            f?.toLowerCase().includes(search),
+          ),
+        )
+        return inArtifact || inAuthors
       }
       return true
     })
     .filter((a) => {
       if (state.selectedTags.length > 0) {
-        let filtered_tags = a.tags.filter((t) => state.selectedTags.indexOf(t) >= 0)
-        return filtered_tags.length == state.selectedTags.length
+        const filteredTags = a.tags.filter((t) => state.selectedTags.includes(t))
+        return filteredTags.length === state.selectedTags.length
       }
       return true
     })
     .filter((a) => {
       return (
-        state.selectedBadges.length == 0 ||
-        state.selectedBadges.every((b) => {
-          return a.badges.some((ab) => ab.name == b)
-        })
+        state.selectedBadges.length === 0 ||
+        state.selectedBadges.every((b) => a.badges.some((ab) => ab.name === b))
       )
     })
-    .filter((a) => {
-      if (state.filterOwned) {
-        return a.computed.isOwnedByUser()
-      }
-      return true
-    })
-    .filter((a) => {
-      if (state.filterPublic) {
-        return a.visibility === 'public'
-      }
-      return true
-    })
+    .filter((a) => !state.filterOwned || a.computed.isOwnedByUser())
+    .filter((a) => !state.filterPublic || a.visibility === 'public')
+    .filter((a) => !state.filterDoi || a.computed.hasDoi)
     .slice(0, props.limit || state.artifacts.length)
 })
 
-const isLoading = computed(() => {
-  return artifactsStore.loading
-})
+const isLoading = computed(() => artifactsStore.loading)
 
 onMounted(async () => {
   try {
     state.artifacts = artifactsStore.artifacts
     state.badges = artifactsStore.processed_badges.badges
-    // Extract tags from artifacts for filtering options
-    // TODO this should use the API
   } catch (error) {
     console.error('Error fetching artifacts', error)
   }
 })
 </script>
+
 <template>
   <MainSection>
-    <h2 class="text-3xl font-bold text-stone-900 dark:text-white mb-6 text-center">
-      Browse Artifacts
-    </h2>
-
-    <SearchBar v-model="state.searchText" />
+    <h1 class="text-center text-h4 q-mb-lg">Browse Artifacts</h1>
 
     <TagFilter
       :tags="artifactsStore.tags"
       :badges="state.badges"
       v-model:filterOwned="state.filterOwned"
       v-model:filterPublic="state.filterPublic"
-      v-model:selected-tags="state.selectedTags"
-      v-model:selected-badges="state.selectedBadges"
+      v-model:selectedTags="state.selectedTags"
+      v-model:selectedBadges="state.selectedBadges"
+      v-model:filterDoi="state.filterDoi"
+      v-model:searchText="state.searchText"
     />
-
-    <ArtifactGrid :artifacts="filteredArtifacts" :is-loading="isLoading" />
+    <ArtifactGrid
+      :artifacts="filteredArtifacts"
+      :is-loading="(!props.limit || state.artifacts.length < props.limit) && isLoading"
+    />
   </MainSection>
 
-  <section v-if="showButton" class="m-auto max-w-lg my-10 px-6">
-    <LinkButton to="/artifacts" class="w-full justify-center">View All Artifacts </LinkButton>
+  <section v-if="showButton" class="q-mx-auto q-my-xl q-pa-md" style="max-width: 32rem">
+    <q-btn
+      :to="{
+        path: '/artifacts',
+        query: {
+          q: state.searchText || undefined,
+          tags: state.selectedTags.length ? state.selectedTags.join(',') : undefined,
+          badges: state.selectedBadges.length ? state.selectedBadges.join(',') : undefined,
+          owned: state.filterOwned ? '1' : undefined,
+          public: state.filterPublic ? '1' : undefined,
+          doi: state.filterDoi ? '1' : undefined,
+        },
+      }"
+      color="primary"
+      class="full-width justify-center"
+    >
+      View All Artifacts
+    </q-btn>
   </section>
 </template>
