@@ -5,6 +5,9 @@ import ArtifactGrid from '@/components/artifact/ArtifactGrid.vue'
 import MainSection from '@/components/MainSection.vue'
 
 import { useArtifactsStore } from '@/stores/artifact'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
 
 const artifactsStore = useArtifactsStore()
 artifactsStore.fetchAllArtifacts()
@@ -21,12 +24,12 @@ const props = defineProps({
 const state = reactive({
   artifacts: [],
   badges: [],
-  selectedTags: [],
-  selectedBadges: [],
-  searchText: '',
-  filterOwned: false,
-  filterPublic: false,
-  filterDoi: false,
+  selectedTags: route.query.tags ? route.query.tags.split(',') : [],
+  selectedBadges: route.query.badges ? route.query.badges.split(',') : [],
+  searchText: route.query.q || '',
+  filterOwned: route.query.owned === '1',
+  filterPublic: route.query.public === '1',
+  filterDoi: route.query.doi === '1',
 })
 
 const filteredArtifacts = computed(() => {
