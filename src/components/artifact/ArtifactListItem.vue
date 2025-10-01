@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import ArtifactBadge from '@/components/artifact/ArtifactBadge.vue'
+import ArtifactMetrics from './ArtifactMetrics.vue'
 
 const props = defineProps({
   artifact: Object,
@@ -18,7 +19,7 @@ const toggleFullDescription = () => {
   <q-card flat bordered class="q-pa-md full-height">
     <div class="flex flex-column full-height">
       <div class="row justify-between items-start q-mb-md">
-        <div class="column">
+        <div class="col-9">
           <q-btn
             flat
             unelevated
@@ -26,10 +27,10 @@ const toggleFullDescription = () => {
             @click="router.push(`/artifacts/${props.artifact.uuid}`)"
             no-caps
           >
-            <h3 class="text-h6">{{ props.artifact.title }}</h3>
+            <h3 class="text-h6 text-left">{{ props.artifact.title }}</h3>
           </q-btn>
 
-          <div class="row wrap q-gutter-sm q-mt-xs">
+          <div class="row wrap q-gutter-sm q-mt-xs col">
             <q-chip v-for="tag in props.artifact.tags" :key="tag" dense outline>
               <i class="pi pi-tag q-mr-xs"></i> {{ tag }}
             </q-chip>
@@ -77,7 +78,9 @@ const toggleFullDescription = () => {
       </div>
 
       <q-separator class="q-mb-md" />
-
+      <div>
+        <ArtifactMetrics :artifact="props.artifact" />
+      </div>
       <div class="row justify-between items-center q-gutter-sm q-mt-auto">
         <q-btn color="primary" :to="`/artifacts/${props.artifact.uuid}`" label="View" />
 

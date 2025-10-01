@@ -5,6 +5,7 @@ import ArtifactGrid from '@/components/artifact/ArtifactGrid.vue'
 import MainSection from '@/components/MainSection.vue'
 
 import { useArtifactsStore } from '@/stores/artifact'
+import { QSpinnerDots } from 'quasar'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
@@ -63,7 +64,7 @@ const filteredArtifacts = computed(() => {
       )
     })
     .filter((a) => !state.filterOwned || a.computed.isOwnedByUser())
-    .filter((a) => !state.filterPublic || a.visibility === 'public')
+    .filter((a) => !state.filterPublic || a.visibility === 'public' || a.computed.hasDoi)
     .filter((a) => !state.filterDoi || a.computed.hasDoi)
     .slice(0, props.limit || state.artifacts.length)
 })
@@ -94,6 +95,16 @@ onMounted(async () => {
       v-model:filterDoi="state.filterDoi"
       v-model:searchText="state.searchText"
     />
+
+    <div class="row justify-end">
+      Displaying {{ filteredArtifacts.length }} of
+      <template v-if="!isLoading"> {{ artifactsStore.artifacts.length }}</template>
+      <template v-else>
+        <QSpinnerDots class="q-mx-sm" size="1.6em" />
+      </template>
+      artifacts
+    </div>
+
     <ArtifactGrid
       :artifacts="filteredArtifacts"
       :is-loading="(!props.limit || state.artifacts.length < props.limit) && isLoading"
