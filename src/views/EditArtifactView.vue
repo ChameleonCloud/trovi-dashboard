@@ -407,7 +407,7 @@ const reimportArtifact = async () => {
               <div>{{ version.created_at }}</div>
               <div class="row q-gutter-sm">
                 <q-btn
-                  v-if="!version.computed?.doi && !version.doi_request"
+                  v-if="!version.computed?.doi && !version.doi_request && !version.computed?.is_git"
                   color="secondary"
                   label="Request DOI"
                   @click="version.doi_request = true"
