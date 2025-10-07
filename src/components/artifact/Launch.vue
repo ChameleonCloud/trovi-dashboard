@@ -29,6 +29,17 @@ const sharingKey = computed(() => {
         color="primary"
         label="Download Archive"
         :href="artifact.computed.get_chameleon_download_url(version_slug, sharingKey)"
+        v-if="artifact.computed.github_url"
+        target="_blank"
+        class="full-width"
+      />
+    </div>
+
+    <div v-if="artifact.reproducibility.enable_requests" class="q-mb-sm">
+      <q-btn
+        color="primary"
+        label="Request daypass"
+        :href="artifact.computed.get_chameleon_request_daypass_url()"
         target="_blank"
         class="full-width"
       />
@@ -40,8 +51,21 @@ const sharingKey = computed(() => {
         label="View on GitHub"
         :href="artifact.computed.github_url"
         target="_blank"
-        class="full-width"
+        class="full-width q-mb-sm"
       />
+
+      <div
+        class="bg-grey-2 rounded-borders q-pa-sm"
+        style="max-width: 100%; overflow-x: auto; white-space: pre; font-family: monospace"
+      >
+        <code>
+          <pre>
+git clone {{ artifact.computed.github_url }}
+# cd into the created directory git checkout
+{{ artifact.computed.git_ref }}</pre
+          >
+        </code>
+      </div>
     </div>
   </div>
 </template>

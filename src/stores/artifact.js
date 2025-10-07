@@ -52,16 +52,22 @@ function processArtifact(store, artifact) {
   artifact.computed.get_chameleon_daypass_url = function () {
     return `${import.meta.env.VITE_CHAMELEON_PORTAL_URL}/experiment/share/${artifact.uuid}/share`
   }
+  artifact.computed.get_chameleon_request_daypass_url = function () {
+    return `${import.meta.env.VITE_CHAMELEON_PORTAL_URL}/experiment/share/${artifact.uuid}/request`
+  }
 
   let v = artifact.versions.find((version) => {
     return version.contents.urn.includes('github.com')
   })
   artifact.computed.github_url = undefined
-  const regex = /github\.com\/[^@]+\.git/
+  const regex = /github\.com[:\/]([^\/]+\/[^\/]+?)(?:\.git)?(?:@(.+))?$/i
   const match = v?.contents.urn.match(regex)
+
   if (match) {
-    artifact.computed.github_url = `https://${match[0]}`
-    artifact.computed.github_repo = match[0].substring('github.com/'.length)
+    const repo = match[1].replace(/\.git$/, '')
+    artifact.computed.github_url = `https://github.com/${repo}`
+    artifact.computed.github_repo = repo
+    artifact.computed.git_ref = match[2] || null // will be the hash/tag/branch if present
   }
 
   if (store.processed_badges.artifact_badges[artifact.uuid]) {
@@ -84,6 +90,9 @@ function processArtifact(store, artifact) {
       v.computed.doi = parseDoi(v.contents.urn)
       v.computed.doi_url = `https://doi.org/${v.computed.doi}`
       artifact.computed.hasDoi = true
+    }
+    if (v.contents.urn.includes('git')) {
+      v.computed.is_git = true
     }
   })
 
