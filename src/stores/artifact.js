@@ -60,7 +60,7 @@ function processArtifact(store, artifact) {
     return version.contents.urn.includes('github.com')
   })
   artifact.computed.github_url = undefined
-  const regex = /github\.com[:\/]([^\/]+\/[^\/]+?)(?:\.git)?(?:@(.+))?$/i
+  const regex = /github\.com[:/]([^/]+\/[^/]+?)(?:\.git)?(?:@(.+))?$/i
   const match = v?.contents.urn.match(regex)
 
   if (match) {
