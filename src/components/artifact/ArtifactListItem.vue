@@ -85,7 +85,7 @@ const toggleFullDescription = () => {
         <q-btn color="primary" :to="`/artifacts/${props.artifact.uuid}`" label="View" />
 
         <q-btn
-          v-if="props.artifact.computed.isOwnedByUser()"
+          v-if="props.artifact.computed.canEdit()"
           color="secondary"
           :to="`/artifacts/${props.artifact.uuid}/edit`"
           label="Edit"

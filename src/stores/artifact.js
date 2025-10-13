@@ -82,6 +82,23 @@ function processArtifact(store, artifact) {
     // user info may change between when this was loaded & used
     return artifact.owner_urn === store.authStore.userInfo?.userUrn
   }
+  artifact.computed.canEdit = function () {
+    let userUrn = store.authStore.userInfo?.userUrn
+    return (
+      artifact.computed.isOwnedByUser() ||
+      artifact.roles.some(
+        (role) =>
+          role.user === userUrn && (role.role === 'collaborator' || role.role === 'administrator'),
+      )
+    )
+  }
+  artifact.computed.canEditRoles = function () {
+    let userUrn = store.authStore.userInfo?.userUrn
+    return (
+      artifact.computed.isOwnedByUser() ||
+      artifact.roles.some((role) => role.user === userUrn && role.role === 'administrator')
+    )
+  }
 
   artifact.computed.hasDoi = false
   artifact.versions.forEach((v) => {

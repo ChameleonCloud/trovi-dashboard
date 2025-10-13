@@ -346,7 +346,7 @@ const reimportArtifact = async () => {
           </q-card>
 
           <!-- Roles -->
-          <q-card class="q-pa-md q-mb-md">
+          <q-card class="q-pa-md q-mb-md" v-if="state.originalArtifact.computed.canEditRoles()">
             <h3 class="text-h6 q-mb-sm">Roles</h3>
             <div
               v-for="(role, index) in state.artifact.roles"
