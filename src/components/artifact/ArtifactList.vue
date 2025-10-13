@@ -63,7 +63,7 @@ const filteredArtifacts = computed(() => {
         state.selectedBadges.every((b) => a.badges.some((ab) => ab.name === b))
       )
     })
-    .filter((a) => !state.filterOwned || a.computed.isOwnedByUser())
+    .filter((a) => !state.filterOwned || a.computed.canEdit())
     .filter((a) => !state.filterPublic || a.visibility === 'public' || a.computed.hasDoi)
     .filter((a) => !state.filterDoi || a.computed.hasDoi)
     .slice(0, props.limit || state.artifacts.length)

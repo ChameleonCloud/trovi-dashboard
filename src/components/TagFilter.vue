@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, watch, toRefs } from 'vue'
+import { reactive, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ArtifactBadge from '@/components/artifact/ArtifactBadge.vue'
 

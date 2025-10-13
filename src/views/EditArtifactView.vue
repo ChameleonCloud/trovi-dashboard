@@ -102,7 +102,7 @@ const onGitFilter = async function (val, update) {
   // gitOptions.value = stringOptions.filter((v) => v.toLowerCase().indexOf(needle) > -1)
   update(() => {
     gitOptions.value = rawGitOptions
-      .filter(([value, label]) => label.toLowerCase().indexOf(needle) > -1)
+      .filter(([_val, label]) => label.toLowerCase().indexOf(needle) > -1)
       .map(([value, label]) => ({ value, label }))
   })
 }
@@ -213,7 +213,6 @@ const confirmDelete = () => {
   Dialog.create({
     title: 'Confirm Deletion',
     message: `Are you sure you want to delete artifact "${state.artifact.title}"? This action cannot be undone.`,
-    cancel: true,
     persistent: true,
     ok: { label: 'Delete', color: 'negative' },
     cancel: { label: 'Cancel' },
@@ -346,7 +345,7 @@ const reimportArtifact = async () => {
           </q-card>
 
           <!-- Roles -->
-          <q-card class="q-pa-md q-mb-md">
+          <q-card class="q-pa-md q-mb-md" v-if="state.originalArtifact.computed.canEditRoles()">
             <h3 class="text-h6 q-mb-sm">Roles</h3>
             <div
               v-for="(role, index) in state.artifact.roles"

@@ -60,7 +60,7 @@ function processArtifact(store, artifact) {
     return version.contents.urn.includes('github.com')
   })
   artifact.computed.github_url = undefined
-  const regex = /github\.com[:\/]([^\/]+\/[^\/]+?)(?:\.git)?(?:@(.+))?$/i
+  const regex = /github\.com[:/]([^/]+\/[^/]+?)(?:\.git)?(?:@(.+))?$/i
   const match = v?.contents.urn.match(regex)
 
   if (match) {
@@ -81,6 +81,23 @@ function processArtifact(store, artifact) {
   artifact.computed.isOwnedByUser = function () {
     // user info may change between when this was loaded & used
     return artifact.owner_urn === store.authStore.userInfo?.userUrn
+  }
+  artifact.computed.canEdit = function () {
+    let userUrn = store.authStore.userInfo?.userUrn
+    return (
+      artifact.computed.isOwnedByUser() ||
+      artifact.roles.some(
+        (role) =>
+          role.user === userUrn && (role.role === 'collaborator' || role.role === 'administrator'),
+      )
+    )
+  }
+  artifact.computed.canEditRoles = function () {
+    let userUrn = store.authStore.userInfo?.userUrn
+    return (
+      artifact.computed.isOwnedByUser() ||
+      artifact.roles.some((role) => role.user === userUrn && role.role === 'administrator')
+    )
   }
 
   artifact.computed.hasDoi = false

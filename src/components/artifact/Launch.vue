@@ -55,7 +55,7 @@ const sharingKey = computed(() => {
       />
 
       <div
-        class="bg-grey-2 rounded-borders q-pa-sm"
+        class="rounded-borders q-pa-sm"
         style="max-width: 100%; overflow-x: auto; white-space: pre; font-family: monospace"
       >
         <code>

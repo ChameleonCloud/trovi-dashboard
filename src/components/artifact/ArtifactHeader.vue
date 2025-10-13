@@ -19,7 +19,7 @@ const props = defineProps({ artifact: Object })
       </template>
 
       <RouterLink
-        v-if="artifact?.computed?.isOwnedByUser()"
+        v-if="artifact?.computed?.canEdit()"
         :to="'/artifacts/' + artifact.uuid + '/edit'"
       >
         <q-btn color="secondary" label="Edit" />
