@@ -54,10 +54,7 @@ const sharingKey = computed(() => {
         class="full-width q-mb-sm"
       />
 
-      <div
-        class="rounded-borders q-pa-sm"
-        style="max-width: 100%; overflow-x: auto; white-space: pre; font-family: monospace"
-      >
+      <div class="rounded-borders q-pa-sm code">
         <code>
           <pre>
 git clone {{ artifact.computed.github_url }}

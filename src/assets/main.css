@@ -17,3 +17,27 @@
     color: white;
   }
 }
+
+.code {
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: pre;
+  font-family: monospace;
+  background: #f5f5f5;
+  color: #222;
+  padding: 12px;
+  border-radius: 4px;
+}
+
+.code-wrap {
+  overflow-x: auto;
+  white-space: inherit;
+}
+
+
+@media (prefers-color-scheme: dark) {
+  .code {
+    background: #222;
+    color: #f5f5f5;
+  }
+}
