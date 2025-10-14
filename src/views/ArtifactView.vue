@@ -3,6 +3,7 @@ import MainSection from '@/components/MainSection.vue'
 import ArtifactHeader from '@/components/artifact/ArtifactHeader.vue'
 import ArtifactAbout from '@/components/artifact/ArtifactAbout.vue'
 import ArtifactAuthors from '@/components/artifact/ArtifactAuthors.vue'
+import ArtifactCitation from '@/components/artifact/ArtifactCitation.vue'
 import ArtifactVersions from '@/components/artifact/ArtifactVersions.vue'
 import Launch from '@/components/artifact/Launch.vue'
 import Loading from '@/components/Loading.vue'
@@ -63,6 +64,7 @@ onMounted(async () => {
                 :artifact="state.artifact"
                 :version_slug="state.selectedVersion?.slug"
               />
+              <ArtifactCitation :artifact="state.artifact" :version="state.selectedVersion" />
             </aside>
           </div>
         </q-card-section>
