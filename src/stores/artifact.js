@@ -3,7 +3,7 @@ import axios from 'axios'
 import { marked } from 'marked'
 import { useAuthStore } from '@/stores/auth'
 import { Notify } from 'quasar'
-import { parseDoi } from '@/util'
+import { parseDoi, parseUrn } from '@/util'
 
 function processArtifact(store, artifact) {
   /**
@@ -18,7 +18,19 @@ function processArtifact(store, artifact) {
   artifact.computed.nonLatestVersions = artifact.versions.filter(
     (version) => version.created_at !== artifact.computed.latestVersion.created_at,
   )
-
+  // Latest month/year the artifact had a version at, or updated at if no versions
+  artifact.computed.latestMonth =
+    artifact.computed.latestVersion?.created_at?.split('-')[1] ??
+    artifact.updated_at?.split('-')[1] ??
+    ''
+  artifact.computed.latestYear =
+    artifact.computed.latestVersion?.created_at?.split('-')[0] ??
+    artifact.updated_at?.split('-')[0] ??
+    ''
+  artifact.computed.authorString =
+    artifact.authors.length > 0
+      ? artifact.authors.map((a) => a.full_name).join(', ')
+      : parseUrn(artifact.owner_urn)['username']
   artifact.computed.summedMetrics = artifact.versions.reduce(
     (acc, version) => {
       acc.access_count += version.metrics.access_count
@@ -373,6 +385,61 @@ export const useArtifactsStore = defineStore('artifacts', {
           type: 'negative',
           message: 'Could not update roles, try refreshing the page.',
         })
+      }
+    },
+    async updateArtifactLinks(uuid, _linksToAdd, _linksToRemove) {
+      // Build a replacement list for linked_artifacts and send as a JSON Patch
+      if (!this.authStore.isAuthenticated) {
+        await this.authStore.initKeycloak()
+      }
+      const token = await this.authStore.getTroviToken()
+      if (!token) {
+        Notify.create({
+          type: 'negative',
+          message: 'Could not update links, try refreshing the page.',
+        })
+        return
+      }
+
+      try {
+        // Determine current selection from store artifacts
+        const selected = (this.artifacts || []).filter((a) => a.computed?.isLinkedToArtifact)
+
+        // Map to the serializer format: { relation, linked_artifact }
+        // Use 'collection' as a sensible default relation (matches server tests)
+        const newLinked = selected.map((a) => ({ relation: 'collection', linked_artifact: a.uuid }))
+
+        const patch = [
+          {
+            op: 'replace',
+            path: '/linked_artifacts',
+            value: newLinked,
+          },
+        ]
+
+        const response = await axios.put(
+          `/artifacts/${uuid}/?access_token=${token}&partial=true`,
+          { patch },
+          { headers: { 'Content-Type': 'application/json' } },
+        )
+
+        if (response.status === 200) {
+          Notify.create({ type: 'positive', message: 'Updated links' })
+          this.artifactDetails[uuid] = processArtifact(this, response.data)
+        } else {
+          let message = errObjToMessage(response.data)
+          Notify.create({ type: 'negative', message: `Failed to update links:\n${message}` })
+        }
+      } catch (error) {
+        console.error(error)
+        if (error.response) {
+          Notify.create({
+            type: 'negative',
+            message: `Error ${error.message}\n${error.response.data.detail || ''}`,
+          })
+        } else {
+          Notify.create({ type: 'negative', message: `Error ${error.message}` })
+        }
       }
     },
     async updateArtifactVersions(uuid, versionsToRemove) {

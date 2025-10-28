@@ -1,10 +1,11 @@
 <script setup>
-import { reactive, onMounted, ref, watch } from 'vue'
+import { reactive, onMounted, ref, watch, computed } from 'vue'
 import { useArtifactsStore } from '@/stores/artifact'
 import { useAuthStore } from '@/stores/auth'
 import { useRoute } from 'vue-router'
 import router from '@/router'
-import { parseUrn, usernameToUrn, gitToUrn } from '@/util'
+import { parseUrn, usernameToUrn, gitToUrn, filterArtifacts } from '@/util'
+import TagFilter from '@/components/TagFilter.vue'
 import MainSection from '@/components/MainSection.vue'
 import Loading from '@/components/Loading.vue'
 import { Dialog, Notify, QSpinner } from 'quasar'
@@ -24,6 +25,15 @@ const state = reactive({
   originalArtifact: null, // keep original for comparison if needed
   loading: true,
   availableTags: [],
+  // local linked artifacts view: array of { relation, linked_artifact, artifact }
+  linked_list: [],
+  // linked-artifact filter state (used by TagFilter)
+  selectedTags: [],
+  selectedBadges: [],
+  filterOwned: false,
+  filterPublic: false,
+  filterDoi: false,
+  filterCollection: false,
 })
 
 // helper to make a plain editable copy without cloning computed properties
@@ -46,6 +56,7 @@ function makeEditableArtifact(raw) {
     versions: raw.versions.map((v) => v),
     computed: raw.computed, // keep as reference, do NOT clone
     sharing_key: raw.sharing_key,
+    linked_artifacts: raw.linked_artifacts ? [...raw.linked_artifacts] : [],
   })
 }
 
@@ -55,6 +66,25 @@ onMounted(async () => {
   state.artifact = makeEditableArtifact(rawArtifact)
   await artifactsStore.fetchTags()
   state.availableTags = artifactsStore.tags
+  // fetch available artifacts for linking
+  await artifactsStore.fetchAllArtifacts()
+
+  // Ensure the boolean flag exists for each artifact so checkboxes
+  // are not rendered as indeterminate. initSelectionFromLinks will
+  // overwrite these values for actual linked artifacts.
+  artifactsStore.artifacts.forEach((a) => {
+    a.computed.isLinkedToArtifact = false
+  })
+
+  state.linked_list = []
+  if (state.artifact.linked_artifacts) {
+    for (const link of state.artifact.linked_artifacts) {
+      state.linked_list.push(link)
+    }
+  }
+
+  initSelectionFromLinks()
+
   state.loading = false
 
   gitForm.gitUrl = state.artifact.computed?.github_url || ''
@@ -117,6 +147,37 @@ const submitGitVersion = async () => {
   artifactsStore.createVersion(artifactUUID, { contents: { urn: contents_urn } })
   gitForm.submitting = false
   gitDialog.value = false
+}
+
+/* --------- Linked Artifacts (checkbox UI) ---------- */
+const linkSearch = ref('')
+
+const filteredCandidates = computed(() => {
+  // Start from all artifacts except the one being edited
+  const candidates = (artifactsStore.artifacts || []).filter((a) => a.uuid !== state.artifact?.uuid)
+
+  // Use the shared filterArtifacts util; combine TagFilter's search (bound to linkSearch)
+  const filtered = filterArtifacts(candidates, {
+    searchText: linkSearch.value,
+    selectedTags: state.selectedTags,
+    selectedBadges: state.selectedBadges,
+    filterOwned: state.filterOwned,
+    filterPublic: state.filterPublic,
+    filterDoi: state.filterDoi,
+    filterCollection: state.filterCollection,
+  })
+  return filtered
+})
+
+// initialize selection state from existing linked_artifacts
+const initSelectionFromLinks = () => {
+  const linkedArtifactUUIDs = new Set()
+  for (const link of state.artifact.linked_artifacts) {
+    linkedArtifactUUIDs.add(link.linked_artifact)
+  }
+  artifactsStore.artifacts.forEach((a) => {
+    a.computed.isLinkedToArtifact = linkedArtifactUUIDs.has(a.uuid)
+  })
 }
 
 /* --------- Metadata ---------- */
@@ -207,6 +268,38 @@ const submitVersions = async () => {
     version.doi_request = false // reset flag
   }
   // TODO we don't know the DOI unless we wait a while and refetch
+}
+
+/* --------- Linked Artifacts submission ---------- */
+const submitLinks = async () => {
+  if (!state.artifact) return
+
+  // Gather currently selected candidate artifact UUIDs
+  const selected = new Set(
+    artifactsStore.artifacts.filter((a) => a.computed.isLinkedToArtifact).map((a) => a.uuid),
+  )
+
+  // Original linked artifact UUIDs (may be fetched as objects)
+  const originalLinked = new Set(
+    (state.artifact.linked_artifacts || []).map((a) => a.linked_artifact),
+  )
+
+  // Compute differences
+  const toAdd = Array.from(selected).filter((u) => !originalLinked.has(u))
+  const toRemove = Array.from(originalLinked).filter((u) => !selected.has(u))
+
+  try {
+    await artifactsStore.updateArtifactLinks(state.artifact.uuid, toAdd, toRemove)
+
+    // Refresh local copies
+    const refreshed = await artifactsStore.fetchArtifactById(state.artifact.uuid)
+    state.originalArtifact = refreshed
+    state.artifact = makeEditableArtifact(refreshed)
+    // Ensure selection UI reflects the latest
+    initSelectionFromLinks()
+  } catch (err) {
+    Notify.create({ type: 'negative', message: `Failed to update links: ${err?.message || err}` })
+  }
 }
 
 const confirmDelete = () => {
@@ -341,6 +434,84 @@ const reimportArtifact = async () => {
                 :href="state.artifact.computed?.get_chameleon_daypass_url()"
               />
               <q-btn label="Save Metadata" color="positive" @click="submitMetadata" />
+            </div>
+          </q-card>
+
+          <!-- Linked Artifacts -->
+          <q-card class="q-pa-md q-mb-md">
+            <h3 class="text-h6 q-mb-sm">Linked Artifacts</h3>
+
+            <div class="row q-gutter-sm q-mb-md items-center">
+              <TagFilter
+                :tags="artifactsStore.tags"
+                :badges="artifactsStore.processed_badges?.badges || {}"
+                v-model:selectedTags="state.selectedTags"
+                v-model:selectedBadges="state.selectedBadges"
+                v-model:filterOwned="state.filterOwned"
+                v-model:filterPublic="state.filterPublic"
+                v-model:filterCollection="state.filterCollection"
+                v-model:filterDoi="state.filterDoi"
+                v-model:searchText="linkSearch"
+              />
+            </div>
+
+            <q-table
+              hide-header
+              :rows="filteredCandidates"
+              row-key="uuid"
+              :pagination="{ rowsPerPage: 10 }"
+            >
+              <template v-slot:body="props">
+                <q-tr :props="props">
+                  <q-td style="width: 48px">
+                    <!--need to force the re-render with :key here, might be a bug?-->
+                    <q-checkbox
+                      :key="props.row.uuid + '-' + String(props.row.computed.isLinkedToArtifact)"
+                      v-model="props.row.computed.isLinkedToArtifact"
+                      dense
+                    />
+                  </q-td>
+                  <q-td>
+                    <RouterLink :to="'/artifacts/' + props.row.uuid">
+                      {{ props.row.title || '(untitled)' }}
+                    </RouterLink>
+                    <div class="text-caption">{{ props.row.computed.authorString }}</div>
+                  </q-td>
+                  <q-td>{{ props.row.updated_at }}</q-td>
+                </q-tr>
+              </template>
+            </q-table>
+
+            <q-separator class="q-mt-md q-mb-md" />
+
+            <div>
+              <h4 class="text-subtitle2">Selected to link</h4>
+              <div
+                v-if="
+                  artifactsStore.artifacts.filter((a) => a.computed.isLinkedToArtifact).length === 0
+                "
+              >
+                No artifacts selected
+              </div>
+              <div v-else>
+                <ul>
+                  <li
+                    v-for="a in artifactsStore.artifacts.filter(
+                      (a) => a.computed.isLinkedToArtifact,
+                    )"
+                    :key="a.uuid"
+                  >
+                    {{ a.uuid }}
+                    <RouterLink :to="'/artifacts/' + a.uuid">{{ a.title }}</RouterLink>
+                    —
+                    {{ a.computed.authorString }}
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="row q-gutter-sm q-mt-md">
+              <q-btn label="Save Links" color="positive" @click="submitLinks" />
             </div>
           </q-card>
 

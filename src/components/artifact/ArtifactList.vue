@@ -7,6 +7,7 @@ import MainSection from '@/components/MainSection.vue'
 import { useArtifactsStore } from '@/stores/artifact'
 import { QSpinnerDots } from 'quasar'
 import { useRoute } from 'vue-router'
+import { filterArtifacts } from '@/util'
 
 const route = useRoute()
 
@@ -31,42 +32,21 @@ const state = reactive({
   filterOwned: route.query.owned === '1',
   filterPublic: route.query.public === '1',
   filterDoi: route.query.doi === '1',
+  filterCollection: route.query.collection === '1',
 })
 
 const filteredArtifacts = computed(() => {
-  return state.artifacts
-    .filter((a) => {
-      if (state.searchText) {
-        const search = state.searchText.toLowerCase()
-        const inArtifact = [a.title, a.long_description, a.short_description].some((f) =>
-          f?.toLowerCase().includes(search),
-        )
-        const inAuthors = a.authors.some((author) =>
-          [author.full_name, author.affiliation, author.email].some((f) =>
-            f?.toLowerCase().includes(search),
-          ),
-        )
-        return inArtifact || inAuthors
-      }
-      return true
-    })
-    .filter((a) => {
-      if (state.selectedTags.length > 0) {
-        const filteredTags = a.tags.filter((t) => state.selectedTags.includes(t))
-        return filteredTags.length === state.selectedTags.length
-      }
-      return true
-    })
-    .filter((a) => {
-      return (
-        state.selectedBadges.length === 0 ||
-        state.selectedBadges.every((b) => a.badges.some((ab) => ab.name === b))
-      )
-    })
-    .filter((a) => !state.filterOwned || a.computed.canEdit())
-    .filter((a) => !state.filterPublic || a.visibility === 'public' || a.computed.hasDoi)
-    .filter((a) => !state.filterDoi || a.computed.hasDoi)
-    .slice(0, props.limit || state.artifacts.length)
+  const filtered = filterArtifacts(state.artifacts, {
+    searchText: state.searchText,
+    selectedTags: state.selectedTags,
+    selectedBadges: state.selectedBadges,
+    filterOwned: state.filterOwned,
+    filterPublic: state.filterPublic,
+    filterDoi: state.filterDoi,
+    filterCollection: state.filterCollection,
+  })
+
+  return filtered.slice(0, props.limit || state.artifacts.length)
 })
 
 const isLoading = computed(() => artifactsStore.loading)
@@ -122,6 +102,7 @@ onMounted(async () => {
           owned: state.filterOwned ? '1' : undefined,
           public: state.filterPublic ? '1' : undefined,
           doi: state.filterDoi ? '1' : undefined,
+          collection: state.filterCollection ? '1' : undefined,
         },
       }"
       color="primary"
