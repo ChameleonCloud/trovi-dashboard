@@ -10,6 +10,7 @@ import MainSection from '@/components/MainSection.vue'
 import Loading from '@/components/Loading.vue'
 import { Dialog, Notify, QSpinner } from 'quasar'
 import axios from 'axios'
+import draggable from 'vuedraggable'
 
 const route = useRoute()
 const artifactUUID = route.params.uuid
@@ -78,11 +79,13 @@ onMounted(async () => {
 
   state.linked_list = []
   if (state.artifact.linked_artifacts) {
-    for (const link of state.artifact.linked_artifacts) {
-      state.linked_list.push(link)
-    }
+    state.artifact.linked_artifacts.forEach((link, index) => {
+      state.linked_list.push({
+        ...link,
+        order: index, // track position
+      })
+    })
   }
-
   initSelectionFromLinks()
 
   state.loading = false
@@ -274,28 +277,27 @@ const submitVersions = async () => {
 const submitLinks = async () => {
   if (!state.artifact) return
 
-  // Gather currently selected candidate artifact UUIDs
-  const selected = new Set(
-    artifactsStore.artifacts.filter((a) => a.computed.isLinkedToArtifact).map((a) => a.uuid),
-  )
-
-  // Original linked artifact UUIDs (may be fetched as objects)
-  const originalLinked = new Set(
-    (state.artifact.linked_artifacts || []).map((a) => a.linked_artifact),
-  )
-
-  // Compute differences
-  const toAdd = Array.from(selected).filter((u) => !originalLinked.has(u))
-  const toRemove = Array.from(originalLinked).filter((u) => !selected.has(u))
-
   try {
-    await artifactsStore.updateArtifactLinks(state.artifact.uuid, toAdd, toRemove)
+    // Send the ordered linked_artifacts
+    const linksPayload = state.linked_list.map((link, index) => ({
+      linked_artifact: link.linked_artifact,
+      relation: link.relation,
+      order: index, // include order
+    }))
+
+    await artifactsStore.updateArtifactLinks(state.artifact.uuid, linksPayload)
 
     // Refresh local copies
     const refreshed = await artifactsStore.fetchArtifactById(state.artifact.uuid)
     state.originalArtifact = refreshed
     state.artifact = makeEditableArtifact(refreshed)
-    // Ensure selection UI reflects the latest
+
+    // Reinitialize linked_list with proper order
+    state.linked_list = refreshed.linked_artifacts.map((link, index) => ({
+      ...link,
+      order: index,
+    }))
+
     initSelectionFromLinks()
   } catch (err) {
     Notify.create({ type: 'negative', message: `Failed to update links: ${err?.message || err}` })
@@ -441,6 +443,7 @@ const reimportArtifact = async () => {
           <q-card class="q-pa-md q-mb-md">
             <h3 class="text-h6 q-mb-sm">Linked Artifacts</h3>
 
+            <!-- Filter/Search -->
             <div class="row q-gutter-sm q-mb-md items-center">
               <TagFilter
                 :tags="artifactsStore.tags"
@@ -455,6 +458,7 @@ const reimportArtifact = async () => {
               />
             </div>
 
+            <!-- Available artifacts table for linking -->
             <q-table
               hide-header
               :rows="filteredCandidates"
@@ -464,11 +468,32 @@ const reimportArtifact = async () => {
               <template v-slot:body="props">
                 <q-tr :props="props">
                   <q-td style="width: 48px">
-                    <!--need to force the re-render with :key here, might be a bug?-->
                     <q-checkbox
                       :key="props.row.uuid + '-' + String(props.row.computed.isLinkedToArtifact)"
                       v-model="props.row.computed.isLinkedToArtifact"
                       dense
+                      @update:model-value="
+                        (val) => {
+                          if (val) {
+                            // Add to linked_list if not already there
+                            if (
+                              !state.linked_list.find((l) => l.linked_artifact === props.row.uuid)
+                            ) {
+                              state.linked_list.push({
+                                linked_artifact: props.row.uuid,
+                                linked_title: props.row.title,
+                                computed: props.row.computed,
+                              })
+                            }
+                          } else {
+                            // Remove from linked_list
+                            const index = state.linked_list.findIndex(
+                              (l) => l.linked_artifact === props.row.uuid,
+                            )
+                            if (index !== -1) state.linked_list.splice(index, 1)
+                          }
+                        }
+                      "
                     />
                   </q-td>
                   <q-td>
@@ -484,35 +509,51 @@ const reimportArtifact = async () => {
 
             <q-separator class="q-mt-md q-mb-md" />
 
-            <div>
-              <h4 class="text-subtitle2">Selected to link</h4>
-              <div
-                v-if="
-                  artifactsStore.artifacts.filter((a) => a.computed.isLinkedToArtifact).length === 0
-                "
-              >
-                No artifacts selected
-              </div>
-              <div v-else>
-                <ul>
-                  <li
-                    v-for="a in artifactsStore.artifacts.filter(
-                      (a) => a.computed.isLinkedToArtifact,
-                    )"
-                    :key="a.uuid"
-                  >
-                    {{ a.uuid }}
-                    <RouterLink :to="'/artifacts/' + a.uuid">{{ a.title }}</RouterLink>
-                    —
-                    {{ a.computed.authorString }}
-                  </li>
-                </ul>
-              </div>
-            </div>
+            <!-- Draggable selected links -->
+            <h4 class="text-subtitle2">Selected to link (Drag to reorder)</h4>
+            <draggable
+              v-model="state.linked_list"
+              item-key="linked_artifact"
+              handle=".drag-handle"
+              animation="200"
+            >
+              <template #item="{ element, index }">
+                <div>
+                  <q-item clickable>
+                    <q-item-section avatar>
+                      <q-icon name="drag_indicator" class="drag-handle" />
+                    </q-item-section>
+                    <q-item-section>
+                      <RouterLink :to="'/artifacts/' + element.linked_artifact">
+                        {{ element.linked_title || '(untitled)' }}
+                      </RouterLink>
+                      <div class="text-caption">{{ element.computed?.authorString }}</div>
+                    </q-item-section>
+                    <q-item-section side>
+                      <q-btn
+                        color="negative"
+                        icon="delete"
+                        flat
+                        dense
+                        @click="
+                          () => {
+                            state.linked_list.splice(index, 1)
+                            // Also uncheck table checkbox
+                            const tableItem = artifactsStore.artifacts.find(
+                              (a) => a.uuid === element.linked_artifact,
+                            )
+                            if (tableItem) tableItem.computed.isLinkedToArtifact = false
+                          }
+                        "
+                      />
+                    </q-item-section>
+                  </q-item>
+                  <q-separator />
+                </div>
+              </template>
+            </draggable>
 
-            <div class="row q-gutter-sm q-mt-md">
-              <q-btn label="Save Links" color="positive" @click="submitLinks" />
-            </div>
+            <q-btn label="Save Links" color="positive" class="q-mt-md" @click="submitLinks" />
           </q-card>
 
           <!-- Roles -->

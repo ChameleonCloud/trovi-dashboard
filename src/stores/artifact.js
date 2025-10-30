@@ -387,8 +387,7 @@ export const useArtifactsStore = defineStore('artifacts', {
         })
       }
     },
-    async updateArtifactLinks(uuid, _linksToAdd, _linksToRemove) {
-      // Build a replacement list for linked_artifacts and send as a JSON Patch
+    async updateArtifactLinks(uuid, orderedLinks) {
       if (!this.authStore.isAuthenticated) {
         await this.authStore.initKeycloak()
       }
@@ -402,12 +401,12 @@ export const useArtifactsStore = defineStore('artifacts', {
       }
 
       try {
-        // Determine current selection from store artifacts
-        const selected = (this.artifacts || []).filter((a) => a.computed?.isLinkedToArtifact)
-
-        // Map to the serializer format: { relation, linked_artifact }
-        // Use 'collection' as a sensible default relation (matches server tests)
-        const newLinked = selected.map((a) => ({ relation: 'collection', linked_artifact: a.uuid }))
+        // Map the ordered list to the serializer format
+        const newLinked = orderedLinks.map((link, index) => ({
+          relation: link.relation || 'collection', // default relation
+          linked_artifact: link.linked_artifact,
+          order: index, // maintain order
+        }))
 
         const patch = [
           {
