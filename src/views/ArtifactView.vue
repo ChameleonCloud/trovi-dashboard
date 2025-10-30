@@ -6,6 +6,7 @@ import ArtifactAuthors from '@/components/artifact/ArtifactAuthors.vue'
 import ArtifactCitation from '@/components/artifact/ArtifactCitation.vue'
 import ArtifactVersions from '@/components/artifact/ArtifactVersions.vue'
 import ArtifactLinks from '@/components/artifact/ArtifactLinks.vue'
+import ArtifactLinksFrom from '@/components/artifact/ArtifactLinksFrom.vue'
 import Launch from '@/components/artifact/Launch.vue'
 import Loading from '@/components/Loading.vue'
 
@@ -66,6 +67,7 @@ onMounted(async () => {
                 :artifact="state.artifact"
                 :version_slug="state.selectedVersion?.slug"
               />
+              <ArtifactLinksFrom :artifact="state.artifact" />
               <ArtifactCitation :artifact="state.artifact" :version="state.selectedVersion" />
             </aside>
           </div>
