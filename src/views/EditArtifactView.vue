@@ -25,6 +25,7 @@ const state = reactive({
   artifact: null, // editable artifact
   originalArtifact: null, // keep original for comparison if needed
   loading: true,
+  loadingLinkOptions: true,
   availableTags: [],
   // local linked artifacts view: array of { relation, linked_artifact, artifact }
   linked_list: [],
@@ -67,6 +68,9 @@ onMounted(async () => {
   state.artifact = makeEditableArtifact(rawArtifact)
   await artifactsStore.fetchTags()
   state.availableTags = artifactsStore.tags
+  state.loading = false
+  gitForm.gitUrl = state.artifact.computed?.github_url || ''
+
   // fetch available artifacts for linking
   await artifactsStore.fetchAllArtifacts()
 
@@ -87,10 +91,7 @@ onMounted(async () => {
     })
   }
   initSelectionFromLinks()
-
-  state.loading = false
-
-  gitForm.gitUrl = state.artifact.computed?.github_url || ''
+  state.loadingLinkOptions = false
 })
 
 const gitDialog = ref(false)
@@ -434,126 +435,10 @@ const reimportArtifact = async () => {
                 label="Configure Daypass"
                 color="primary"
                 :href="state.artifact.computed?.get_chameleon_daypass_url()"
+                target="_blank"
               />
               <q-btn label="Save Metadata" color="positive" @click="submitMetadata" />
             </div>
-          </q-card>
-
-          <!-- Linked Artifacts -->
-          <q-card class="q-pa-md q-mb-md">
-            <h3 class="text-h6 q-mb-sm">Linked Artifacts</h3>
-
-            <!-- Filter/Search -->
-            <div class="row q-gutter-sm q-mb-md items-center">
-              <TagFilter
-                :tags="artifactsStore.tags"
-                :badges="artifactsStore.processed_badges?.badges || {}"
-                v-model:selectedTags="state.selectedTags"
-                v-model:selectedBadges="state.selectedBadges"
-                v-model:filterOwned="state.filterOwned"
-                v-model:filterPublic="state.filterPublic"
-                v-model:filterCollection="state.filterCollection"
-                v-model:filterDoi="state.filterDoi"
-                v-model:searchText="linkSearch"
-              />
-            </div>
-
-            <!-- Available artifacts table for linking -->
-            <q-table
-              hide-header
-              :rows="filteredCandidates"
-              row-key="uuid"
-              :pagination="{ rowsPerPage: 10 }"
-            >
-              <template v-slot:body="props">
-                <q-tr :props="props">
-                  <q-td style="width: 48px">
-                    <q-checkbox
-                      :key="props.row.uuid + '-' + String(props.row.computed.isLinkedToArtifact)"
-                      v-model="props.row.computed.isLinkedToArtifact"
-                      dense
-                      @update:model-value="
-                        (val) => {
-                          if (val) {
-                            // Add to linked_list if not already there
-                            if (
-                              !state.linked_list.find((l) => l.linked_artifact === props.row.uuid)
-                            ) {
-                              state.linked_list.push({
-                                linked_artifact: props.row.uuid,
-                                linked_title: props.row.title,
-                                computed: props.row.computed,
-                              })
-                            }
-                          } else {
-                            // Remove from linked_list
-                            const index = state.linked_list.findIndex(
-                              (l) => l.linked_artifact === props.row.uuid,
-                            )
-                            if (index !== -1) state.linked_list.splice(index, 1)
-                          }
-                        }
-                      "
-                    />
-                  </q-td>
-                  <q-td>
-                    <RouterLink :to="'/artifacts/' + props.row.uuid">
-                      {{ props.row.title || '(untitled)' }}
-                    </RouterLink>
-                    <div class="text-caption">{{ props.row.computed.authorString }}</div>
-                  </q-td>
-                  <q-td>{{ props.row.updated_at }}</q-td>
-                </q-tr>
-              </template>
-            </q-table>
-
-            <q-separator class="q-mt-md q-mb-md" />
-
-            <!-- Draggable selected links -->
-            <h4 class="text-subtitle2">Selected to link (Drag to reorder)</h4>
-            <draggable
-              v-model="state.linked_list"
-              item-key="linked_artifact"
-              handle=".drag-handle"
-              animation="200"
-            >
-              <template #item="{ element, index }">
-                <div>
-                  <q-item clickable>
-                    <q-item-section avatar>
-                      <q-icon name="drag_indicator" class="drag-handle" />
-                    </q-item-section>
-                    <q-item-section>
-                      <RouterLink :to="'/artifacts/' + element.linked_artifact">
-                        {{ element.linked_title || '(untitled)' }}
-                      </RouterLink>
-                      <div class="text-caption">{{ element.computed?.authorString }}</div>
-                    </q-item-section>
-                    <q-item-section side>
-                      <q-btn
-                        color="negative"
-                        icon="delete"
-                        flat
-                        dense
-                        @click="
-                          () => {
-                            state.linked_list.splice(index, 1)
-                            // Also uncheck table checkbox
-                            const tableItem = artifactsStore.artifacts.find(
-                              (a) => a.uuid === element.linked_artifact,
-                            )
-                            if (tableItem) tableItem.computed.isLinkedToArtifact = false
-                          }
-                        "
-                      />
-                    </q-item-section>
-                  </q-item>
-                  <q-separator />
-                </div>
-              </template>
-            </draggable>
-
-            <q-btn label="Save Links" color="positive" class="q-mt-md" @click="submitLinks" />
           </q-card>
 
           <!-- Roles -->
@@ -649,6 +534,127 @@ const reimportArtifact = async () => {
                 class="q-mt-md"
               />
             </div>
+          </q-card>
+        </q-card-section>
+
+        <!-- Linked Artifacts -->
+        <q-card-section>
+          <q-card class="q-pa-md q-mb-md">
+            <h3 class="text-h6 q-mb-sm">Linked Artifacts</h3>
+
+            <!-- Filter/Search -->
+            <div class="row q-gutter-sm q-mb-md items-center">
+              <TagFilter
+                :tags="artifactsStore.tags"
+                :badges="artifactsStore.processed_badges?.badges || {}"
+                v-model:selectedTags="state.selectedTags"
+                v-model:selectedBadges="state.selectedBadges"
+                v-model:filterOwned="state.filterOwned"
+                v-model:filterPublic="state.filterPublic"
+                v-model:filterCollection="state.filterCollection"
+                v-model:filterDoi="state.filterDoi"
+                v-model:searchText="linkSearch"
+              />
+            </div>
+
+            <!-- Available artifacts table for linking -->
+            <Loading :loading="state.loadingLinkOptions">
+              <q-table
+                hide-header
+                :rows="filteredCandidates"
+                row-key="uuid"
+                :pagination="{ rowsPerPage: 10 }"
+              >
+                <template v-slot:body="props">
+                  <q-tr :props="props">
+                    <q-td style="width: 48px">
+                      <q-checkbox
+                        :key="props.row.uuid + '-' + String(props.row.computed.isLinkedToArtifact)"
+                        v-model="props.row.computed.isLinkedToArtifact"
+                        dense
+                        @update:model-value="
+                          (val) => {
+                            if (val) {
+                              // Add to linked_list if not already there
+                              if (
+                                !state.linked_list.find((l) => l.linked_artifact === props.row.uuid)
+                              ) {
+                                state.linked_list.push({
+                                  linked_artifact: props.row.uuid,
+                                  linked_title: props.row.title,
+                                  computed: props.row.computed,
+                                })
+                              }
+                            } else {
+                              // Remove from linked_list
+                              const index = state.linked_list.findIndex(
+                                (l) => l.linked_artifact === props.row.uuid,
+                              )
+                              if (index !== -1) state.linked_list.splice(index, 1)
+                            }
+                          }
+                        "
+                      />
+                    </q-td>
+                    <q-td>
+                      <RouterLink :to="'/artifacts/' + props.row.uuid" target="_blank">
+                        {{ props.row.title || '(untitled)' }}
+                      </RouterLink>
+                      <div class="text-caption">{{ props.row.computed.authorString }}</div>
+                    </q-td>
+                    <q-td>{{ props.row.updated_at }}</q-td>
+                  </q-tr>
+                </template>
+              </q-table>
+            </Loading>
+
+            <q-separator class="q-mt-md q-mb-md" />
+
+            <!-- Draggable selected links -->
+            <h4 class="text-subtitle2">Selected to link (Drag to reorder)</h4>
+            <draggable
+              v-model="state.linked_list"
+              item-key="linked_artifact"
+              handle=".drag-handle"
+              animation="200"
+            >
+              <template #item="{ element, index }">
+                <div>
+                  <q-item clickable>
+                    <q-item-section avatar>
+                      <q-icon name="drag_indicator" class="drag-handle" />
+                    </q-item-section>
+                    <q-item-section>
+                      <RouterLink :to="'/artifacts/' + element.linked_artifact" target="_blank">
+                        {{ element.linked_title || '(untitled)' }}
+                      </RouterLink>
+                      <div class="text-caption">{{ element.computed?.authorString }}</div>
+                    </q-item-section>
+                    <q-item-section side>
+                      <q-btn
+                        color="negative"
+                        icon="delete"
+                        flat
+                        dense
+                        @click="
+                          () => {
+                            state.linked_list.splice(index, 1)
+                            // Also uncheck table checkbox
+                            const tableItem = artifactsStore.artifacts.find(
+                              (a) => a.uuid === element.linked_artifact,
+                            )
+                            if (tableItem) tableItem.computed.isLinkedToArtifact = false
+                          }
+                        "
+                      />
+                    </q-item-section>
+                  </q-item>
+                  <q-separator />
+                </div>
+              </template>
+            </draggable>
+
+            <q-btn label="Save Links" color="positive" class="q-mt-md" @click="submitLinks" />
           </q-card>
         </q-card-section>
       </q-card>

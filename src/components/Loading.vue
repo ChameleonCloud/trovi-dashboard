@@ -11,7 +11,7 @@ const props = defineProps({
   <div class="relative-position full-size">
     <!-- Wrapped content -->
     <div :class="{ 'q-opacity-50 q-pointer-events-none': props.loading }">
-      <slot />
+      <slot></slot>
     </div>
 
     <!-- Loading overlay -->
