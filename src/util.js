@@ -96,5 +96,5 @@ export function filterArtifacts(artifacts = [], options = {}) {
     .filter((a) => !filterOwned || (a.computed && a.computed.canEdit && a.computed.canEdit()))
     .filter((a) => !filterPublic || a.visibility === 'public' || (a.computed && a.computed.hasDoi))
     .filter((a) => !filterDoi || (a.computed && a.computed.hasDoi))
-    .filter((a) => !filterCollection || a.linked_artifacts)
+    .filter((a) => !filterCollection || (a.linked_artifacts && a.linked_artifacts.length > 0))
 }

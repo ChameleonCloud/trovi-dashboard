@@ -22,6 +22,7 @@ const emit = defineEmits([
   'update:filterPublic',
   'update:filterCollection',
   'update:filterDoi',
+  'update:filterCollection',
   'update:searchText',
 ])
 

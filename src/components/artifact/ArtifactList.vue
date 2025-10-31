@@ -74,6 +74,7 @@ onMounted(async () => {
       v-model:selectedBadges="state.selectedBadges"
       v-model:filterDoi="state.filterDoi"
       v-model:searchText="state.searchText"
+      v-model:filterCollection="state.filterCollection"
     />
 
     <div class="row justify-end">
