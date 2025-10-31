@@ -1,14 +1,16 @@
 <script setup>
-import { reactive, onMounted, ref, watch } from 'vue'
+import { reactive, onMounted, ref, watch, computed } from 'vue'
 import { useArtifactsStore } from '@/stores/artifact'
 import { useAuthStore } from '@/stores/auth'
 import { useRoute } from 'vue-router'
 import router from '@/router'
-import { parseUrn, usernameToUrn, gitToUrn } from '@/util'
+import { parseUrn, usernameToUrn, gitToUrn, filterArtifacts } from '@/util'
+import TagFilter from '@/components/TagFilter.vue'
 import MainSection from '@/components/MainSection.vue'
 import Loading from '@/components/Loading.vue'
 import { Dialog, Notify, QSpinner } from 'quasar'
 import axios from 'axios'
+import draggable from 'vuedraggable'
 
 const route = useRoute()
 const artifactUUID = route.params.uuid
@@ -23,7 +25,17 @@ const state = reactive({
   artifact: null, // editable artifact
   originalArtifact: null, // keep original for comparison if needed
   loading: true,
+  loadingLinkOptions: true,
   availableTags: [],
+  // local linked artifacts view: array of { relation, linked_artifact, artifact }
+  linked_list: [],
+  // linked-artifact filter state (used by TagFilter)
+  selectedTags: [],
+  selectedBadges: [],
+  filterOwned: false,
+  filterPublic: false,
+  filterDoi: false,
+  filterCollection: false,
 })
 
 // helper to make a plain editable copy without cloning computed properties
@@ -46,6 +58,7 @@ function makeEditableArtifact(raw) {
     versions: raw.versions.map((v) => v),
     computed: raw.computed, // keep as reference, do NOT clone
     sharing_key: raw.sharing_key,
+    linked_artifacts: raw.linked_artifacts ? [...raw.linked_artifacts] : [],
   })
 }
 
@@ -56,8 +69,29 @@ onMounted(async () => {
   await artifactsStore.fetchTags()
   state.availableTags = artifactsStore.tags
   state.loading = false
-
   gitForm.gitUrl = state.artifact.computed?.github_url || ''
+
+  // fetch available artifacts for linking
+  await artifactsStore.fetchAllArtifacts()
+
+  // Ensure the boolean flag exists for each artifact so checkboxes
+  // are not rendered as indeterminate. initSelectionFromLinks will
+  // overwrite these values for actual linked artifacts.
+  artifactsStore.artifacts.forEach((a) => {
+    a.computed.isLinkedToArtifact = false
+  })
+
+  state.linked_list = []
+  if (state.artifact.linked_artifacts) {
+    state.artifact.linked_artifacts.forEach((link, index) => {
+      state.linked_list.push({
+        ...link,
+        order: index, // track position
+      })
+    })
+  }
+  initSelectionFromLinks()
+  state.loadingLinkOptions = false
 })
 
 const gitDialog = ref(false)
@@ -117,6 +151,37 @@ const submitGitVersion = async () => {
   artifactsStore.createVersion(artifactUUID, { contents: { urn: contents_urn } })
   gitForm.submitting = false
   gitDialog.value = false
+}
+
+/* --------- Linked Artifacts (checkbox UI) ---------- */
+const linkSearch = ref('')
+
+const filteredCandidates = computed(() => {
+  // Start from all artifacts except the one being edited
+  const candidates = (artifactsStore.artifacts || []).filter((a) => a.uuid !== state.artifact?.uuid)
+
+  // Use the shared filterArtifacts util; combine TagFilter's search (bound to linkSearch)
+  const filtered = filterArtifacts(candidates, {
+    searchText: linkSearch.value,
+    selectedTags: state.selectedTags,
+    selectedBadges: state.selectedBadges,
+    filterOwned: state.filterOwned,
+    filterPublic: state.filterPublic,
+    filterDoi: state.filterDoi,
+    filterCollection: state.filterCollection,
+  })
+  return filtered
+})
+
+// initialize selection state from existing linked_artifacts
+const initSelectionFromLinks = () => {
+  const linkedArtifactUUIDs = new Set()
+  for (const link of state.artifact.linked_artifacts) {
+    linkedArtifactUUIDs.add(link.linked_artifact)
+  }
+  artifactsStore.artifacts.forEach((a) => {
+    a.computed.isLinkedToArtifact = linkedArtifactUUIDs.has(a.uuid)
+  })
 }
 
 /* --------- Metadata ---------- */
@@ -207,6 +272,37 @@ const submitVersions = async () => {
     version.doi_request = false // reset flag
   }
   // TODO we don't know the DOI unless we wait a while and refetch
+}
+
+/* --------- Linked Artifacts submission ---------- */
+const submitLinks = async () => {
+  if (!state.artifact) return
+
+  try {
+    // Send the ordered linked_artifacts
+    const linksPayload = state.linked_list.map((link, index) => ({
+      linked_artifact: link.linked_artifact,
+      relation: link.relation,
+      order: index, // include order
+    }))
+
+    await artifactsStore.updateArtifactLinks(state.artifact.uuid, linksPayload)
+
+    // Refresh local copies
+    const refreshed = await artifactsStore.fetchArtifactById(state.artifact.uuid)
+    state.originalArtifact = refreshed
+    state.artifact = makeEditableArtifact(refreshed)
+
+    // Reinitialize linked_list with proper order
+    state.linked_list = refreshed.linked_artifacts.map((link, index) => ({
+      ...link,
+      order: index,
+    }))
+
+    initSelectionFromLinks()
+  } catch (err) {
+    Notify.create({ type: 'negative', message: `Failed to update links: ${err?.message || err}` })
+  }
 }
 
 const confirmDelete = () => {
@@ -339,6 +435,7 @@ const reimportArtifact = async () => {
                 label="Configure Daypass"
                 color="primary"
                 :href="state.artifact.computed?.get_chameleon_daypass_url()"
+                target="_blank"
               />
               <q-btn label="Save Metadata" color="positive" @click="submitMetadata" />
             </div>
@@ -437,6 +534,127 @@ const reimportArtifact = async () => {
                 class="q-mt-md"
               />
             </div>
+          </q-card>
+        </q-card-section>
+
+        <!-- Linked Artifacts -->
+        <q-card-section>
+          <q-card class="q-pa-md q-mb-md">
+            <h3 class="text-h6 q-mb-sm">Linked Artifacts</h3>
+
+            <!-- Filter/Search -->
+            <div class="row q-gutter-sm q-mb-md items-center">
+              <TagFilter
+                :tags="artifactsStore.tags"
+                :badges="artifactsStore.processed_badges?.badges || {}"
+                v-model:selectedTags="state.selectedTags"
+                v-model:selectedBadges="state.selectedBadges"
+                v-model:filterOwned="state.filterOwned"
+                v-model:filterPublic="state.filterPublic"
+                v-model:filterCollection="state.filterCollection"
+                v-model:filterDoi="state.filterDoi"
+                v-model:searchText="linkSearch"
+              />
+            </div>
+
+            <!-- Available artifacts table for linking -->
+            <Loading :loading="state.loadingLinkOptions">
+              <q-table
+                hide-header
+                :rows="filteredCandidates"
+                row-key="uuid"
+                :pagination="{ rowsPerPage: 10 }"
+              >
+                <template v-slot:body="props">
+                  <q-tr :props="props">
+                    <q-td style="width: 48px">
+                      <q-checkbox
+                        :key="props.row.uuid + '-' + String(props.row.computed.isLinkedToArtifact)"
+                        v-model="props.row.computed.isLinkedToArtifact"
+                        dense
+                        @update:model-value="
+                          (val) => {
+                            if (val) {
+                              // Add to linked_list if not already there
+                              if (
+                                !state.linked_list.find((l) => l.linked_artifact === props.row.uuid)
+                              ) {
+                                state.linked_list.push({
+                                  linked_artifact: props.row.uuid,
+                                  linked_title: props.row.title,
+                                  computed: props.row.computed,
+                                })
+                              }
+                            } else {
+                              // Remove from linked_list
+                              const index = state.linked_list.findIndex(
+                                (l) => l.linked_artifact === props.row.uuid,
+                              )
+                              if (index !== -1) state.linked_list.splice(index, 1)
+                            }
+                          }
+                        "
+                      />
+                    </q-td>
+                    <q-td>
+                      <RouterLink :to="'/artifacts/' + props.row.uuid" target="_blank">
+                        {{ props.row.title || '(untitled)' }}
+                      </RouterLink>
+                      <div class="text-caption">{{ props.row.computed.authorString }}</div>
+                    </q-td>
+                    <q-td>{{ props.row.updated_at }}</q-td>
+                  </q-tr>
+                </template>
+              </q-table>
+            </Loading>
+
+            <q-separator class="q-mt-md q-mb-md" />
+
+            <!-- Draggable selected links -->
+            <h4 class="text-subtitle2">Selected to link (Drag to reorder)</h4>
+            <draggable
+              v-model="state.linked_list"
+              item-key="linked_artifact"
+              handle=".drag-handle"
+              animation="200"
+            >
+              <template #item="{ element, index }">
+                <div>
+                  <q-item clickable>
+                    <q-item-section avatar>
+                      <q-icon name="drag_indicator" class="drag-handle" />
+                    </q-item-section>
+                    <q-item-section>
+                      <RouterLink :to="'/artifacts/' + element.linked_artifact" target="_blank">
+                        {{ element.linked_title || '(untitled)' }}
+                      </RouterLink>
+                      <div class="text-caption">{{ element.computed?.authorString }}</div>
+                    </q-item-section>
+                    <q-item-section side>
+                      <q-btn
+                        color="negative"
+                        icon="delete"
+                        flat
+                        dense
+                        @click="
+                          () => {
+                            state.linked_list.splice(index, 1)
+                            // Also uncheck table checkbox
+                            const tableItem = artifactsStore.artifacts.find(
+                              (a) => a.uuid === element.linked_artifact,
+                            )
+                            if (tableItem) tableItem.computed.isLinkedToArtifact = false
+                          }
+                        "
+                      />
+                    </q-item-section>
+                  </q-item>
+                  <q-separator />
+                </div>
+              </template>
+            </draggable>
+
+            <q-btn label="Save Links" color="positive" class="q-mt-md" @click="submitLinks" />
           </q-card>
         </q-card-section>
       </q-card>

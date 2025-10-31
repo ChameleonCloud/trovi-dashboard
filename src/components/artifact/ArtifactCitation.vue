@@ -56,8 +56,6 @@ const latestVersion = computed(
 )
 
 const authorList = computed(() => props.artifact?.authors?.map((a) => a.full_name).join(', ') ?? '')
-const year = computed(() => latestVersion.value?.created_at?.split('-')[0] ?? '')
-const month = computed(() => latestVersion.value?.created_at?.split('-')[1] ?? '')
 const troviUrl = computed(() =>
   props.artifact?.uuid ? `https://trovi.chameleoncloud.org/artifacts/${props.artifact.uuid}` : '',
 )
@@ -73,11 +71,11 @@ const doi = computed(() => {
   return `${latestDoi}.` || ''
 })
 const citation = computed(() =>
-  `${authorList.value}. (${year.value}). ${props.artifact?.title ?? ''}. Trovi. ${troviUrl.value}. ${doi.value}`.trim(),
+  `${authorList.value}. (${props.artifact.computed.latestYear}). ${props.artifact?.title ?? ''}. Trovi. ${troviUrl.value}. ${doi.value}`.trim(),
 )
 const bibtexKey = computed(() => {
   const author = props.artifact?.authors?.[0]?.full_name?.split(' ')[0] ?? 'author'
-  const yr = year.value || 'year'
+  const yr = props.artifact.computed.latestYear || 'year'
   const titleWords = props.artifact?.title?.split(' ').slice(0, 2).join('_') ?? 'title'
   return `${author}_${yr}_${titleWords}`.toLowerCase()
 })
@@ -96,8 +94,8 @@ const bibtex = computed(() => {
     title={${props.artifact?.title ?? ''}},
     publisher={{Trovi}},
     url={${troviUrl.value}},${doi.value ? `\n    doi={${doi.value}},` : ''}
-    year={${year.value}},
-    month={${month.value}},${note.value ? `\n    note={${note.value}},` : ''}
+    year={${props.artifact.computed.latestYear}},
+    month={${props.artifact.computed.latestMonth}},${note.value ? `\n    note={${note.value}},` : ''}
   }
 }`
 })

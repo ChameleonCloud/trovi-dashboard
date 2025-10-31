@@ -1,6 +1,5 @@
 <script setup>
 import { useRoute } from 'vue-router'
-import logo from '@/assets/img/logo.png'
 import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
