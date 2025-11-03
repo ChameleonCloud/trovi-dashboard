@@ -28,7 +28,8 @@
     "primevue": "^4.0.5",
     "quasar": "^2.18.5",
     "vue": "^3.4.29",
-    "vue-router": "^4.4.0"
+    "vue-router": "^4.4.0",
+    "vuedraggable": "^4.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.12.0",

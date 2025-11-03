@@ -46,3 +46,55 @@ export function parseDoi(urn) {
   }
   return parts[4]
 }
+
+// Reusable artifact filtering utility. This is a pure function so it can be
+// used from components, stores, tests, or other utilities. It intentionally
+// does not apply slicing/limits so callers can handle paging / previews.
+export function filterArtifacts(artifacts = [], options = {}) {
+  const {
+    searchText = '',
+    selectedTags = [],
+    selectedBadges = [],
+    filterOwned = false,
+    filterPublic = false,
+    filterDoi = false,
+    filterCollection = false,
+  } = options
+
+  const search = (searchText || '').toLowerCase()
+
+  return (artifacts || [])
+    .filter((a) => {
+      if (search) {
+        const inArtifact = [a.title, a.long_description, a.short_description].some((f) =>
+          f?.toLowerCase().includes(search),
+        )
+        const authors = Array.isArray(a.authors) ? a.authors : []
+        const inAuthors = authors.some((author) =>
+          [author.full_name, author.affiliation, author.email].some((f) =>
+            f?.toLowerCase().includes(search),
+          ),
+        )
+        return inArtifact || inAuthors
+      }
+      return true
+    })
+    .filter((a) => {
+      if (selectedTags && selectedTags.length > 0) {
+        const filteredTags = (a.tags || []).filter((t) => selectedTags.includes(t))
+        return filteredTags.length === selectedTags.length
+      }
+      return true
+    })
+    .filter((a) => {
+      return (
+        !selectedBadges ||
+        selectedBadges.length === 0 ||
+        selectedBadges.every((b) => (a.badges || []).some((ab) => ab.name === b))
+      )
+    })
+    .filter((a) => !filterOwned || (a.computed && a.computed.canEdit && a.computed.canEdit()))
+    .filter((a) => !filterPublic || a.visibility === 'public' || (a.computed && a.computed.hasDoi))
+    .filter((a) => !filterDoi || (a.computed && a.computed.hasDoi))
+    .filter((a) => !filterCollection || (a.linked_artifacts && a.linked_artifacts.length > 0))
+}
