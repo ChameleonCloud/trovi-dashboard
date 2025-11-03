@@ -15,7 +15,7 @@ const artifactsStore = useArtifactsStore()
 const route = useRoute()
 
 // Default to 'import', but override if query param exists
-const tab = ref(route.query.mode || 'import')
+const tab = ref(route.query.mode || 'manual')
 watch(tab, (newTab) => {
   router.replace({ query: { ...route.query, mode: newTab } })
 })

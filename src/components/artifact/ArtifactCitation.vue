@@ -79,15 +79,6 @@ const bibtexKey = computed(() => {
   const titleWords = props.artifact?.title?.split(' ').slice(0, 2).join('_') ?? 'title'
   return `${author}_${yr}_${titleWords}`.toLowerCase()
 })
-const note = computed(() => {
-  const result = []
-  for (const badge of props.artifact.badges) {
-    if (badge.name === 'reproducible') result.push('NSF Award No. 2226406')
-    if (badge.name === 'educational') result.push('NSF Award No. 2230077')
-  }
-  if (result.length === 0) return ''
-  return `This material is supported by ${result.join(', ')}`
-})
 const bibtex = computed(() => {
   return `@misc{${bibtexKey.value},
     author={${authorList.value}},
@@ -95,7 +86,7 @@ const bibtex = computed(() => {
     publisher={{Trovi}},
     url={${troviUrl.value}},${doi.value ? `\n    doi={${doi.value}},` : ''}
     year={${props.artifact.computed.latestYear}},
-    month={${props.artifact.computed.latestMonth}},${note.value ? `\n    note={${note.value}},` : ''}
+    month={${props.artifact.computed.latestMonth}},
   }
 }`
 })
