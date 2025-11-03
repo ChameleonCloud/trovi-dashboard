@@ -20,7 +20,9 @@ const sortedLinkedFrom = computed(() => {
     <h2 class="text-h6 text-primary">Related to:</h2>
     <ol class="q-mb-sm">
       <li v-for="a in sortedLinkedFrom" :key="a.source_artifact">
-        <a :href="'/artifacts/' + a.source_artifact"> "{{ a.linked_from_title }}" </a>
+        <router-link :to="`/artifacts/${a.source_artifact}`">
+          "{{ a.linked_from_title }}"
+        </router-link>
       </li>
     </ol>
   </div>

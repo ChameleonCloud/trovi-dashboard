@@ -10,13 +10,12 @@ import ArtifactLinksFrom from '@/components/artifact/ArtifactLinksFrom.vue'
 import Launch from '@/components/artifact/Launch.vue'
 import Loading from '@/components/Loading.vue'
 
-import { reactive, onMounted } from 'vue'
+import { reactive, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useArtifactsStore } from '@/stores/artifact'
 import { Notify } from 'quasar'
 
 const route = useRoute()
-const artifactId = route.params.uuid
 const artifactsStore = useArtifactsStore()
 
 const state = reactive({
@@ -25,8 +24,10 @@ const state = reactive({
   selectedVersion: null,
 })
 
-onMounted(async () => {
+async function loadArtifact() {
+  state.isLoading = true
   try {
+    const artifactId = route.params.uuid
     state.artifact = await artifactsStore.fetchArtifactById(
       artifactId,
       new URLSearchParams(window.location.search).get('sharing_key'),
@@ -45,7 +46,16 @@ onMounted(async () => {
   } finally {
     state.isLoading = false
   }
-})
+}
+
+onMounted(loadArtifact)
+
+watch(
+  () => [route.params.uuid, route.params.version],
+  async () => {
+    await loadArtifact()
+  },
+)
 </script>
 
 <template>
