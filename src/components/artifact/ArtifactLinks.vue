@@ -8,7 +8,7 @@ const props = defineProps({ artifact: Object })
     <ol class="q-mb-sm">
       <li v-for="a in artifact.linked_artifacts" :key="a.linked_artifact">
         <router-link :to="`/artifacts/${a.linked_artifact}`">
-          "{{ a.linked_title }}"
+          {{ a.linked_title }}
         </router-link>
       </li>
     </ol>
