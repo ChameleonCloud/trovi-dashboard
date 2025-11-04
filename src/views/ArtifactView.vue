@@ -36,7 +36,11 @@ async function loadArtifact() {
     const v = state.artifact?.versions.find(
       (v) => !route.params.version || v.slug.trim() === route.params.version.trim(),
     )
-    if (v) state.selectedVersion = v
+    if (v) {
+      state.selectedVersion = v
+    } else {
+      state.selectedVersion = null
+    }
   } catch (error) {
     console.error('Error fetching artifact', error)
     Notify.create({
