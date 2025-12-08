@@ -14,6 +14,8 @@ const props = defineProps({
   filterDoi: { type: Boolean, default: null },
   filterCollection: { type: Boolean, default: null },
   searchText: { type: String, default: null },
+  sortBy: { type: String, default: null },
+  isSearching: { type: Boolean, default: false },
 })
 const emit = defineEmits([
   'update:selectedTags',
@@ -24,6 +26,8 @@ const emit = defineEmits([
   'update:filterDoi',
   'update:filterCollection',
   'update:searchText',
+  'update:sortBy',
+  'search',
 ])
 
 const route = useRoute()
@@ -115,7 +119,18 @@ const searchText = computed({
   set(val) {
     const s = val || ''
     emit('update:searchText', s)
-    updateQuery({ q: s || undefined })
+  },
+})
+
+const sortBy = computed({
+  get() {
+    if (typeof props.sortBy === 'string') return props.sortBy
+    return route.query.sort_by || ''
+  },
+  set(val) {
+    const s = val || ''
+    emit('update:sortBy', s)
+    updateQuery({ sort_by: s || undefined })
   },
 })
 
@@ -128,6 +143,18 @@ const badgesList = computed(() => {
 function updateQuery(newParams) {
   router.replace({ query: { ...route.query, ...newParams } })
 }
+
+function onSearchKeydown(e) {
+  if (e.key === 'Enter') {
+    updateQuery({ q: searchText.value || undefined })
+    emit('search')
+  }
+}
+
+function handleSearch() {
+  updateQuery({ q: searchText.value || undefined })
+  emit('search')
+}
 </script>
 
 <template>
@@ -137,10 +164,23 @@ function updateQuery(newParams) {
         filled
         v-model="searchText"
         placeholder="Search artifacts..."
-        clearable
-        class="full-width"
+        class="col"
+        @keydown="onSearchKeydown"
+        :disable="isSearching"
+        hint="Use operators: &quot;exact phrase&quot;, OR, and -exclude. e.g. &quot;data science&quot; OR python -jupyter"
       />
+      <q-btn
+        icon="search"
+        color="primary"
+        @click="handleSearch"
+        :loading="isSearching"
+        :disable="isSearching"
+        title="Search (or press Enter)"
+        style="margin-bottom: 20px"
+      />
+    </div>
 
+    <div class="row items-center q-gutter-sm">
       <div class="col-auto">
         <span>Tags:</span>
       </div>

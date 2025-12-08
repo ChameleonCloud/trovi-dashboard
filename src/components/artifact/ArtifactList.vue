@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, onMounted, computed } from 'vue'
+import { reactive, onMounted, computed, watch, ref } from 'vue'
 import TagFilter from '@/components/TagFilter.vue'
 import ArtifactGrid from '@/components/artifact/ArtifactGrid.vue'
 import MainSection from '@/components/MainSection.vue'
@@ -7,12 +7,10 @@ import MainSection from '@/components/MainSection.vue'
 import { useArtifactsStore } from '@/stores/artifact'
 import { QSpinnerDots } from 'quasar'
 import { useRoute } from 'vue-router'
-import { filterArtifacts } from '@/util'
 
 const route = useRoute()
 
 const artifactsStore = useArtifactsStore()
-artifactsStore.fetchAllArtifacts()
 artifactsStore.fetchTags()
 
 const props = defineProps({
@@ -29,36 +27,74 @@ const state = reactive({
   selectedTags: route.query.tags ? route.query.tags.split(',') : [],
   selectedBadges: route.query.badges ? route.query.badges.split(',') : [],
   searchText: route.query.q || '',
+  sortBy: route.query.sort_by || '',
   filterOwned: route.query.owned === '1',
   filterPublic: route.query.public === '1',
   filterDoi: route.query.doi === '1',
   filterCollection: route.query.collection === '1',
+  showAllArtifacts: false,
 })
 
-const filteredArtifacts = computed(() => {
-  const filtered = filterArtifacts(state.artifacts, {
-    searchText: state.searchText,
-    selectedTags: state.selectedTags,
-    selectedBadges: state.selectedBadges,
-    filterOwned: state.filterOwned,
-    filterPublic: state.filterPublic,
-    filterDoi: state.filterDoi,
-    filterCollection: state.filterCollection,
-  })
+const isSearching = ref(false)
 
-  return filtered.slice(0, props.limit || state.artifacts.length)
+const displayedArtifacts = computed(() => {
+  if (state.showAllArtifacts) {
+    return state.artifacts
+  }
+  return state.artifacts.slice(0, props.limit || state.artifacts.length)
 })
 
 const isLoading = computed(() => artifactsStore.loading)
 
+async function performSearch() {
+  if (isSearching.value) return
+
+  isSearching.value = true
+  try {
+    await artifactsStore.fetchAllArtifacts({
+      q: state.searchText,
+      sortBy: state.sortBy,
+      tags: state.selectedTags,
+    })
+    state.artifacts = artifactsStore.artifacts
+  } catch (error) {
+    console.error('Error fetching artifacts', error)
+  } finally {
+    isSearching.value = false
+  }
+}
+
+watch(
+  [() => state.selectedTags, () => state.sortBy],
+  async () => {
+    await performSearch()
+  },
+  { deep: true },
+)
+
 onMounted(async () => {
   try {
-    state.artifacts = artifactsStore.artifacts
     state.badges = artifactsStore.processed_badges.badges
+    await performSearch()
   } catch (error) {
     console.error('Error fetching artifacts', error)
   }
 })
+
+watch(
+  () => artifactsStore.artifacts,
+  (newArtifacts) => {
+    state.artifacts = newArtifacts
+  },
+)
+
+function handleSearch() {
+  performSearch()
+}
+
+function showAllArtifacts() {
+  state.showAllArtifacts = true
+}
 </script>
 
 <template>
@@ -75,37 +111,54 @@ onMounted(async () => {
       v-model:filterDoi="state.filterDoi"
       v-model:searchText="state.searchText"
       v-model:filterCollection="state.filterCollection"
+      v-model:sortBy="state.sortBy"
+      :isSearching="isSearching"
+      @search="handleSearch"
     />
 
-    <div class="row justify-end">
-      Displaying {{ filteredArtifacts.length }} of
-      <template v-if="!isLoading"> {{ artifactsStore.artifacts.length }}</template>
-      <template v-else>
-        <QSpinnerDots class="q-mx-sm" size="1.6em" />
-      </template>
-      artifacts
+    <div class="row justify-between items-center q-my-md">
+      <div>
+        <template v-if="!isSearching">
+          Displaying {{ displayedArtifacts.length }} of {{ artifactsStore.artifacts.length }} artifacts
+        </template>
+        <template v-else>
+          <QSpinnerDots class="q-mr-sm" size="1.6em" />
+          Searching artifacts...
+        </template>
+      </div>
+
+      <div class="row items-center q-gutter-sm">
+        <span>Sort by:</span>
+        <q-select
+          v-model="state.sortBy"
+          :options="[
+            { label: 'Relevance', value: '' },
+            { label: 'Creation Date', value: 'created_at' },
+            { label: 'Updated Date', value: 'updated_at' },
+            { label: 'Access Count', value: 'access_count' },
+            { label: 'Unique Access Count', value: 'unique_access_count' },
+            { label: 'Unique Cell Execution Count', value: 'unique_cell_execution_count' },
+          ]"
+          option-value="value"
+          option-label="label"
+          dense
+          outlined
+          emit-value
+          map-options
+          style="min-width: 200px"
+        />
+      </div>
     </div>
 
     <ArtifactGrid
-      :artifacts="filteredArtifacts"
+      :artifacts="displayedArtifacts"
       :is-loading="(!props.limit || state.artifacts.length < props.limit) && isLoading"
     />
   </MainSection>
 
-  <section v-if="showButton" class="q-mx-auto q-my-xl q-pa-md" style="max-width: 32rem">
+  <section v-if="showButton && !state.showAllArtifacts && displayedArtifacts.length < artifactsStore.artifacts.length" class="q-mx-auto q-my-xl q-pa-md" style="max-width: 32rem">
     <q-btn
-      :to="{
-        path: '/artifacts',
-        query: {
-          q: state.searchText || undefined,
-          tags: state.selectedTags.length ? state.selectedTags.join(',') : undefined,
-          badges: state.selectedBadges.length ? state.selectedBadges.join(',') : undefined,
-          owned: state.filterOwned ? '1' : undefined,
-          public: state.filterPublic ? '1' : undefined,
-          doi: state.filterDoi ? '1' : undefined,
-          collection: state.filterCollection ? '1' : undefined,
-        },
-      }"
+      @click="showAllArtifacts"
       color="primary"
       class="full-width justify-center"
     >
