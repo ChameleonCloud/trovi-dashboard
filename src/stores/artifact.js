@@ -199,10 +199,8 @@ export const useArtifactsStore = defineStore('artifacts', {
         console.error('Failed to load badges:', error)
       }
     },
-    async fetchAllArtifacts() {
-      if (this.artifacts.length > 0) {
-        return
-      }
+    async fetchAllArtifacts(queryParams = {}) {
+      const { q = '', sortBy = '', tags = [] } = queryParams
 
       await this.fetchBadges()
       this.loading = true
@@ -214,11 +212,19 @@ export const useArtifactsStore = defineStore('artifacts', {
       }
       let tokenParam = token ? `?access_token=${token}` : ''
 
+      this.artifacts = []
+      this.artifactDetails = {}
+
       do {
         try {
-          const response = await axios.get(`/artifacts/${tokenParam}`, {
-            params: { after, limit: 21 },
-          })
+          const params = { after, limit: 500 }
+          if (q) params.q = q
+          if (sortBy) params.sort_by = sortBy
+          if (tags && tags.length > 0) {
+            params.tag = tags
+          }
+
+          const response = await axios.get(`/artifacts/${tokenParam}`, { params })
 
           // Append the new artifacts to the store
           // After includes first artifact, so ignore it if set
