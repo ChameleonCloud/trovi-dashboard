@@ -3,7 +3,7 @@ import { reactive, onMounted, computed, watch, ref } from 'vue'
 import TagFilter from '@/components/TagFilter.vue'
 import ArtifactGrid from '@/components/artifact/ArtifactGrid.vue'
 import MainSection from '@/components/MainSection.vue'
-
+import { filterArtifacts } from '@/util'
 import { useArtifactsStore } from '@/stores/artifact'
 import { QSpinnerDots } from 'quasar'
 import { useRoute } from 'vue-router'
@@ -37,11 +37,19 @@ const state = reactive({
 
 const isSearching = ref(false)
 
+const locallyFilteredArtifacts = computed(() => {
+  return filterArtifacts(state.artifacts, {
+    selectedBadges: state.selectedBadges,
+    filterOwned: state.filterOwned,
+    filterPublic: state.filterPublic,
+    filterDoi: state.filterDoi,
+    filterCollection: state.filterCollection,
+  })
+})
+
 const displayedArtifacts = computed(() => {
-  if (state.showAllArtifacts) {
-    return state.artifacts
-  }
-  return state.artifacts.slice(0, props.limit || state.artifacts.length)
+  const artifactsToDisplay = state.showAllArtifacts ? locallyFilteredArtifacts.value : locallyFilteredArtifacts.value.slice(0, props.limit || locallyFilteredArtifacts.value.length)
+  return artifactsToDisplay
 })
 
 const isLoading = computed(() => artifactsStore.loading)
