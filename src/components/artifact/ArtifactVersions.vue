@@ -1,16 +1,38 @@
 <script setup>
-const props = defineProps({ artifact: Object, version_slug: String })
+import { computed } from 'vue'
+
+const props = defineProps({
+  artifact: Object,
+  version_slug: String,
+  goLatestView: Function,
+})
+
+const safeVersions = computed(() => props.artifact?.versions || [])
 </script>
 
 <template>
   <div class="q-mt-sm">
     <h2 class="text-h6 text-primary q-mb-xs">Versions</h2>
-    <div v-if="artifact.versions?.length">
+
+    <div v-if="safeVersions.length">
       <q-list bordered padding class="q-pa-none">
         <q-item
-          v-for="version in artifact.versions"
+          v-if="goLatestView"
+          clickable
+          :active="!version_slug"
+          @click="goLatestView && goLatestView()"
+        >
+          <q-item-section>
+            <div class="text-subtitle2">Latest View</div>
+            <div class="text-caption">Show most recent version state</div>
+          </q-item-section>
+        </q-item>
+
+        <q-item
+          v-for="version in safeVersions"
           :key="version.uuid"
           clickable
+          :active="version.slug === version_slug"
           :to="`/artifacts/${artifact.uuid}/versions/${version.slug}`"
         >
           <q-item-section>
@@ -19,7 +41,7 @@ const props = defineProps({ artifact: Object, version_slug: String })
                 <div class="text-subtitle2">{{ version.slug }}</div>
                 <div class="text-caption">{{ version.created_at }}</div>
               </div>
-              <div v-if="version.computed.doi" class="col text-caption">
+              <div v-if="version.computed?.doi" class="col text-caption">
                 <a
                   :href="version.computed.doi_url"
                   target="_blank"

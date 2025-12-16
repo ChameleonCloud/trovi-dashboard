@@ -1,12 +1,26 @@
 <script setup>
 import { computed } from 'vue'
-const props = defineProps({ artifact: Object, version_slug: String })
+
+const { artifact, version_slug } = defineProps({
+  artifact: Object,
+  version_slug: String,
+})
 
 const sharingKey = computed(() => {
-  if (typeof window !== 'undefined') {
-    return new URLSearchParams(window.location.search).get('sharing_key')
-  }
-  return null
+  if (typeof window === 'undefined') return null
+  return new URLSearchParams(window.location.search).get('sharing_key')
+})
+
+const selectedVersion = computed(() => {
+  if (!artifact || !version_slug) return null
+  const versions = artifact.versions || []
+  return versions.find((v) => v.slug === version_slug) || null
+})
+
+const isJupyterHub = computed(() => {
+  const v = selectedVersion.value
+  const setup = Array.isArray(v?.environment_setup) ? v.environment_setup : []
+  return setup.some((e) => e.type === 'jupyterhub')
 })
 </script>
 
@@ -16,12 +30,22 @@ const sharingKey = computed(() => {
 
     <div class="q-mb-sm">
       <q-btn
+        v-if="isJupyterHub"
         color="primary"
         label="Launch on Chameleon"
         :href="artifact.computed.get_chameleon_launch_url(version_slug, sharingKey)"
         target="_blank"
         class="full-width"
       />
+      <q-chip
+        v-else
+        color="grey"
+        text-color="white"
+        class="full-width justify-center cursor-inherit"
+        icon="open_in_new"
+      >
+        External Artifact
+      </q-chip>
     </div>
 
     <div class="q-mb-sm">

@@ -101,6 +101,7 @@ const gitForm = reactive({
   loadingOptions: false,
   submitting: false,
 })
+
 const gitOptions = ref([])
 let rawGitOptions = []
 
@@ -147,10 +148,113 @@ const submitGitVersion = async () => {
     return
   }
   gitForm.submitting = true
-  let contents_urn = gitToUrn(gitForm.gitUrl, gitForm.selectedOption)
-  artifactsStore.createVersion(artifactUUID, { contents: { urn: contents_urn } })
-  gitForm.submitting = false
-  gitDialog.value = false
+  try {
+    const contents_urn = gitToUrn(gitForm.gitUrl, gitForm.selectedOption)
+    const newVersion = await artifactsStore.createVersion(artifactUUID, {
+      contents: { urn: contents_urn },
+    })
+    if (newVersion) {
+      state.artifact.versions.push(newVersion)
+    }
+  } finally {
+    gitForm.submitting = false
+    gitDialog.value = false
+  }
+}
+
+const SITE_MAP = {
+  'CHI@UC': 'chi-uc',
+  'CHI@TACC': 'chi-tacc',
+  'KVM@TACC': 'kvm-tacc',
+  Other: 'other',
+}
+
+const imageForm = reactive({
+  selectedSite: null,
+  imageUuid: '',
+  submitting: false,
+  siteOptions: ['CHI@UC', 'CHI@TACC', 'KVM@TACC', 'Other'],
+})
+
+const submitImageVersion = async () => {
+  if (!imageForm.selectedSite) {
+    Notify.create({ type: 'negative', message: 'Please select a site' })
+    return
+  }
+  if (!imageForm.imageUuid) {
+    Notify.create({ type: 'negative', message: 'Please enter an image UUID' })
+    return
+  }
+
+  imageForm.submitting = true
+  try {
+    const siteKey = SITE_MAP[imageForm.selectedSite] || 'other'
+    const linkUrn = `urn:trovi:image:${siteKey}:${imageForm.imageUuid}`
+
+    const urnExists = state.artifact.versions.some(
+      (v) => v.contents?.urn === linkUrn || v.links?.some((l) => l.urn === linkUrn),
+    )
+    if (urnExists) {
+      Notify.create({
+        type: 'negative',
+        message: 'An artifact version with this image already exists.',
+      })
+      imageForm.submitting = false
+      return
+    }
+    const version_obj = {
+      contents: { urn: linkUrn },
+      environment_setup: [{ type: 'image', arguments: '' }],
+      links: [{ urn: linkUrn, label: imageForm.selectedSite }],
+    }
+    const newVersion = await artifactsStore.createVersion(state.artifact.uuid, version_obj)
+    if (newVersion) {
+      state.artifact.versions.push(newVersion)
+    }
+    imageForm.selectedSite = null
+    imageForm.imageUuid = ''
+    Notify.create({ type: 'positive', message: 'Image version created' })
+  } catch (err) {
+    Notify.create({
+      type: 'negative',
+      message: `Failed to create image version: ${err?.message || err}`,
+    })
+  } finally {
+    imageForm.submitting = false
+  }
+}
+
+const infrastructureTemplateContent = ref('')
+const infrastructureTemplateSubmitting = ref(false)
+
+const submitInfrastructureTemplate = async () => {
+  if (!infrastructureTemplateContent.value) {
+    Notify.create({ type: 'negative', message: 'Please enter a template' })
+    return
+  }
+
+  infrastructureTemplateSubmitting.value = true
+  try {
+    const version_obj = {
+      contents: { urn: `urn:trovi:contents:template:embedded-${Date.now()}` },
+      environment_setup: [{ type: 'template', arguments: infrastructureTemplateContent.value }],
+    }
+
+    const newVersion = await artifactsStore.createVersion(state.artifact.uuid, version_obj)
+    if (newVersion) {
+      state.artifact.versions.push(newVersion)
+    }
+
+    infrastructureTemplateContent.value = ''
+    Notify.create({ type: 'positive', message: 'Infrastructure template version created' })
+  } catch (err) {
+    Notify.create({
+      type: 'negative',
+      message: `Failed to create template version: ${err?.message || err}`,
+    })
+  } finally {
+    infrastructureTemplateSubmitting.value = false
+  }
 }
 
 /* --------- Linked Artifacts (checkbox UI) ---------- */
@@ -272,6 +376,31 @@ const submitVersions = async () => {
     version.doi_request = false // reset flag
   }
   // TODO we don't know the DOI unless we wait a while and refetch
+}
+
+function isDiskImageVersion(version) {
+  return version.environment_setup && version.environment_setup.some((e) => e.type === 'image')
+}
+
+const deleteVersion = (index) => {
+  const version = state.artifact.versions[index]
+  if (!version) return
+
+  Dialog.create({
+    title: 'Confirm Deletion',
+    message: `Are you sure you want to delete this version? This action happens immediately.`,
+    persistent: true,
+    ok: { label: 'Delete', color: 'negative' },
+    cancel: { label: 'Cancel' },
+  }).onOk(async () => {
+    try {
+      await artifactsStore.updateArtifactVersions(state.artifact.uuid, [version.slug])
+      state.artifact.versions.splice(index, 1)
+      Notify.create({ type: 'positive', message: 'Version deleted' })
+    } catch (err) {
+      Notify.create({ type: 'negative', message: `Failed to delete: ${err.message}` })
+    }
+  })
 }
 
 /* --------- Linked Artifacts submission ---------- */
@@ -516,7 +645,7 @@ const reimportArtifact = async () => {
                   v-if="!version.computed?.doi"
                   color="negative"
                   icon="delete"
-                  @click="state.artifact.versions.splice(index, 1)"
+                  @click="deleteVersion(index)"
                   label="Delete"
                 />
               </div>
@@ -524,6 +653,105 @@ const reimportArtifact = async () => {
 
             <div class="row q-gutter-sm q-mt-md">
               <q-btn label="Save Versions" color="positive" @click="submitVersions" />
+            </div>
+
+            <div
+              v-if="state.artifact.versions && state.artifact.versions.length"
+              class="q-mt-md q-pa-sm rounded-borders"
+            >
+              <h4 class="text-subtitle2 q-mb-sm">Disk Images</h4>
+              <div v-for="(v, vi) in state.artifact.versions" :key="vi">
+                <div v-if="v.links">
+                  <div
+                    v-for="(l, li) in v.links.filter((link) =>
+                      (link.urn || '').startsWith('urn:trovi:image:'),
+                    )"
+                    :key="li"
+                    class="row items-center q-gutter-sm q-mb-sm"
+                  >
+                    <div class="col">
+                      <div>{{ l.label || l.urn }}</div>
+                      <div class="text-caption">{{ l.urn }}</div>
+                    </div>
+                    <div class="col-auto row q-gutter-sm">
+                      <q-btn
+                        v-if="isDiskImageVersion(v)"
+                        color="negative"
+                        icon="delete"
+                        @click="deleteVersion(vi)"
+                        label="Delete"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="q-mt-md q-pa-sm rounded-borders">
+              <h4 class="text-subtitle2 q-mb-sm">Add Disk Image Version</h4>
+              <div class="row q-gutter-sm items-center q-mb-sm">
+                <q-select
+                  v-model="imageForm.selectedSite"
+                  :options="imageForm.siteOptions"
+                  label="Site"
+                  dense
+                  class="col-6"
+                />
+                <q-input
+                  v-model="imageForm.imageUuid"
+                  label="Image UUID"
+                  dense
+                  class="col"
+                />
+              </div>
+              <div class="row q-gutter-sm">
+                <q-btn
+                  label="Create Image Version"
+                  color="primary"
+                  :loading="imageForm.submitting"
+                  @click="submitImageVersion"
+                />
+              </div>
+            </div>
+
+            <div v-if="state.artifact.versions && state.artifact.versions.length" class="q-mt-md q-pa-sm rounded-borders">
+              <h4 class="text-subtitle2 q-mb-sm">Infrastructure Templates</h4>
+              <div v-for="(v, vi) in state.artifact.versions" :key="vi">
+                <div v-if="v.environment_setup && v.environment_setup.some((e) => e.type === 'template')">
+                  <div class="row items-center q-gutter-sm q-mb-sm">
+                    <div class="col">
+                      <div>{{ v.slug }}</div>
+                    </div>
+                    <div class="col-auto row q-gutter-sm">
+                      <q-btn
+                        color="negative" icon="delete" @click="deleteVersion(vi)"
+                        label="Delete"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="q-mt-md q-pa-sm rounded-borders">
+              <h4 class="text-subtitle2 q-mb-sm">Add Infrastructure Template</h4>
+              <div class="row q-gutter-sm items-center q-mb-sm">
+                <q-input
+                  v-model="infrastructureTemplateContent"
+                  type="textarea"
+                  label="Add Template Text Here"
+                  dense
+                  class="col"
+                />
+              </div>
+              <div class="row q-gutter-sm">
+                <q-btn
+                  label="Create Template Version"
+                  color="primary"
+                  :loading="infrastructureTemplateSubmitting"
+                  @click="submitInfrastructureTemplate"
+                />
+              </div>
             </div>
             <div>
               <q-btn
@@ -607,7 +835,6 @@ const reimportArtifact = async () => {
                 </template>
               </q-table>
             </Loading>
-
             <q-separator class="q-mt-md q-mb-md" />
 
             <!-- Draggable selected links -->
