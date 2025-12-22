@@ -236,8 +236,8 @@ const submitInfrastructureTemplate = async () => {
   infrastructureTemplateSubmitting.value = true
   try {
     const version_obj = {
-      contents: { urn: `urn:trovi:contents:template:embedded-${Date.now()}` },
-      environment_setup: [{ type: 'template', arguments: infrastructureTemplateContent.value }],
+      contents: { urn: `urn:trovi:contents:heat_template:embedded-${Date.now()}` },
+      environment_setup: [{ type: 'heat_template', arguments: infrastructureTemplateContent.value }],
     }
 
     const newVersion = await artifactsStore.createVersion(state.artifact.uuid, version_obj)
@@ -717,7 +717,7 @@ const reimportArtifact = async () => {
             <div v-if="state.artifact.versions && state.artifact.versions.length" class="q-mt-md q-pa-sm rounded-borders">
               <h4 class="text-subtitle2 q-mb-sm">Infrastructure Templates</h4>
               <div v-for="(v, vi) in state.artifact.versions" :key="vi">
-                <div v-if="v.environment_setup && v.environment_setup.some((e) => e.type === 'template')">
+                <div v-if="v.environment_setup && v.environment_setup.some((e) => e.type === 'heat_template')">
                   <div class="row items-center q-gutter-sm q-mb-sm">
                     <div class="col">
                       <div>{{ v.slug }}</div>

@@ -33,7 +33,7 @@ function buildImageHref(siteKey, uuid) {
 
 function findTemplateEnv(version) {
   if (!version?.environment_setup) return null
-  return version.environment_setup.find((e) => e.type === 'template' && e.arguments)
+  return version.environment_setup.find((e) => e.type === 'heat_template' && e.arguments)
 }
 
 function isImageVersion(version) {
