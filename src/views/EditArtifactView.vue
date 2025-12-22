@@ -715,7 +715,7 @@ const reimportArtifact = async () => {
             </div>
 
             <div v-if="state.artifact.versions && state.artifact.versions.length" class="q-mt-md q-pa-sm rounded-borders">
-              <h4 class="text-subtitle2 q-mb-sm">Infrastructure Templates</h4>
+              <h4 class="text-subtitle2 q-mb-sm">Heat Templates</h4>
               <div v-for="(v, vi) in state.artifact.versions" :key="vi">
                 <div v-if="v.environment_setup && v.environment_setup.some((e) => e.type === 'heat_template')">
                   <div class="row items-center q-gutter-sm q-mb-sm">
@@ -734,19 +734,19 @@ const reimportArtifact = async () => {
             </div>
 
             <div class="q-mt-md q-pa-sm rounded-borders">
-              <h4 class="text-subtitle2 q-mb-sm">Add Infrastructure Template</h4>
+              <h4 class="text-subtitle2 q-mb-sm">Add Heat Template</h4>
               <div class="row q-gutter-sm items-center q-mb-sm">
                 <q-input
                   v-model="infrastructureTemplateContent"
                   type="textarea"
-                  label="Add Template Text Here"
+                  label="Add Heat Template Text Here"
                   dense
                   class="col"
                 />
               </div>
               <div class="row q-gutter-sm">
                 <q-btn
-                  label="Create Template Version"
+                  label="Create Heat Template Version"
                   color="primary"
                   :loading="infrastructureTemplateSubmitting"
                   @click="submitInfrastructureTemplate"
