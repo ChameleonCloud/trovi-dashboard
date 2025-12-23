@@ -42,7 +42,6 @@ const isJupyterHub = computed(() => {
         color="grey"
         text-color="white"
         class="full-width justify-center cursor-inherit"
-        icon="open_in_new"
       >
         External Artifact
       </q-chip>
