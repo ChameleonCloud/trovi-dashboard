@@ -10,19 +10,33 @@ import ArtifactLinksFrom from '@/components/artifact/ArtifactLinksFrom.vue'
 import Launch from '@/components/artifact/Launch.vue'
 import Loading from '@/components/Loading.vue'
 
-import { reactive, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { reactive, onMounted, watch, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useArtifactsStore } from '@/stores/artifact'
 import { Notify } from 'quasar'
 
 const route = useRoute()
+const router = useRouter()
 const artifactsStore = useArtifactsStore()
 
 const state = reactive({
   artifact: null,
   isLoading: true,
   selectedVersion: null,
+  viewKey: 0,
 })
+
+async function goLatestView() {
+  if (route.params.version) {
+    await router.replace({
+      name: route.name,
+      params: { uuid: route.params.uuid },
+      query: route.query,
+    })
+  }
+  state.selectedVersion = null
+  state.viewKey++
+}
 
 async function loadArtifact() {
   state.isLoading = true
@@ -33,14 +47,17 @@ async function loadArtifact() {
       new URLSearchParams(window.location.search).get('sharing_key'),
     )
     document.title = `${state.artifact.title} - Trovi`
-    const v = state.artifact?.versions.find(
-      (v) => !route.params.version || v.slug.trim() === route.params.version.trim(),
-    )
-    if (v) {
-      state.selectedVersion = v
+
+    if (route.params.version) {
+      const v = state.artifact?.versions.find(
+        (v) => v.slug.trim() === route.params.version.trim(),
+      )
+      state.selectedVersion = v || null
     } else {
       state.selectedVersion = null
     }
+
+    state.viewKey++
   } catch (error) {
     console.error('Error fetching artifact', error)
     Notify.create({
@@ -60,6 +77,16 @@ watch(
     await loadArtifact()
   },
 )
+
+const launchVersionSlug = computed(() => {
+  if (state.selectedVersion) return state.selectedVersion.slug
+  const versions = (state.artifact?.versions || []).filter((v) => v && !v.deleted)
+  if (!versions.length) return null
+  const sorted = versions
+    .slice()
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+  return sorted[0]?.slug || null
+})
 </script>
 
 <template>
@@ -70,16 +97,22 @@ watch(
           <div v-if="state.artifact" class="row q-gutter-md">
             <main class="col-8">
               <ArtifactHeader :artifact="state.artifact" />
-              <ArtifactAbout :artifact="state.artifact" />
+              <ArtifactAbout
+                :key="state.viewKey"
+                :artifact="state.artifact"
+                :selectedVersion="state.selectedVersion"
+              />
               <ArtifactLinks :artifact="state.artifact" />
             </main>
 
             <aside class="col">
-              <Launch :artifact="state.artifact" :version_slug="state.selectedVersion?.slug" />
+              <Launch :artifact="state.artifact" :version_slug="launchVersionSlug" />
+
               <ArtifactAuthors :authors="state.artifact.authors" />
               <ArtifactVersions
                 :artifact="state.artifact"
                 :version_slug="state.selectedVersion?.slug"
+                :goLatestView="goLatestView"
               />
               <ArtifactLinksFrom :artifact="state.artifact" />
               <ArtifactCitation :artifact="state.artifact" :version="state.selectedVersion" />

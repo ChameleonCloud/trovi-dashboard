@@ -98,3 +98,17 @@ export function filterArtifacts(artifacts = [], options = {}) {
     .filter((a) => !filterDoi || (a.computed && a.computed.hasDoi))
     .filter((a) => !filterCollection || (a.linked_artifacts && a.linked_artifacts.length > 0))
 }
+
+export function parseImageUrn(urn) {
+  // Expected: urn:trovi:image:<siteKey>:<uuid>
+  const parts = urn.split(':')
+
+  if (parts.length < 5 || parts[0] !== 'urn' || parts[1] !== 'trovi' || parts[2] !== 'image') {
+    return { siteKey: '', uuid: '' }
+  }
+
+  return {
+    siteKey: parts[3] || '',
+    uuid: parts[4] || '',
+  }
+}
