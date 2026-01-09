@@ -70,9 +70,12 @@ const doi = computed(() => {
   }
   return `${latestDoi}.` || ''
 })
-const citation = computed(() =>
-  `${authorList.value}. (${props.artifact.computed.latestYear}). ${props.artifact?.title ?? ''}. Trovi. ${troviUrl.value}. ${doi.value}`.trim(),
-)
+const citation = computed(() => {
+  if (props.artifact?.citation) {
+    return props.artifact.citation
+  }
+  return `${authorList.value}. (${props.artifact.computed.latestYear}). ${props.artifact?.title ?? ''}. Trovi. ${troviUrl.value}. ${doi.value}`.trim()
+})
 const bibtexKey = computed(() => {
   const author = props.artifact?.authors?.[0]?.full_name?.split(' ')[0] ?? 'author'
   const yr = props.artifact.computed.latestYear || 'year'
