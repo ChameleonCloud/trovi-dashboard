@@ -48,18 +48,39 @@ function processArtifact(store, artifact) {
     artifact.long_description ? artifact.long_description : '',
   )
   artifact.computed.get_chameleon_launch_url = function (version_slug, sharing_key) {
-    let sharing_key_param = ''
+    const params = new URLSearchParams()
     if (sharing_key) {
-      sharing_key_param = `&${sharing_key}`
+      params.append('sharing_key', sharing_key)
     }
-    return `${import.meta.env.VITE_CHAMELEON_PORTAL_URL}/experiment/share/${artifact.uuid}/version/${version_slug}/launch?${sharing_key_param}`
+
+    const version = artifact.versions.find((v) => v.slug === version_slug)
+    if (version && version.environment_setup) {
+      const setup = Array.isArray(version.environment_setup) ? version.environment_setup : []
+      const sourceCodeSetup = setup.find(
+        (e) => e.type === 'source_code' && e.arguments && e.arguments.repo_url,
+      )
+      if (sourceCodeSetup) {
+        params.append('repo_url', sourceCodeSetup.arguments.repo_url)
+      }
+    }
+
+    const paramString = params.toString()
+    const queryString = paramString ? `?${paramString}` : ''
+
+    return `${
+      import.meta.env.VITE_CHAMELEON_PORTAL_URL
+    }/experiment/share/${artifact.uuid}/version/${version_slug}/launch${queryString}`
   }
   artifact.computed.get_chameleon_download_url = function (version_slug, sharing_key) {
-    let sharing_key_param = ''
+    const params = new URLSearchParams()
     if (sharing_key) {
-      sharing_key_param = `&${sharing_key}`
+      params.append('sharing_key', sharing_key)
     }
-    return `${import.meta.env.VITE_CHAMELEON_PORTAL_URL}/experiment/share/${artifact.uuid}/version/${version_slug}/download?${sharing_key_param}`
+    const paramString = params.toString()
+    const queryString = paramString ? `?${paramString}` : ''
+    return `${
+      import.meta.env.VITE_CHAMELEON_PORTAL_URL
+    }/experiment/share/${artifact.uuid}/version/${version_slug}/download${queryString}`
   }
   artifact.computed.get_chameleon_daypass_url = function () {
     return `${import.meta.env.VITE_CHAMELEON_PORTAL_URL}/experiment/share/${artifact.uuid}/share`
