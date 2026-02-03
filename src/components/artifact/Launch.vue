@@ -22,23 +22,31 @@ const isJupyterHub = computed(() => {
   const setup = Array.isArray(v?.environment_setup) ? v.environment_setup : []
   return setup.some((e) => e.type === 'jupyterhub')
 })
+
+const genericJupyter = computed(() => {
+  const v = selectedVersion.value
+  const setup = Array.isArray(v?.environment_setup) ? v.environment_setup : []
+  const entry = setup.find((e) => e.type === 'source_code' && e.arguments && e.arguments.url)
+  return entry ? entry.arguments : null
+})
 </script>
 
 <template>
   <div v-if="version_slug">
     <h2 class="text-h6 text-primary">Content</h2>
 
-    <div class="q-mb-sm">
+    <div class="q-mb-sm" v-if="isJupyterHub || genericJupyter">
       <q-btn
-        v-if="isJupyterHub"
         color="primary"
         label="Launch on Chameleon"
         :href="artifact.computed.get_chameleon_launch_url(version_slug, sharingKey)"
         target="_blank"
         class="full-width"
       />
+    </div>
+
+    <div class="q-mb-sm" v-if="!isJupyterHub">
       <q-chip
-        v-else
         color="grey"
         text-color="white"
         class="full-width justify-center cursor-inherit"
