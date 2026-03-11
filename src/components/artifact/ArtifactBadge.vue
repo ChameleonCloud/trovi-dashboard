@@ -5,7 +5,7 @@ import repetoLogo from '@/assets/img/reproducible-logo-small.png'
 import fountLogo from '@/assets/img/educational-logo-small.png'
 
 const badgeIcons = {
-  chameleon: chameleonLogo,
+  "chameleon supported": chameleonLogo,
   reproducible: repetoLogo,
   educational: fountLogo,
 }
