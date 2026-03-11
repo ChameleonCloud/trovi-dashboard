@@ -207,6 +207,10 @@ export const useArtifactsStore = defineStore('artifacts', {
         badge_data.data.badges.forEach((badge) => {
           this.processed_badges.badges[badge.name] = badge
         })
+
+        // rename chameleon to chameleon supported
+        this.processed_badges.badges['chameleon'].name = 'chameleon supported'
+
         badge_data.data.artifact_badges.forEach((artifact_badge) => {
           if (!this.processed_badges.artifact_badges[artifact_badge.artifact_uuid]) {
             this.processed_badges.artifact_badges[artifact_badge.artifact_uuid] = new Set()
