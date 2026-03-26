@@ -19,6 +19,6 @@ import ArtifactList from '@/components/artifact/ArtifactList.vue'
       </CardItem>
     </div>
   </MainSection>
-
+  <!-- Changed show buttton because all results fetched so this avoids pagination and hides the view all artifacts button -->
   <ArtifactList :limit="6" :showButton="true" />
 </template>
