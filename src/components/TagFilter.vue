@@ -193,6 +193,7 @@ function handleSearch() {
           label-class="text-subtitle2"
           :label="tag"
           dense
+          :disable="isSearching"
         />
       </div>
     </div>
@@ -208,6 +209,7 @@ function handleSearch() {
           :val="badge.name"
           v-model="selectedBadges"
           dense
+          :disable="isSearching"
         >
           <ArtifactBadge :badge="badge" :link="false" />
         </q-checkbox>
@@ -221,16 +223,16 @@ function handleSearch() {
       </div>
 
       <div class="col-auto">
-        <q-checkbox v-model="filterOwned" label="My Artifacts" dense />
+        <q-checkbox v-model="filterOwned" label="My Artifacts" dense :disable="isSearching" />
       </div>
       <div class="col-auto">
-        <q-checkbox v-model="filterPublic" label="Public" dense />
+        <q-checkbox v-model="filterPublic" label="Public" dense :disable="isSearching" />
       </div>
       <div class="col-auto">
-        <q-checkbox v-model="filterCollection" label="Is collection" dense />
+        <q-checkbox v-model="filterCollection" label="Is collection" dense :disable="isSearching" />
       </div>
       <div class="col-auto">
-        <q-checkbox v-model="filterDoi" label="Has DOI" dense />
+        <q-checkbox v-model="filterDoi" label="Has DOI" dense :disable="isSearching" />
       </div>
     </div>
   </div>
