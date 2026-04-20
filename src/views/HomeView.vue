@@ -19,6 +19,5 @@ import ArtifactList from '@/components/artifact/ArtifactList.vue'
       </CardItem>
     </div>
   </MainSection>
-
   <ArtifactList :limit="6" :showButton="true" />
 </template>

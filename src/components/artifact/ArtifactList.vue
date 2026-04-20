@@ -163,14 +163,22 @@ function showAllArtifacts() {
       :is-loading="(!props.limit || state.artifacts.length < props.limit) && isLoading"
     />
   </MainSection>
-
-  <section v-if="showButton && !state.showAllArtifacts && displayedArtifacts.length < artifactsStore.artifacts.length" class="q-mx-auto q-my-xl q-pa-md" style="max-width: 32rem">
+  <section
+    v-if="
+      showButton &&
+      !state.showAllArtifacts &&
+      displayedArtifacts.length > 0 &&
+      displayedArtifacts.length < artifactsStore.artifacts.length
+    "
+    class="q-mx-auto q-my-xl q-pa-md"
+    style="max-width: 32rem"
+  >
     <q-btn
       @click="showAllArtifacts"
-      color="primary"
+      color="primary" 
       class="full-width justify-center"
     >
-      View All Artifacts
+      View More Artifacts
     </q-btn>
   </section>
 </template>

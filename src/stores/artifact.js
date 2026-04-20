@@ -31,19 +31,21 @@ function processArtifact(store, artifact) {
     artifact.authors.length > 0
       ? artifact.authors.map((a) => a.full_name).join(', ')
       : parseUrn(artifact.owner_urn)['username']
-  artifact.computed.summedMetrics = artifact.versions.reduce(
-    (acc, version) => {
-      acc.access_count += version.metrics.access_count
-      acc.unique_access_count += version.metrics.unique_access_count
-      acc.unique_cell_execution_count += version.metrics.unique_cell_execution_count
-      return acc
-    },
-    {
-      access_count: 0,
-      unique_access_count: 0,
-      unique_cell_execution_count: 0,
-    },
-  )
+  artifact.computed.summedMetrics = artifact.metrics
+    ? { ...artifact.metrics }
+    : artifact.versions.reduce(
+        (acc, version) => {
+          acc.access_count += version.metrics.access_count
+          acc.unique_access_count += version.metrics.unique_access_count
+          acc.unique_cell_execution_count += version.metrics.unique_cell_execution_count
+          return acc
+        },
+        {
+          access_count: 0,
+          unique_access_count: 0,
+          unique_cell_execution_count: 0,
+        },
+      )
   artifact.computed.long_description_markup = marked(
     artifact.long_description ? artifact.long_description : '',
   )
