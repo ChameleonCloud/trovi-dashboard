@@ -27,7 +27,7 @@ const state = reactive({
   selectedTags: route.query.tags ? route.query.tags.split(',') : [],
   selectedBadges: route.query.badges ? route.query.badges.split(',') : [],
   searchText: route.query.q || '',
-  sortBy: route.query.sort_by || '',
+  sortBy: route.query.sort_by || 'unique_access_count',
   filterOwned: route.query.owned === '1',
   filterPublic: route.query.public === '1',
   filterDoi: route.query.doi === '1',
@@ -128,6 +128,9 @@ function showAllArtifacts() {
       <div>
         <template v-if="!isSearching">
           Displaying {{ displayedArtifacts.length }} of {{ artifactsStore.artifacts.length }} artifacts
+          <span v-if="artifactsStore.loadingMore" class="text-grey-7">
+            <QSpinnerDots size="1em" class="q-ml-sm" /> loading more...
+          </span>
         </template>
         <template v-else>
           <QSpinnerDots class="q-mr-sm" size="1.6em" />
