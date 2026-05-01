@@ -189,6 +189,7 @@ export const useArtifactsStore = defineStore('artifacts', {
     artifacts: [],
     artifactDetails: {},
     loading: false,
+    loadingMore: false,
     badges_loaded: false,
     processed_badges: {
       badges: {},
@@ -231,6 +232,7 @@ export const useArtifactsStore = defineStore('artifacts', {
 
       await this.fetchBadges()
       this.loading = true
+      this.loadingMore = false
       let after = null
 
       var token = undefined
@@ -242,9 +244,11 @@ export const useArtifactsStore = defineStore('artifacts', {
       this.artifacts = []
       this.artifactDetails = {}
 
+      let isFirstPage = true
+
       do {
         try {
-          const params = { after, limit: 500 }
+          const params = { after, limit: isFirstPage ? 50 : 500 }
           if (q) params.q = q
           if (sortBy) params.sort_by = sortBy
           if (tags && tags.length > 0) {
@@ -261,17 +265,28 @@ export const useArtifactsStore = defineStore('artifacts', {
             this.artifactDetails[artifact.uuid] = processArtifact(this, artifact)
           })
 
+          // Show results after first page loads
+          if (isFirstPage) {
+            this.loading = false
+            isFirstPage = false
+          }
+
           // Update the `after` parameter for the next call
           after =
             response.data.next.after && newArtifacts.length > 0
               ? newArtifacts[newArtifacts.length - 1].uuid
               : null
+
+          if (after !== null && !this.loadingMore) {
+            this.loadingMore = true
+          }
         } catch (error) {
           console.error('Failed to load artifacts:', error)
           break
         }
       } while (after !== null)
       this.loading = false
+      this.loadingMore = false
     },
     async fetchArtifactById(uuid, sharing_key) {
       await this.fetchBadges()
