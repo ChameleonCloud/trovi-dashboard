@@ -105,6 +105,82 @@ function processArtifact(store, artifact) {
     artifact.computed.git_ref = match[2] || null // will be the hash/tag/branch if present
   }
 
+  // Derive a generic external source URL (GitHub or Zenodo) for the artifact.
+  // Prefer feature/setup metadata (environment_setup source_code) on the latest
+  // version, then fall back to contents.urn parsing for either provider.
+  artifact.computed.source_url = undefined
+  artifact.computed.source_provider = undefined
+
+  const sortedVersions = artifact.versions
+    .slice()
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+
+  const githubSourceRegex = /(?:https?:\/\/|git@)?github\.com[:/]([^\s/]+\/[^\s/]+?)(?:\.git)?(?:[/?#].*)?$/i
+  const zenodoUrnRegex = /^urn:trovi:contents:zenodo:(.+)$/i
+  const zenodoUrlRegex = /https?:\/\/(?:[^/]*\.)?zenodo\.org\/(?:record|records|doi)\/([^\s?#]+)/i
+  const doiUrlRegex = /https?:\/\/(?:dx\.)?doi\.org\/(.+)$/i
+
+  function deriveGithubSource(candidate) {
+    if (typeof candidate !== 'string') return undefined
+    const match = candidate.match(githubSourceRegex)
+    if (!match) return undefined
+    const repo = match[1].replace(/\.git$/, '')
+    return { url: `https://github.com/${repo}`, provider: 'github' }
+  }
+
+  function deriveZenodoSource(candidate) {
+    if (typeof candidate !== 'string') return undefined
+    const urnMatch = candidate.match(zenodoUrnRegex)
+    if (urnMatch) {
+      try {
+        const doi = parseDoi(candidate)
+        return { url: `https://doi.org/${doi}`, provider: 'zenodo' }
+      } catch {
+        return undefined
+      }
+    }
+    const doiMatch = candidate.match(doiUrlRegex)
+    if (doiMatch) {
+      return { url: `https://doi.org/${doiMatch[1]}`, provider: 'zenodo' }
+    }
+    const zUrlMatch = candidate.match(zenodoUrlRegex)
+    if (zUrlMatch) {
+      return { url: candidate, provider: 'zenodo' }
+    }
+    return undefined
+  }
+
+  function deriveFromVersion(version) {
+    const setup = Array.isArray(version?.environment_setup) ? version.environment_setup : []
+    for (const entry of setup) {
+      if (entry?.type !== 'source_code' || !entry.arguments) continue
+      const candidate = entry.arguments.url || entry.arguments.repo_url
+      if (!candidate || typeof candidate !== 'string') continue
+      const githubSource = deriveGithubSource(candidate)
+      if (githubSource) return githubSource
+      const zenodoSource = deriveZenodoSource(candidate)
+      if (zenodoSource) return zenodoSource
+    }
+
+    const urn = version?.contents?.urn
+    if (typeof urn === 'string') {
+      const githubSource = deriveGithubSource(urn)
+      if (githubSource) return githubSource
+      const zenodoSource = deriveZenodoSource(urn)
+      if (zenodoSource) return zenodoSource
+    }
+    return undefined
+  }
+
+  for (const version of sortedVersions) {
+    const derived = deriveFromVersion(version)
+    if (derived) {
+      artifact.computed.source_url = derived.url
+      artifact.computed.source_provider = derived.provider
+      break
+    }
+  }
+
   if (store.processed_badges.artifact_badges[artifact.uuid]) {
     artifact.badges = Array.from(store.processed_badges.artifact_badges[artifact.uuid]).map(
       (ab) => store.processed_badges.badges[ab],
@@ -189,6 +265,7 @@ export const useArtifactsStore = defineStore('artifacts', {
     artifacts: [],
     artifactDetails: {},
     loading: false,
+    loadingMore: false,
     badges_loaded: false,
     processed_badges: {
       badges: {},
@@ -231,6 +308,7 @@ export const useArtifactsStore = defineStore('artifacts', {
 
       await this.fetchBadges()
       this.loading = true
+      this.loadingMore = false
       let after = null
 
       var token = undefined
@@ -242,9 +320,11 @@ export const useArtifactsStore = defineStore('artifacts', {
       this.artifacts = []
       this.artifactDetails = {}
 
+      let isFirstPage = true
+
       do {
         try {
-          const params = { after, limit: 500 }
+          const params = { after, limit: isFirstPage ? 50 : 500 }
           if (q) params.q = q
           if (sortBy) params.sort_by = sortBy
           if (tags && tags.length > 0) {
@@ -261,17 +341,28 @@ export const useArtifactsStore = defineStore('artifacts', {
             this.artifactDetails[artifact.uuid] = processArtifact(this, artifact)
           })
 
+          // Show results after first page loads
+          if (isFirstPage) {
+            this.loading = false
+            isFirstPage = false
+          }
+
           // Update the `after` parameter for the next call
           after =
             response.data.next.after && newArtifacts.length > 0
               ? newArtifacts[newArtifacts.length - 1].uuid
               : null
+
+          if (after !== null && !this.loadingMore) {
+            this.loadingMore = true
+          }
         } catch (error) {
           console.error('Failed to load artifacts:', error)
           break
         }
       } while (after !== null)
       this.loading = false
+      this.loadingMore = false
     },
     async fetchArtifactById(uuid, sharing_key) {
       await this.fetchBadges()

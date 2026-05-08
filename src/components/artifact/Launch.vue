@@ -76,22 +76,26 @@ const genericJupyter = computed(() => {
       />
     </div>
 
-    <div v-if="artifact.computed.github_url" class="q-mb-sm">
+    <div v-if="!isJupyterHub && artifact.computed.source_url" class="q-mb-sm">
       <q-btn
         color="primary"
-        label="View on GitHub"
-        :href="artifact.computed.github_url"
+        label="View source"
+        :href="artifact.computed.source_url"
         target="_blank"
         class="full-width q-mb-sm"
       />
 
-      <div class="rounded-borders q-pa-sm code">
+      <div
+        v-if="artifact.computed.source_provider === 'github'"
+        class="rounded-borders q-pa-sm code"
+      >
         <code>
           <pre>
-git clone {{ artifact.computed.github_url }}
-# cd into the created directory git checkout
-{{ artifact.computed.git_ref }}</pre
-          >
+git clone {{ artifact.computed.source_url }}
+<template v-if="artifact.computed.git_ref">
+# cd into the created directory
+git checkout {{ artifact.computed.git_ref }}
+</template></pre>
         </code>
       </div>
     </div>

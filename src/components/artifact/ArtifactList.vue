@@ -128,6 +128,9 @@ function showAllArtifacts() {
       <div>
         <template v-if="!isSearching">
           Displaying {{ displayedArtifacts.length }} of {{ artifactsStore.artifacts.length }} artifacts
+          <span v-if="artifactsStore.loadingMore" class="text-grey-7">
+            <QSpinnerDots size="1em" class="q-ml-sm" /> loading more...
+          </span>
         </template>
         <template v-else>
           <QSpinnerDots class="q-mr-sm" size="1.6em" />
