@@ -229,14 +229,15 @@ export const useArtifactsStore = defineStore('artifacts', {
     async fetchAllArtifacts(queryParams = {}) {
       const { q = '', sortBy = '', tags = [] } = queryParams
 
-      await this.fetchBadges()
       this.loading = true
       let after = null
 
-      var token = undefined
-      if (this.authStore.isAuthenticated) {
-        token = await this.authStore.getTroviToken()
-      }
+      const [token] = await Promise.all([
+        this.authStore.isAuthenticated
+          ? this.authStore.getTroviToken()
+          : Promise.resolve(undefined),
+        this.fetchBadges(),
+      ])
       let tokenParam = token ? `?access_token=${token}` : ''
 
       this.artifacts = []

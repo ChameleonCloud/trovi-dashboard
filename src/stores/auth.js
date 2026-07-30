@@ -54,6 +54,18 @@ export const useAuthStore = defineStore('auth', {
     },
     async getTroviToken() {
       await this.initKeycloak()
+      if (this.troviToken) {
+        try {
+          const b64 = this.troviToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
+          const padded = b64 + '='.repeat((4 - b64.length % 4) % 4)
+          const payload = JSON.parse(atob(padded))
+          if (payload.exp && payload.exp > Date.now() / 1000 + 30) {
+            return this.troviToken
+          }
+        } catch {
+          // malformed token — fall through to re-fetch
+        }
+      }
       let res = await axios.post('/token/', {
         grant_type: 'token_exchange',
         subject_token: this.token,
