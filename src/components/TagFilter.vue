@@ -122,18 +122,6 @@ const searchText = computed({
   },
 })
 
-const sortBy = computed({
-  get() {
-    if (typeof props.sortBy === 'string') return props.sortBy
-    return route.query.sort_by || ''
-  },
-  set(val) {
-    const s = val || ''
-    emit('update:sortBy', s)
-    updateQuery({ sort_by: s || undefined })
-  },
-})
-
 const badgesList = computed(() => {
   if (Array.isArray(props.badges)) return props.badges
   if (props.badges && typeof props.badges === 'object') return Object.values(props.badges)
@@ -209,7 +197,6 @@ function handleSearch() {
           :val="badge.name"
           v-model="selectedBadges"
           dense
-          :disable="isSearching"
         >
           <ArtifactBadge :badge="badge" :link="false" />
         </q-checkbox>
@@ -223,16 +210,16 @@ function handleSearch() {
       </div>
 
       <div class="col-auto">
-        <q-checkbox v-model="filterOwned" label="My Artifacts" dense :disable="isSearching" />
+        <q-checkbox v-model="filterOwned" label="My Artifacts" dense />
       </div>
       <div class="col-auto">
-        <q-checkbox v-model="filterPublic" label="Public" dense :disable="isSearching" />
+        <q-checkbox v-model="filterPublic" label="Public" dense />
       </div>
       <div class="col-auto">
-        <q-checkbox v-model="filterCollection" label="Is collection" dense :disable="isSearching" />
+        <q-checkbox v-model="filterCollection" label="Is collection" dense />
       </div>
       <div class="col-auto">
-        <q-checkbox v-model="filterDoi" label="Has DOI" dense :disable="isSearching" />
+        <q-checkbox v-model="filterDoi" label="Has DOI" dense />
       </div>
     </div>
   </div>

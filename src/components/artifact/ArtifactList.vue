@@ -36,6 +36,7 @@ const state = reactive({
 })
 
 const isSearching = ref(false)
+let searchGeneration = 0
 
 const locallyFilteredArtifacts = computed(() => {
   return filterArtifacts(state.artifacts, {
@@ -55,8 +56,7 @@ const displayedArtifacts = computed(() => {
 const isLoading = computed(() => artifactsStore.loading)
 
 async function performSearch() {
-  if (isSearching.value) return
-
+  const myGeneration = (searchGeneration += 1)
   isSearching.value = true
   try {
     await artifactsStore.fetchAllArtifacts({
@@ -64,11 +64,15 @@ async function performSearch() {
       sortBy: state.sortBy,
       tags: state.selectedTags,
     })
-    state.artifacts = artifactsStore.artifacts
+    if (myGeneration === searchGeneration) {
+      state.artifacts = artifactsStore.artifacts
+    }
   } catch (error) {
     console.error('Error fetching artifacts', error)
   } finally {
-    isSearching.value = false
+    if (myGeneration === searchGeneration) {
+      isSearching.value = false
+    }
   }
 }
 
@@ -120,18 +124,19 @@ function showAllArtifacts() {
       v-model:searchText="state.searchText"
       v-model:filterCollection="state.filterCollection"
       v-model:sortBy="state.sortBy"
-      :isSearching="isSearching"
+      :isSearching="isSearching && artifactsStore.artifacts.length === 0"
       @search="handleSearch"
     />
 
     <div class="row justify-between items-center q-my-md">
-      <div>
-        <template v-if="!isSearching">
-          Displaying {{ displayedArtifacts.length }} of {{ artifactsStore.artifacts.length }} artifacts
+      <div class="row items-center q-gutter-xs">
+        <template v-if="isSearching && artifactsStore.artifacts.length === 0">
+          <QSpinnerDots size="1.6em" />
+          <span>Searching artifacts...</span>
         </template>
         <template v-else>
-          <QSpinnerDots class="q-mr-sm" size="1.6em" />
-          Searching artifacts...
+          <span>Displaying {{ displayedArtifacts.length }} of {{ artifactsStore.artifacts.length }} artifacts</span>
+          <QSpinnerDots v-if="isSearching" size="1em" />
         </template>
       </div>
 
