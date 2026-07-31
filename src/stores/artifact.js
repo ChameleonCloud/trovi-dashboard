@@ -245,7 +245,7 @@ export const useArtifactsStore = defineStore('artifacts', {
 
       do {
         try {
-          const params = { after, limit: 500 }
+          const params = { after, limit: 50 }
           if (q) params.q = q
           if (sortBy) params.sort_by = sortBy
           if (tags && tags.length > 0) {
@@ -262,17 +262,20 @@ export const useArtifactsStore = defineStore('artifacts', {
             this.artifactDetails[artifact.uuid] = processArtifact(this, artifact)
           })
 
+          // Unblock the UI after the first page; remaining pages load in the background
+          this.loading = false
+
           // Update the `after` parameter for the next call
           after =
             response.data.next.after && newArtifacts.length > 0
               ? newArtifacts[newArtifacts.length - 1].uuid
               : null
         } catch (error) {
+          this.loading = false
           console.error('Failed to load artifacts:', error)
           break
         }
       } while (after !== null)
-      this.loading = false
     },
     async fetchArtifactById(uuid, sharing_key) {
       await this.fetchBadges()
