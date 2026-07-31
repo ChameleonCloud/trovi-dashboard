@@ -184,6 +184,8 @@ function errObjToMessage(errObj) {
   return messages.join('\n')
 }
 
+let _fetchGeneration = 0
+
 export const useArtifactsStore = defineStore('artifacts', {
   state: () => ({
     artifacts: [],
@@ -229,6 +231,8 @@ export const useArtifactsStore = defineStore('artifacts', {
     async fetchAllArtifacts(queryParams = {}) {
       const { q = '', sortBy = '', tags = [] } = queryParams
 
+      const myGeneration = ++_fetchGeneration
+
       this.loading = true
       let after = null
 
@@ -245,7 +249,7 @@ export const useArtifactsStore = defineStore('artifacts', {
 
       do {
         try {
-          const params = { after, limit: 50 }
+          const params = { after, limit: after ? 200 : 50 }
           if (q) params.q = q
           if (sortBy) params.sort_by = sortBy
           if (tags && tags.length > 0) {
@@ -253,6 +257,9 @@ export const useArtifactsStore = defineStore('artifacts', {
           }
 
           const response = await axios.get(`/artifacts/${tokenParam}`, { params })
+
+          // If a newer fetch started while waiting for this response, bail out
+          if (myGeneration !== _fetchGeneration) break
 
           // Append the new artifacts to the store
           // After includes first artifact, so ignore it if set
@@ -275,7 +282,7 @@ export const useArtifactsStore = defineStore('artifacts', {
           console.error('Failed to load artifacts:', error)
           break
         }
-      } while (after !== null)
+      } while (after !== null && myGeneration === _fetchGeneration)
     },
     async fetchArtifactById(uuid, sharing_key) {
       await this.fetchBadges()
