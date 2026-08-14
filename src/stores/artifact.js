@@ -52,7 +52,7 @@ function processArtifact(store, artifact) {
   artifact.computed.get_chameleon_launch_url = function (version_slug, sharing_key) {
     const params = new URLSearchParams()
     if (sharing_key) {
-      params.append('sharing_key', sharing_key)
+      params.append('s', sharing_key)
     }
 
     const version = artifact.versions.find((v) => v.slug === version_slug)
@@ -76,7 +76,7 @@ function processArtifact(store, artifact) {
   artifact.computed.get_chameleon_download_url = function (version_slug, sharing_key) {
     const params = new URLSearchParams()
     if (sharing_key) {
-      params.append('sharing_key', sharing_key)
+      params.append('s', sharing_key)
     }
     const paramString = params.toString()
     const queryString = paramString ? `?${paramString}` : ''
