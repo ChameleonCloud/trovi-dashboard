@@ -57,7 +57,7 @@ const latestVersion = computed(
 
 const authorList = computed(() => props.artifact?.authors?.map((a) => a.full_name).join(', ') ?? '')
 const troviUrl = computed(() =>
-  props.artifact?.uuid ? `https://trovi.chameleoncloud.org/artifacts/${props.artifact.uuid}` : '',
+  props.artifact?.uuid ? `https://trovi.chameleoncloud.org/dashboard/artifacts/${props.artifact.uuid}` : '',
 )
 const doi = computed(() => {
   if (!props.artifact.computed.hasDoi) {
