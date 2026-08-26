@@ -7,8 +7,7 @@ import AddArtifactView from '@/views/AddArtifactView.vue'
 import EditArtifactView from '@/views/EditArtifactView.vue'
 import AboutView from '@/views/AboutView.vue'
 import LoginView from '@/views/LoginView.vue'
-
-let lastRoute = null
+import { useAuthStore } from '@/stores/auth'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -85,12 +84,18 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach((to, from, next) => {
-  if (lastRoute?.name == 'login' && to.meta.requiresAuth) {
-    router.push({ path: '/' })
+// Routes are public unless marked requiresAuth
+router.beforeEach(async (to) => {
+  if (!to.meta.requiresAuth) {
+    return true
   }
-  lastRoute = to
-  next()
+  const authStore = useAuthStore()
+  if (await authStore.restoreSession()) {
+    return true
+  }
+  // redirects away; only falls through if login was impossible
+  await authStore.login(router.resolve(to.fullPath).href)
+  return { path: '/' }
 })
 
 router.beforeEach((to, from, next) => {

@@ -1,7 +1,6 @@
 <script setup>
 import { reactive, onMounted, ref, watch, computed } from 'vue'
 import { useArtifactsStore } from '@/stores/artifact'
-import { useAuthStore } from '@/stores/auth'
 import { useRoute } from 'vue-router'
 import router from '@/router'
 import { parseUrn, usernameToUrn, gitToUrn, filterArtifacts } from '@/util'
@@ -15,8 +14,6 @@ import draggable from 'vuedraggable'
 const route = useRoute()
 const artifactUUID = route.params.uuid
 const artifactsStore = useArtifactsStore()
-const authStore = useAuthStore()
-authStore.initKeycloak()
 
 const VISIBILITY_OPTIONS = ['public', 'private']
 const ROLES = ['collaborator', 'administrator']
