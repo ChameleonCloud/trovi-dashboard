@@ -236,12 +236,7 @@ export const useArtifactsStore = defineStore('artifacts', {
       this.loading = true
       let after = null
 
-      const [token] = await Promise.all([
-        this.authStore.isAuthenticated
-          ? this.authStore.getTroviToken()
-          : Promise.resolve(undefined),
-        this.fetchBadges(),
-      ])
+      const [token] = await Promise.all([this.authStore.getTroviToken(), this.fetchBadges()])
       let tokenParam = token ? `?access_token=${token}` : ''
 
       this.artifacts = []
@@ -285,13 +280,9 @@ export const useArtifactsStore = defineStore('artifacts', {
       } while (after !== null && myGeneration === _fetchGeneration)
     },
     async fetchArtifactById(uuid, sharing_key) {
-      await this.fetchBadges()
-      // Check if the artifact is already in the cache
-      var token = undefined
-      if (this.authStore.isAuthenticated) {
-        token = await this.authStore.getTroviToken()
-      }
+      const [token] = await Promise.all([this.authStore.getTroviToken(), this.fetchBadges()])
       let tokenParam = token ? `access_token=${token}` : ''
+      // Check if the artifact is already in the cache
       if (!this.artifactDetails[uuid]) {
         const response = await axios.get(
           `/artifacts/${uuid}/?${tokenParam}&sharing_key=${sharing_key}`,
@@ -315,9 +306,7 @@ export const useArtifactsStore = defineStore('artifacts', {
       this.tags = response.data.tags.map((t) => t.tag)
     },
     async importArtifact(githubRepo, uuid = undefined) {
-      if (!this.authStore.isAuthenticated) {
-        await this.authStore.initKeycloak()
-      }
+      await this.authStore.requireLogin()
       let token = await this.authStore.getTroviToken()
       if (token) {
         try {
@@ -355,9 +344,7 @@ export const useArtifactsStore = defineStore('artifacts', {
       }
     },
     async createArtifact(artifact_obj) {
-      if (!this.authStore.isAuthenticated) {
-        await this.authStore.initKeycloak()
-      }
+      await this.authStore.requireLogin()
       let token = await this.authStore.getTroviToken()
       if (token) {
         try {
@@ -388,9 +375,7 @@ export const useArtifactsStore = defineStore('artifacts', {
       }
     },
     async updateArtifactRoles(uuid, rolesToAdd, rolesToRemove) {
-      if (!this.authStore.isAuthenticated) {
-        await this.authStore.initKeycloak()
-      }
+      await this.authStore.requireLogin()
       let token = await this.authStore.getTroviToken()
       if (token) {
         try {
@@ -432,9 +417,7 @@ export const useArtifactsStore = defineStore('artifacts', {
       }
     },
     async updateArtifactLinks(uuid, orderedLinks) {
-      if (!this.authStore.isAuthenticated) {
-        await this.authStore.initKeycloak()
-      }
+      await this.authStore.requireLogin()
       const token = await this.authStore.getTroviToken()
       if (!token) {
         Notify.create({
@@ -486,9 +469,7 @@ export const useArtifactsStore = defineStore('artifacts', {
       }
     },
     async updateArtifactVersions(uuid, versionsToRemove) {
-      if (!this.authStore.isAuthenticated) {
-        await this.authStore.initKeycloak()
-      }
+      await this.authStore.requireLogin()
       let token = await this.authStore.getTroviToken()
       if (token) {
         try {
@@ -520,15 +501,14 @@ export const useArtifactsStore = defineStore('artifacts', {
       }
     },
     async migrateArtifactVersion(uuid, slug, backed = 'zenodo') {
-      if (!this.authStore.isAuthenticated) {
-        await this.authStore.initKeycloak()
-      }
+      await this.authStore.requireLogin()
       const token = await this.authStore.getTroviToken()
       if (!token) {
         Notify.create({
           type: 'negative',
           message: 'Could not request DOI, try refreshing the page.',
         })
+        return null
       }
 
       try {
@@ -558,15 +538,14 @@ export const useArtifactsStore = defineStore('artifacts', {
       }
     },
     async createVersion(uuid, version_obj) {
-      if (!this.authStore.isAuthenticated) {
-        await this.authStore.initKeycloak()
-      }
+      await this.authStore.requireLogin()
       const token = await this.authStore.getTroviToken()
       if (!token) {
         Notify.create({
           type: 'negative',
           message: 'Could not create version, try refreshing the page.',
         })
+        return null
       }
 
       try {
@@ -596,9 +575,7 @@ export const useArtifactsStore = defineStore('artifacts', {
       }
     },
     async updateArtifactMetadata(uuid, patch) {
-      if (!this.authStore.isAuthenticated) {
-        await this.authStore.initKeycloak()
-      }
+      await this.authStore.requireLogin()
       const token = await this.authStore.getTroviToken()
       if (!token) return
 
@@ -635,9 +612,7 @@ export const useArtifactsStore = defineStore('artifacts', {
       }
     },
     async deleteArtifact(uuid) {
-      if (!this.authStore.isAuthenticated) {
-        await this.authStore.initKeycloak()
-      }
+      await this.authStore.requireLogin()
       const token = await this.authStore.getTroviToken()
       if (!token) return false
 

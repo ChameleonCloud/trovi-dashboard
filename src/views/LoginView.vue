@@ -4,15 +4,15 @@ import router from '@/router'
 import MainSection from '@/components/MainSection.vue'
 
 const authStore = useAuthStore()
-if (!authStore.isAuthenticated) {
-  authStore.initKeycloak().then(() => {
-    router.go(-1)
-  })
-} else {
-  authStore.logout().then(() => {
-    router.go(-1)
-  })
-}
+
+// Landing here means "log me in". Return home, not here, which would loop.
+authStore.restoreSession().then((authenticated) => {
+  if (authenticated) {
+    router.replace({ path: '/' })
+  } else {
+    authStore.login(router.resolve('/').href)
+  }
+})
 </script>
 
 <template>

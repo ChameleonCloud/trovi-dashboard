@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Checking session</title>
+  </head>
+
+  <body>
+    <!-- Hands Keycloak's hidden session-check iframe its callback parameters -->
+    <script>
+      parent.postMessage(location.href, location.origin)
+    </script>
+  </body>
+</html>

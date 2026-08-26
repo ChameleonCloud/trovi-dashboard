@@ -6,6 +6,8 @@ const route = useRoute()
 const authStore = useAuthStore()
 
 const isActiveLink = (routePath) => route.path === routePath
+
+const toggleSession = () => (authStore.isAuthenticated ? authStore.logout() : authStore.login())
 </script>
 
 <template>
@@ -41,11 +43,10 @@ const isActiveLink = (routePath) => route.path === routePath
     <q-btn
       flat
       dense
-      :to="'/login'"
+      @click="toggleSession"
       :label="
         authStore.isAuthenticated ? `Sign Out: ${authStore.userInfo.preferred_username}` : 'Log in'
       "
-      :class="{ 'text-bold': isActiveLink('/login') }"
     />
   </q-toolbar>
 </template>

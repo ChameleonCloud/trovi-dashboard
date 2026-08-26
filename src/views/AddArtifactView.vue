@@ -2,13 +2,9 @@
 import router from '@/router'
 import { reactive, ref, watch } from 'vue'
 import { useArtifactsStore } from '@/stores/artifact'
-import { useAuthStore } from '@/stores/auth'
 import MainSection from '@/components/MainSection.vue'
 import { Notify, QSpinner, QInput, QBtn, QSelect, QTabs, QTab, QTabPanels, QTabPanel } from 'quasar'
 import { useRoute } from 'vue-router'
-
-const authStore = useAuthStore()
-authStore.initKeycloak()
 
 const artifactsStore = useArtifactsStore()
 
