@@ -6,6 +6,8 @@ import ArtifactAuthors from '@/components/artifact/ArtifactAuthors.vue'
 import ArtifactCitation from '@/components/artifact/ArtifactCitation.vue'
 import ArtifactVersions from '@/components/artifact/ArtifactVersions.vue'
 import ArtifactLinks from '@/components/artifact/ArtifactLinks.vue'
+import ArtifactVideos from '@/components/artifact/ArtifactVideos.vue'
+import ArtifactPublications from '@/components/artifact/ArtifactPublications.vue'
 import ArtifactLinksFrom from '@/components/artifact/ArtifactLinksFrom.vue'
 import Launch from '@/components/artifact/Launch.vue'
 import Loading from '@/components/Loading.vue'
@@ -102,6 +104,8 @@ const launchVersionSlug = computed(() => {
                 :artifact="state.artifact"
                 :selectedVersion="state.selectedVersion"
               />
+              <ArtifactVideos :artifact="state.artifact" />
+              <ArtifactPublications :artifact="state.artifact" />
               <ArtifactLinks :artifact="state.artifact" />
             </main>
 
