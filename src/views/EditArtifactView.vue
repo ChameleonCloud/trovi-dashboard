@@ -3,7 +3,7 @@ import { reactive, onMounted, ref, watch, computed } from 'vue'
 import { useArtifactsStore } from '@/stores/artifact'
 import { useRoute } from 'vue-router'
 import router from '@/router'
-import { parseUrn, usernameToUrn, gitToUrn, filterArtifacts } from '@/util'
+import { parseUrn, usernameToUrn, gitToUrn, filterArtifacts, parseBibtex } from '@/util'
 import TagFilter from '@/components/TagFilter.vue'
 import MainSection from '@/components/MainSection.vue'
 import Loading from '@/components/Loading.vue'
@@ -45,6 +45,8 @@ function makeEditableArtifact(raw) {
     visibility: raw.visibility || 'private',
     tags: raw.tags ? [...raw.tags] : [],
     authors: raw.authors ? raw.authors.map((a) => ({ ...a })) : [],
+    videos: raw.videos ? raw.videos.map((v) => ({ ...v })) : [],
+    publications: raw.publications ? raw.publications.map((p) => ({ ...p })) : [],
     roles: raw.roles
       ? raw.roles.map((r) => ({
           username: parseUrn(r.user).username,
@@ -285,6 +287,25 @@ const initSelectionFromLinks = () => {
   })
 }
 
+const bibtexInput = ref('')
+
+const addPublicationsFromBibtex = () => {
+  const parsed = parseBibtex(bibtexInput.value)
+  if (!parsed.length) {
+    Notify.create({
+      type: 'negative',
+      message: 'No publications found. Check that the BibTeX entry has a title.',
+    })
+    return
+  }
+  state.artifact.publications.push(...parsed)
+  bibtexInput.value = ''
+  Notify.create({
+    type: 'positive',
+    message: `Added ${parsed.length} publication${parsed.length === 1 ? '' : 's'}. Review, then save.`,
+  })
+}
+
 /* --------- Metadata ---------- */
 const submitMetadata = async () => {
   const patch = []
@@ -314,6 +335,21 @@ const submitMetadata = async () => {
   // compare authors array (shallow, by JSON.stringify)
   if (JSON.stringify(edited.authors) !== JSON.stringify(original.authors)) {
     patch.push({ op: 'replace', path: '/authors', value: edited.authors })
+  }
+
+  const videos = edited.videos.filter((v) => v.url?.trim())
+  if (JSON.stringify(videos) !== JSON.stringify(original.videos ?? [])) {
+    patch.push({ op: 'replace', path: '/videos', value: videos })
+  }
+
+  const publications = edited.publications
+    .filter((p) => p.title?.trim())
+    .map((p) => ({
+      ...p,
+      year: p.year === '' || p.year === null ? null : Number(p.year),
+    }))
+  if (JSON.stringify(publications) !== JSON.stringify(original.publications ?? [])) {
+    patch.push({ op: 'replace', path: '/publications', value: publications })
   }
 
   if (patch.length > 0) {
@@ -554,6 +590,122 @@ const reimportArtifact = async () => {
                 label="Add Author"
                 color="primary"
                 @click="state.artifact.authors.push({ full_name: '', affiliation: '', email: '' })"
+              />
+            </div>
+
+            <h3 class="text-h6 q-mb-sm q-mt-lg">Videos</h3>
+            <div
+              v-for="(video, index) in state.artifact.videos"
+              :key="index"
+              class="q-mb-sm row items-center q-gutter-sm"
+            >
+              <q-input
+                v-model="video.url"
+                label="Video URL"
+                dense
+                class="col"
+              />
+              <q-btn
+                color="negative"
+                flat
+                icon="delete"
+                @click="state.artifact.videos.splice(index, 1)"
+                round
+                dense
+              />
+            </div>
+            <div class="row q-gutter-sm q-mt-md">
+              <q-btn
+                label="Add Video"
+                color="primary"
+                @click="state.artifact.videos.push({ url: '' })"
+              />
+            </div>
+
+            <h3 class="text-h6 q-mb-sm q-mt-lg">Publications</h3>
+            <div v-for="(publication, index) in state.artifact.publications" :key="index">
+              <div class="q-mb-sm row items-start q-gutter-sm">
+                <div class="col column q-gutter-sm">
+                  <q-input v-model="publication.title" label="Title" dense />
+                  <div class="row q-gutter-sm">
+                    <q-input v-model="publication.authors" label="Authors" dense class="col" />
+                    <q-input v-model="publication.venue" label="Venue" dense class="col" />
+                    <q-input
+                      v-model="publication.year"
+                      type="number"
+                      label="Year"
+                      dense
+                      class="col-2"
+                    />
+                  </div>
+                  <div class="row q-gutter-sm">
+                    <q-input
+                      v-model="publication.doi"
+                      label="DOI"
+                      hint="e.g. 10.1145/3555776.3577766"
+                      dense
+                      class="col"
+                    />
+                    <q-input v-model="publication.url" label="URL" dense class="col" />
+                  </div>
+                </div>
+                <q-btn
+                  color="negative"
+                  flat
+                  icon="delete"
+                  @click="state.artifact.publications.splice(index, 1)"
+                  round
+                  dense
+                />
+              </div>
+              <q-separator class="q-mb-md" />
+            </div>
+            <q-expansion-item
+              icon="content_paste"
+              label="Add from BibTeX"
+              caption="Paste one or more entries"
+              class="q-mt-sm bg-grey-2 rounded-borders"
+            >
+              <div class="q-pa-md">
+                <q-input
+                  v-model="bibtexInput"
+                  type="textarea"
+                  autogrow
+                  dense
+                  class="code"
+                  input-class="code"
+                  placeholder="@inproceedings{key,
+  title = {...},
+  author = {Last, First and Other, Author},
+  booktitle = {...},
+  year = {2026},
+  doi = {10.1145/...}
+}"
+                />
+                <q-btn
+                  label="Add from BibTeX"
+                  color="primary"
+                  class="q-mt-sm"
+                  :disable="!bibtexInput.trim()"
+                  @click="addPublicationsFromBibtex"
+                />
+              </div>
+            </q-expansion-item>
+
+            <div class="row q-gutter-sm q-mt-md">
+              <q-btn
+                label="Add Publication"
+                color="primary"
+                @click="
+                  state.artifact.publications.push({
+                    title: '',
+                    authors: '',
+                    venue: '',
+                    year: null,
+                    doi: '',
+                    url: '',
+                  })
+                "
               />
             </div>
             <div class="row q-gutter-sm q-mt-md">
