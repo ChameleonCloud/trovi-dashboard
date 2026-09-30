@@ -9,6 +9,7 @@ import ArtifactLinks from '@/components/artifact/ArtifactLinks.vue'
 import ArtifactVideos from '@/components/artifact/ArtifactVideos.vue'
 import ArtifactPublications from '@/components/artifact/ArtifactPublications.vue'
 import ArtifactLinksFrom from '@/components/artifact/ArtifactLinksFrom.vue'
+import ArtifactComments from '@/components/artifact/ArtifactComments.vue'
 import Launch from '@/components/artifact/Launch.vue'
 import Loading from '@/components/Loading.vue'
 
@@ -107,6 +108,7 @@ const launchVersionSlug = computed(() => {
               <ArtifactVideos :artifact="state.artifact" />
               <ArtifactPublications :artifact="state.artifact" />
               <ArtifactLinks :artifact="state.artifact" />
+              <ArtifactComments :artifact="state.artifact" />
             </main>
 
             <aside class="col">
