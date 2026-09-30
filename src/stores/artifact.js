@@ -184,6 +184,22 @@ function errObjToMessage(errObj) {
   return messages.join('\n')
 }
 
+async function sendCommentRequest(store, method, url, data) {
+  await store.authStore.requireLogin()
+  const token = await store.authStore.getTroviToken()
+  if (!token) return false
+  try {
+    const sharing_key = new URLSearchParams(window.location.search).get('sharing_key')
+    await axios({ method, url, data, params: { access_token: token, sharing_key } })
+    return true
+  } catch (error) {
+    console.error(error)
+    const detail = error.response ? errObjToMessage(error.response.data) : ''
+    Notify.create({ type: 'negative', message: `Error ${error.message}\n${detail}` })
+    return false
+  }
+}
+
 let _fetchGeneration = 0
 
 export const useArtifactsStore = defineStore('artifacts', {
@@ -647,6 +663,30 @@ export const useArtifactsStore = defineStore('artifacts', {
         }
         return false
       }
+    },
+    async fetchComments(uuid, sharing_key) {
+      const token = await this.authStore.getTroviToken()
+      const response = await axios.get(`/artifacts/${uuid}/comments/`, {
+        params: { access_token: token, sharing_key },
+      })
+      return response.data
+    },
+    createComment(uuid, comment) {
+      return sendCommentRequest(this, 'post', `/artifacts/${uuid}/comments/`, comment)
+    },
+    updateComment(uuid, id, description) {
+      return sendCommentRequest(this, 'patch', `/artifacts/${uuid}/comments/${id}/`, {
+        description,
+      })
+    },
+    deleteComment(uuid, id) {
+      return sendCommentRequest(this, 'delete', `/artifacts/${uuid}/comments/${id}/`)
+    },
+    reviewComment(uuid, id, decision, decision_comment) {
+      return sendCommentRequest(this, 'post', `/artifacts/${uuid}/comments/${id}/review/`, {
+        decision,
+        decision_comment,
+      })
     },
   },
 })
