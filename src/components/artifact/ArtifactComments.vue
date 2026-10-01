@@ -15,7 +15,6 @@ const state = reactive({
   posting: false,
 })
 
-// Replies whose parent isn't visible to this user are never reached from a root
 const byParent = computed(() => {
   const map = new Map()
   state.comments.forEach((comment) => {

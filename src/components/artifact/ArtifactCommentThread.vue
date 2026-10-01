@@ -24,8 +24,13 @@ const state = reactive({
   saving: false,
 })
 
-const author = computed(() => parseUrn(props.comment.user).username)
-const body = computed(() => DOMPurify.sanitize(marked(props.comment.description)))
+// A removed comment is served as a stub: structure only, no body or author
+const isStub = computed(() => props.comment.description === null)
+const placeholder = computed(() => (props.comment.deleted ? '[deleted]' : '[flagged]'))
+const author = computed(() => (props.comment.user ? parseUrn(props.comment.user).username : ''))
+const body = computed(() =>
+  isStub.value ? '' : DOMPurify.sanitize(marked(props.comment.description)),
+)
 const replies = computed(() => props.byParent.get(props.comment.id) ?? [])
 const isAuthor = computed(() => props.comment.user === authStore.userInfo?.userUrn)
 const canModerate = computed(() => props.artifact.computed.canEditRoles())
@@ -60,7 +65,9 @@ async function save() {
 function confirmDelete() {
   Dialog.create({
     title: 'Confirm Deletion',
-    message: 'Are you sure you want to delete this comment? Any replies to it are deleted too.',
+    message:
+      'Are you sure you want to delete this comment? ' +
+      'Its text is removed, but any replies to it are kept.',
     persistent: true,
     ok: { label: 'Delete', color: 'negative' },
     cancel: { label: 'Cancel' },
@@ -92,11 +99,11 @@ function confirmReject() {
 <template>
   <div class="q-mb-md">
     <div class="row items-center q-gutter-x-sm">
-      <span class="text-subtitle2">{{ author }}</span>
+      <span v-if="author" class="text-subtitle2">{{ author }}</span>
       <span class="text-caption">{{ comment.created_at }}</span>
       <span v-if="comment.updated_at" class="text-caption">(edited)</span>
       <q-badge
-        v-if="comment.decision !== 'approved'"
+        v-if="!isStub && comment.decision !== 'approved'"
         :color="comment.decision === 'rejected' ? 'negative' : 'warning'"
         :label="comment.decision"
       />
@@ -108,7 +115,8 @@ function confirmReject() {
       Reason: {{ comment.decision_comment }}
     </div>
 
-    <div v-if="!state.editing" class="comment-body text-body2" v-html="body"></div>
+    <div v-if="isStub" class="text-body2 text-grey-6">{{ placeholder }}</div>
+    <div v-else-if="!state.editing" class="comment-body text-body2" v-html="body"></div>
 
     <div v-if="state.replying || state.editing" class="q-mt-sm">
       <q-input
@@ -133,7 +141,7 @@ function confirmReject() {
         />
       </div>
     </div>
-    <div v-else-if="authStore.isAuthenticated" class="row q-gutter-x-xs">
+    <div v-else-if="authStore.isAuthenticated && !isStub" class="row q-gutter-x-xs">
       <q-btn flat dense size="sm" label="Reply" @click="openEditor(false)" />
       <q-btn v-if="isAuthor" flat dense size="sm" label="Edit" @click="openEditor(true)" />
       <q-btn
