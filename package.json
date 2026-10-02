@@ -19,7 +19,7 @@
     "marked": "^14.1.0",
     "pinia": "^2.2.1",
     "primeicons": "^7.0.0",
-    "quasar": "^2.18.5",
+    "quasar": "^2.34.0",
     "vue": "^3.4.29",
     "vue-router": "^4.4.0",
     "vuedraggable": "^4.1.0"
