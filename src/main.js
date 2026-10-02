@@ -1,7 +1,4 @@
 import '@/assets/main.css'
-import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
-import Aura from '@primevue/themes/aura'
 import 'primeicons/primeicons.css'
 import router from './router'
 import { createApp } from 'vue'
@@ -19,11 +16,6 @@ pinia.use(piniaPluginPersistedstate)
 
 app.use(pinia)
 app.use(router)
-app.use(PrimeVue, {
-  theme: {
-    preset: Aura,
-  },
-})
 app.use(Quasar, {
   plugins: {
     Notify,
@@ -33,6 +25,5 @@ app.use(Quasar, {
     dark: 'auto',
   },
 })
-app.directive('tooltip', Tooltip)
 
 app.mount('#app')
