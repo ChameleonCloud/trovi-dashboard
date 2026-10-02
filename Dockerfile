@@ -1,4 +1,4 @@
-FROM node:20-alpine AS build-stage
+FROM node:24-alpine AS build-stage
 
 ARG CONFIG_ENV=production
 
@@ -14,7 +14,7 @@ COPY . ./
 # This reads a section from config.yaml and outputs key-value pairs as VAR=VALUE
 RUN yq ".${CONFIG_ENV} | to_entries | .[] | \"\(.key)=\(.value)\"" /app/config.yaml > .env
 
-RUN npm install
+RUN npm ci
 
 RUN npm run build
 
