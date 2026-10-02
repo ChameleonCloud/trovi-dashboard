@@ -13,9 +13,12 @@ export default defineConfig(({ command }) => {
       port: 4000,
     },
     resolve: {
-      alias: {
-        '@': fileURLToPath(new URL('./src', import.meta.url)),
-      },
+      alias: [
+        { find: '@', replacement: fileURLToPath(new URL('./src', import.meta.url)) },
+        // vuedraggable declares a UMD bundle as its ESM entry, so its
+        // require('vue') drags in the full build and its template compiler.
+        { find: /^vue$/, replacement: 'vue/dist/vue.runtime.esm-bundler.js' },
+      ],
     },
     base: command === 'serve' ? '/' : '/dashboard/', // Set the base URL
   }
