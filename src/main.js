@@ -4,7 +4,6 @@ import router from './router'
 import { createApp } from 'vue'
 import App from './components/App.vue'
 import { createPinia } from 'pinia'
-import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 import { Quasar, Notify, Dialog } from 'quasar'
 import '@quasar/extras/material-icons/material-icons.css'
 import 'quasar/src/css/index.sass'
@@ -12,7 +11,6 @@ import 'quasar/src/css/index.sass'
 const app = createApp(App)
 
 const pinia = createPinia()
-pinia.use(piniaPluginPersistedstate)
 
 app.use(pinia)
 app.use(router)
