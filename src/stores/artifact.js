@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import axios from 'axios'
 import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 import { useAuthStore } from '@/stores/auth'
 import { Notify } from 'quasar'
 import { parseDoi, parseUrn } from '@/util'
@@ -46,8 +47,8 @@ function processArtifact(store, artifact) {
           unique_cell_execution_count: 0,
         },
       )
-  artifact.computed.long_description_markup = marked(
-    artifact.long_description ? artifact.long_description : '',
+  artifact.computed.long_description_markup = DOMPurify.sanitize(
+    marked(artifact.long_description ? artifact.long_description : ''),
   )
   artifact.computed.get_chameleon_launch_url = function (version_slug, sharing_key) {
     const params = new URLSearchParams()
