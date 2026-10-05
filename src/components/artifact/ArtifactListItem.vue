@@ -64,12 +64,10 @@ const toggleFullDescription = () => {
       <!-- Description -->
       <div class="q-mb-md" style="max-height: 10rem; overflow-y: auto">
         <div
-          v-html="
-            showFullDescription
-              ? props.artifact.computed.long_description_markup
-              : props.artifact.short_description
-          "
+          v-if="showFullDescription"
+          v-html="props.artifact.computed.long_description_markup"
         ></div>
+        <div v-else>{{ props.artifact.short_description }}</div>
       </div>
       <div class="row justify-end">
         <q-btn flat class="q-mb-md" @click="toggleFullDescription">
