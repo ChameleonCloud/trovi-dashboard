@@ -59,6 +59,7 @@ export function filterArtifacts(artifacts = [], options = {}) {
     filterPublic = false,
     filterDoi = false,
     filterCollection = false,
+    filterVideo = false,
   } = options
 
   const search = (searchText || '').toLowerCase()
@@ -97,6 +98,7 @@ export function filterArtifacts(artifacts = [], options = {}) {
     .filter((a) => !filterPublic || a.visibility === 'public' || (a.computed && a.computed.hasDoi))
     .filter((a) => !filterDoi || (a.computed && a.computed.hasDoi))
     .filter((a) => !filterCollection || (a.linked_artifacts && a.linked_artifacts.length > 0))
+    .filter((a) => !filterVideo || a.videos?.length > 0)
 }
 
 // Converts a video page URL into an embeddable player URL, or returns null

@@ -21,17 +21,24 @@ const props = defineProps({
   },
 })
 
+function filtersFromQuery(query) {
+  return {
+    selectedTags: query.tags ? query.tags.split(',') : [],
+    selectedBadges: query.badges ? query.badges.split(',') : [],
+    filterOwned: query.owned === '1',
+    filterPublic: query.public === '1',
+    filterDoi: query.doi === '1',
+    filterCollection: query.collection === '1',
+    filterVideo: query.video === '1',
+  }
+}
+
 const state = reactive({
   artifacts: [],
   badges: [],
-  selectedTags: route.query.tags ? route.query.tags.split(',') : [],
-  selectedBadges: route.query.badges ? route.query.badges.split(',') : [],
+  ...filtersFromQuery(route.query),
   searchText: route.query.q || '',
   sortBy: route.query.sort_by || 'unique_access_count',
-  filterOwned: route.query.owned === '1',
-  filterPublic: route.query.public === '1',
-  filterDoi: route.query.doi === '1',
-  filterCollection: route.query.collection === '1',
   showAllArtifacts: false,
 })
 
@@ -45,6 +52,7 @@ const locallyFilteredArtifacts = computed(() => {
     filterPublic: state.filterPublic,
     filterDoi: state.filterDoi,
     filterCollection: state.filterCollection,
+filterVideo: state.filterVideo,
   })
 })
 
@@ -123,6 +131,7 @@ function showAllArtifacts() {
       v-model:filterDoi="state.filterDoi"
       v-model:searchText="state.searchText"
       v-model:filterCollection="state.filterCollection"
+v-model:filterVideo="state.filterVideo"
       v-model:sortBy="state.sortBy"
       :isSearching="isSearching && artifactsStore.artifacts.length === 0"
       @search="handleSearch"

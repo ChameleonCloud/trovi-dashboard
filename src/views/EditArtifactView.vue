@@ -33,6 +33,7 @@ const state = reactive({
   filterPublic: false,
   filterDoi: false,
   filterCollection: false,
+  filterVideo: false,
 })
 
 // helper to make a plain editable copy without cloning computed properties
@@ -272,6 +273,7 @@ const filteredCandidates = computed(() => {
     filterPublic: state.filterPublic,
     filterDoi: state.filterDoi,
     filterCollection: state.filterCollection,
+    filterVideo: state.filterVideo,
   })
   return filtered
 })
@@ -930,6 +932,7 @@ const reimportArtifact = async () => {
                 v-model:filterPublic="state.filterPublic"
                 v-model:filterCollection="state.filterCollection"
                 v-model:filterDoi="state.filterDoi"
+                v-model:filterVideo="state.filterVideo"
                 v-model:searchText="linkSearch"
               />
             </div>

@@ -13,6 +13,7 @@ const props = defineProps({
   filterPublic: { type: Boolean, default: null },
   filterDoi: { type: Boolean, default: null },
   filterCollection: { type: Boolean, default: null },
+  filterVideo: { type: Boolean, default: null },
   searchText: { type: String, default: null },
   sortBy: { type: String, default: null },
   isSearching: { type: Boolean, default: false },
@@ -25,6 +26,7 @@ const emit = defineEmits([
   'update:filterCollection',
   'update:filterDoi',
   'update:filterCollection',
+  'update:filterVideo',
   'update:searchText',
   'update:sortBy',
   'search',
@@ -108,6 +110,18 @@ const filterCollection = computed({
     const b = !!val
     emit('update:filterCollection', b)
     updateQuery({ collection: b ? '1' : undefined })
+  },
+})
+
+const filterVideo = computed({
+  get() {
+    if (typeof props.filterVideo === 'boolean') return props.filterVideo
+    return route.query.video === '1'
+  },
+  set(val) {
+    const b = !!val
+    emit('update:filterVideo', b)
+    updateQuery({ video: b ? '1' : undefined })
   },
 })
 
@@ -220,6 +234,9 @@ function handleSearch() {
       </div>
       <div class="col-auto">
         <q-checkbox v-model="filterDoi" label="Has DOI" dense />
+      </div>
+      <div class="col-auto">
+        <q-checkbox v-model="filterVideo" label="Has video" dense />
       </div>
     </div>
   </div>
