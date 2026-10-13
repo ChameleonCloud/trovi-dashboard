@@ -44,6 +44,7 @@ function makeEditableArtifact(raw) {
     short_description: raw.short_description || '',
     long_description: raw.long_description || '',
     visibility: raw.visibility || 'private',
+    comments_enabled: raw.comments_enabled,
     tags: raw.tags ? [...raw.tags] : [],
     authors: raw.authors ? raw.authors.map((a) => ({ ...a })) : [],
     videos: raw.videos ? raw.videos.map((v) => ({ ...v })) : [],
@@ -328,6 +329,9 @@ const submitMetadata = async () => {
   if (edited.visibility !== original.visibility) {
     patch.push({ op: 'replace', path: '/visibility', value: edited.visibility })
   }
+  if (edited.comments_enabled !== original.comments_enabled) {
+    patch.push({ op: 'replace', path: '/comments_enabled', value: edited.comments_enabled })
+  }
 
   // compare tags array (shallow)
   if (JSON.stringify(edited.tags) !== JSON.stringify(original.tags)) {
@@ -568,6 +572,12 @@ const reimportArtifact = async () => {
                 Shareable Secret Link
               </RouterLink>
             </p>
+            <q-checkbox
+              v-model="state.artifact.comments_enabled"
+              label="Allow comments"
+              dense
+              class="q-mb-sm"
+            />
 
             <h3 class="text-h6 q-mb-sm">Authors</h3>
             <div

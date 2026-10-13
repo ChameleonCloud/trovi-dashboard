@@ -108,7 +108,7 @@ const launchVersionSlug = computed(() => {
               <ArtifactVideos :artifact="state.artifact" />
               <ArtifactPublications :artifact="state.artifact" />
               <ArtifactLinks :artifact="state.artifact" />
-              <ArtifactComments :artifact="state.artifact" />
+              <ArtifactComments v-if="state.artifact.comments_enabled" :artifact="state.artifact" />
             </main>
 
             <aside class="col">
