@@ -52,7 +52,7 @@ const locallyFilteredArtifacts = computed(() => {
     filterPublic: state.filterPublic,
     filterDoi: state.filterDoi,
     filterCollection: state.filterCollection,
-filterVideo: state.filterVideo,
+    filterVideo: state.filterVideo,
   })
 })
 
@@ -85,11 +85,14 @@ async function performSearch() {
 }
 
 watch(
-  [() => state.selectedTags, () => state.sortBy],
+  [() => state.selectedTags.join(','), () => state.sortBy],
   async () => {
-    await performSearch()
-  },
-  { deep: true },
+  await performSearch()
+})
+
+watch(
+  () => route.query,
+  (query) => Object.assign(state, filtersFromQuery(query)),
 )
 
 onMounted(async () => {
@@ -131,7 +134,7 @@ function showAllArtifacts() {
       v-model:filterDoi="state.filterDoi"
       v-model:searchText="state.searchText"
       v-model:filterCollection="state.filterCollection"
-v-model:filterVideo="state.filterVideo"
+      v-model:filterVideo="state.filterVideo"
       v-model:sortBy="state.sortBy"
       :isSearching="isSearching && artifactsStore.artifacts.length === 0"
       @search="handleSearch"

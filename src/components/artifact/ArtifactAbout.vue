@@ -2,12 +2,15 @@
 import ArtifactMetrics from '@/components/artifact/ArtifactMetrics.vue'
 import { ref, computed } from 'vue'
 import { copyToClipboard } from 'quasar'
+import { useRouter } from 'vue-router'
 import { parseImageUrn } from '@/util'
 
 const props = defineProps({
   artifact: Object,
   selectedVersion: Object,
 })
+
+const router = useRouter()
 
 // I had cors issues getting these dynamically as well, so I hardcoded them
 // but we can probably switch to fetching these from the API
@@ -151,7 +154,13 @@ const showTemplateHelp = ref(false)
     <ArtifactMetrics :artifact="artifact" />
 
     <div v-if="artifact.tags?.length" class="row q-gutter-sm q-mt-md q-mb-md">
-      <q-chip v-for="tag in artifact.tags" :key="tag" class="text-body2">
+      <q-chip
+        v-for="tag in artifact.tags"
+        :key="tag"
+        class="text-body2"
+        clickable
+        @click="router.push({ path: '/artifacts', query: { tags: tag } })"
+      >
         {{ tag }}
       </q-chip>
     </div>

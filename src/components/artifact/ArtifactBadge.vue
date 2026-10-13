@@ -16,6 +16,7 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  to: [String, Object],
 })
 
 const href = computed(() => (props.link ? props.badge.redirect_link : null))
@@ -23,8 +24,17 @@ const href = computed(() => (props.link ? props.badge.redirect_link : null))
 
 <template>
   <div class="row items-center q-mx-xs q-my-none">
+    <RouterLink
+      v-if="props.to"
+      :to="props.to"
+      :title="props.badge.description"
+      class="row items-center no-decoration"
+    >
+      <img :src="badgeIcons[props.badge.name]" style="width: 2em" />
+    </RouterLink>
+
     <a
-      v-if="href"
+      v-else-if="href"
       :href="href"
       :title="props.badge.description"
       class="row items-center no-decoration"
