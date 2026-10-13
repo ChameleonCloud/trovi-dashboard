@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import ArtifactBadge from '@/components/artifact/ArtifactBadge.vue'
 import ArtifactMetrics from './ArtifactMetrics.vue'
 
@@ -8,8 +8,15 @@ const props = defineProps({
   artifact: Object,
 })
 
+const route = useRoute()
 const router = useRouter()
 const showFullDescription = ref(false)
+
+function filterLink(key, value) {
+  const values = new Set(route.query[key] ? route.query[key].split(',') : [])
+  values.add(value)
+  return { path: '/artifacts', query: { ...route.query, [key]: [...values].join(',') } }
+}
 const toggleFullDescription = () => {
   showFullDescription.value = !showFullDescription.value
 }
@@ -31,7 +38,14 @@ const toggleFullDescription = () => {
           </q-btn>
 
           <div class="row wrap q-gutter-sm q-mt-xs col">
-            <q-chip v-for="tag in props.artifact.tags" :key="tag" dense outline>
+            <q-chip
+              v-for="tag in props.artifact.tags"
+              :key="tag"
+              dense
+              outline
+              clickable
+              @click="router.push(filterLink('tags', tag))"
+            >
               <i class="pi pi-tag q-mr-xs"></i> {{ tag }}
             </q-chip>
           </div>
@@ -46,6 +60,7 @@ const toggleFullDescription = () => {
             v-for="(badge, index) in props.artifact.badges"
             :key="index"
             :badge="badge"
+            :to="filterLink('badges', badge.name)"
           />
           <q-btn
             v-if="props.artifact.computed.github_url"
