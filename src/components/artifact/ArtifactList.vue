@@ -61,8 +61,6 @@ const displayedArtifacts = computed(() => {
   return artifactsToDisplay
 })
 
-const isLoading = computed(() => artifactsStore.loading)
-
 async function performSearch() {
   const myGeneration = (searchGeneration += 1)
   isSearching.value = true
@@ -177,7 +175,7 @@ function showAllArtifacts() {
 
     <ArtifactGrid
       :artifacts="displayedArtifacts"
-      :is-loading="(!props.limit || state.artifacts.length < props.limit) && isLoading"
+      :is-loading="(!props.limit || displayedArtifacts.length < props.limit) && isSearching"
     />
   </MainSection>
   <section
