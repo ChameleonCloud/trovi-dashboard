@@ -33,6 +33,11 @@ const body = computed(() =>
 )
 const replies = computed(() => props.byParent.get(props.comment.id) ?? [])
 const isAuthor = computed(() => props.comment.user === authStore.userInfo?.userUrn)
+const artifactRole = computed(() => {
+  const { user } = props.comment
+  if (user && user === props.artifact.owner_urn) return 'Author'
+  return user && props.artifact.roles.some((role) => role.user === user) ? 'Collaborator' : null
+})
 const canModerate = computed(() => props.artifact.computed.canEditRoles())
 
 function openEditor(editing) {
@@ -99,7 +104,10 @@ function confirmReject() {
 <template>
   <div class="q-mb-md">
     <div class="row items-center q-gutter-x-sm">
-      <span v-if="author" class="text-subtitle2">{{ author }}</span>
+      <span v-if="author" class="text-subtitle2" :class="{ 'text-primary': artifactRole }">
+        {{ author }}
+      </span>
+      <q-badge v-if="artifactRole" color="primary" :label="artifactRole" />
       <span class="text-caption">{{ comment.created_at }}</span>
       <span v-if="comment.updated_at" class="text-caption">(edited)</span>
       <q-badge
