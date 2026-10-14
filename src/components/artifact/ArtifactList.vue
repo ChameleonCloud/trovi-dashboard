@@ -38,7 +38,7 @@ const state = reactive({
   badges: [],
   ...filtersFromQuery(route.query),
   searchText: route.query.q || '',
-  sortBy: route.query.sort_by || 'unique_access_count',
+  sortBy: route.query.sort_by || 'recent_unique_access_count,unique_access_count',
   showAllArtifacts: false,
 })
 
@@ -155,10 +155,11 @@ function showAllArtifacts() {
         <q-select
           v-model="state.sortBy"
           :options="[
-            { label: 'Relevance', value: '' },
+            { label: 'Relevance', value: 'recent_unique_access_count,unique_access_count' },
             { label: 'Creation Date', value: 'created_at' },
             { label: 'Updated Date', value: 'updated_at' },
             { label: 'Access Count', value: 'access_count' },
+            { label: 'Access Count (90 days)', value: 'recent_access_count,access_count' },
             { label: 'Unique Access Count', value: 'unique_access_count' },
             { label: 'Unique Cell Execution Count', value: 'unique_cell_execution_count' },
           ]"
