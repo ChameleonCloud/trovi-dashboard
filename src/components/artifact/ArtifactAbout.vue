@@ -23,6 +23,7 @@ const SITE_URLS = {
 const SITE_NAMES = {
   'chi-uc': 'CHI@UC',
   'chi-tacc': 'CHI@TACC',
+  'chi-ncar': 'CHI@NCAR',
   'kvm-tacc': 'KVM@TACC',
 }
 

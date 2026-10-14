@@ -166,6 +166,7 @@ const submitGitVersion = async () => {
 const SITE_MAP = {
   'CHI@UC': 'chi-uc',
   'CHI@TACC': 'chi-tacc',
+  'CHI@NCAR': 'chi-ncar',
   'KVM@TACC': 'kvm-tacc',
   Other: 'other',
 }
@@ -174,7 +175,7 @@ const imageForm = reactive({
   selectedSite: null,
   imageUuid: '',
   submitting: false,
-  siteOptions: ['CHI@UC', 'CHI@TACC', 'KVM@TACC', 'Other'],
+  siteOptions: ['CHI@UC', 'CHI@TACC', 'CHI@NCAR', 'KVM@TACC', 'Other'],
 })
 
 const submitImageVersion = async () => {
