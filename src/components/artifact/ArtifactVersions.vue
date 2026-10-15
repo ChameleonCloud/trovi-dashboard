@@ -51,6 +51,17 @@ const safeVersions = computed(() => props.artifact?.versions || [])
                   {{ version.computed.doi }}
                 </a>
               </div>
+              <div v-else-if="version.computed?.github_compare_url" class="col text-caption">
+                <a
+                  :href="version.computed.github_compare_url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  @click.stop
+                >
+                  <i class="pi pi-github q-mr-xs" />Compare
+                  <q-tooltip>Compare with previous version on GitHub</q-tooltip>
+                </a>
+              </div>
             </div>
           </q-item-section>
         </q-item>
