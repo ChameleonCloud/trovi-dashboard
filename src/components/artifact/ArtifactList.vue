@@ -109,6 +109,14 @@ watch(
   },
 )
 
+const recentAccessLabel = ref('Recent Access Count')
+watch(
+  () => state.artifacts[0]?.metrics.recent_window_days,
+  (days) => {
+    if (days) recentAccessLabel.value = `Access Count (${days} days)`
+  },
+)
+
 function handleSearch() {
   performSearch()
 }
@@ -159,7 +167,7 @@ function showAllArtifacts() {
             { label: 'Creation Date', value: 'created_at' },
             { label: 'Updated Date', value: 'updated_at' },
             { label: 'Access Count', value: 'access_count' },
-            { label: 'Access Count (90 days)', value: 'recent_access_count,access_count' },
+            { label: recentAccessLabel, value: 'recent_access_count,access_count' },
             { label: 'Unique Access Count', value: 'unique_access_count' },
             { label: 'Unique Cell Execution Count', value: 'unique_cell_execution_count' },
           ]"
