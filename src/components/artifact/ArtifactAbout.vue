@@ -18,6 +18,7 @@ const SITE_URLS = {
   'chi-uc': 'https://chi.uc.chameleoncloud.org/',
   'chi-tacc': 'https://chi.tacc.chameleoncloud.org/',
   'kvm-tacc': 'https://kvm.tacc.chameleoncloud.org/',
+  'chi-ncar': 'https://chi.hpc.ucar.edu/',
 }
 
 const SITE_NAMES = {
