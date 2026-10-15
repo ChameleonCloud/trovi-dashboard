@@ -1,7 +1,9 @@
 <script setup>
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import chameleonLogo from '@/assets/img/chameleon-logo.png'
 
+const portalUrl = import.meta.env.VITE_CHAMELEON_PORTAL_URL
 const route = useRoute()
 const authStore = useAuthStore()
 
@@ -13,17 +15,18 @@ const toggleSession = () => (authStore.isAuthenticated ? authStore.logout() : au
 <template>
   <q-toolbar>
     <!-- Logo + Title -->
+    <a :href="portalUrl" class="row items-center">
+      <img :src="chameleonLogo" alt="Chameleon" style="height: 32px" />
+    </a>
     <router-link
       to="/"
       class="row items-center q-mr-lg"
       style="text-decoration: none; color: inherit"
     >
-      <!-- <img :src="logo" alt="Trovi Artifacts" style="height: 32px" /> -->
       <span class="text-h6 q-ml-sm">Trovi</span>
     </router-link>
 
     <!-- Navigation Links -->
-    <q-btn flat label="Home" to="/" :class="{ 'text-bold': isActiveLink('/') }" />
     <q-btn flat label="About" to="/about" :class="{ 'text-bold': isActiveLink('/about') }" />
     <q-btn
       flat
