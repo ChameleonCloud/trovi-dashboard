@@ -4,7 +4,7 @@ import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { useAuthStore } from '@/stores/auth'
 import { Notify } from 'quasar'
-import { parseDoi, parseUrn } from '@/util'
+import { parseDoi, parseGithubUrn, parseUrn } from '@/util'
 
 function processArtifact(store, artifact) {
   /**
@@ -137,7 +137,7 @@ function processArtifact(store, artifact) {
   }
 
   artifact.computed.hasDoi = false
-  artifact.versions.forEach((v) => {
+  artifact.versions.forEach((v, i) => {
     v.computed = {}
     if (v.contents.urn.includes('zenodo')) {
       v.computed.doi = parseDoi(v.contents.urn)
@@ -146,6 +146,16 @@ function processArtifact(store, artifact) {
     }
     if (v.contents.urn.includes('git')) {
       v.computed.is_git = true
+    }
+    const github = parseGithubUrn(v.contents.urn)
+    const prev = parseGithubUrn(artifact.versions[i + 1]?.contents.urn)
+    if (
+      github &&
+      prev &&
+      github.ref !== prev.ref &&
+      github.repo.toLowerCase() === prev.repo.toLowerCase()
+    ) {
+      v.computed.github_compare_url = `https://github.com/${github.repo}/compare/${prev.ref}...${github.ref}`
     }
   })
 

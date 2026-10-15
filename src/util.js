@@ -6,6 +6,13 @@ export function gitToUrn(gitRepo, ref) {
   return `urn:trovi:contents:git:${gitRepo}@${ref}`
 }
 
+export function parseGithubUrn(urn) {
+  const match = urn?.match(
+    /^urn:trovi:contents:git:https?:\/\/github\.com\/([^/]+\/[^/@]+?)(?:\.git)?(?:\/[^@]*)?@(.+)$/i,
+  )
+  return match && { repo: match[1], ref: match[2] }
+}
+
 export function parseUrn(urn) {
   let parts = urn.split(':')
   if (parts.length < 4) {
