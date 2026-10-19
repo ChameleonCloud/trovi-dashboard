@@ -406,7 +406,8 @@ export const useArtifactsStore = defineStore('artifacts', {
       let token = await this.authStore.getTroviToken()
       if (token) {
         try {
-          rolesToAdd.forEach(async (role) => {
+          // Adds go first so someone changing their own role never loses access midway
+          for (const role of rolesToAdd) {
             const response = await axios.post(
               `/artifacts/${uuid}/roles/?access_token=${token}`,
               role,
@@ -414,8 +415,8 @@ export const useArtifactsStore = defineStore('artifacts', {
             if (response.status !== 204) {
               throw new Error(`Failed to add role ${role}`)
             }
-          })
-          rolesToRemove.forEach(async (role) => {
+          }
+          for (const role of rolesToRemove) {
             let urlParamRole = `&user=${role.user}&role=${role.role}`
             const response = await axios.delete(
               `/artifacts/${uuid}/roles/?access_token=${token}${urlParamRole}`,
@@ -423,24 +424,27 @@ export const useArtifactsStore = defineStore('artifacts', {
             if (response.status !== 204) {
               throw new Error(`Failed to add role ${role}`)
             }
-          })
+          }
         } catch (error) {
           console.error(error)
           if (error.response) {
             Notify.create({
               type: 'negative',
-              message: `Error ${error.message}\n${error.response.data.detail}`,
+              message: `Error ${error.message}\n${errObjToMessage(error.response.data)}`,
             })
           } else {
             Notify.create({ type: 'negative', message: `Error ${error.message}` })
           }
+          return false
         }
         Notify.create({ type: 'positive', message: 'Updated roles' })
+        return true
       } else {
         Notify.create({
           type: 'negative',
           message: 'Could not update roles, try refreshing the page.',
         })
+        return false
       }
     },
     async updateArtifactLinks(uuid, orderedLinks) {
@@ -451,7 +455,7 @@ export const useArtifactsStore = defineStore('artifacts', {
           type: 'negative',
           message: 'Could not update links, try refreshing the page.',
         })
-        return
+        return false
       }
 
       try {
@@ -479,6 +483,7 @@ export const useArtifactsStore = defineStore('artifacts', {
         if (response.status === 200) {
           Notify.create({ type: 'positive', message: 'Updated links' })
           this.artifactDetails[uuid] = processArtifact(this, response.data)
+          return true
         } else {
           let message = errObjToMessage(response.data)
           Notify.create({ type: 'negative', message: `Failed to update links:\n${message}` })
@@ -494,37 +499,41 @@ export const useArtifactsStore = defineStore('artifacts', {
           Notify.create({ type: 'negative', message: `Error ${error.message}` })
         }
       }
+      return false
     },
     async updateArtifactVersions(uuid, versionsToRemove) {
       await this.authStore.requireLogin()
       let token = await this.authStore.getTroviToken()
       if (token) {
         try {
-          versionsToRemove.forEach(async (version_slug) => {
+          for (const version_slug of versionsToRemove) {
             const response = await axios.delete(
               `/artifacts/${uuid}/versions/${version_slug}/?access_token=${token}`,
             )
             if (response.status !== 204) {
               throw new Error(`Failed to remove version ${version_slug}`)
             }
-          })
+          }
         } catch (error) {
           console.error(error)
           if (error.response) {
             Notify.create({
               type: 'negative',
-              message: `Error ${error.message}\n${error.response.data.detail}`,
+              message: `Error ${error.message}\n${errObjToMessage(error.response.data)}`,
             })
           } else {
             Notify.create({ type: 'negative', message: `Error ${error.message}` })
           }
+          return false
         }
         Notify.create({ type: 'positive', message: 'Updated versions' })
+        return true
       } else {
         Notify.create({
           type: 'negative',
           message: 'Could not update versions, try refreshing the page.',
         })
+        return false
       }
     },
     async migrateArtifactVersion(uuid, slug, backed = 'zenodo') {
@@ -604,7 +613,7 @@ export const useArtifactsStore = defineStore('artifacts', {
     async updateArtifactMetadata(uuid, patch) {
       await this.authStore.requireLogin()
       const token = await this.authStore.getTroviToken()
-      if (!token) return
+      if (!token) return false
 
       try {
         const response = await axios.put(
@@ -619,6 +628,7 @@ export const useArtifactsStore = defineStore('artifacts', {
             message: `Updated metadata successfully`,
           })
           this.artifactDetails[uuid] = processArtifact(this, response.data)
+          return true
         } else {
           let message = errObjToMessage(response.data)
           Notify.create({
@@ -631,12 +641,13 @@ export const useArtifactsStore = defineStore('artifacts', {
         if (error.response) {
           Notify.create({
             type: 'negative',
-            message: `Error ${error.message}\n${error.response.data.detail}`,
+            message: `Error ${error.message}\n${errObjToMessage(error.response.data)}`,
           })
         } else {
           Notify.create({ type: 'negative', message: `Error ${error.message}` })
         }
       }
+      return false
     },
     async deleteArtifact(uuid) {
       await this.authStore.requireLogin()
