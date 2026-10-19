@@ -1,13 +1,20 @@
 <script setup>
-import { reactive, onMounted, ref, watch, computed } from 'vue'
+import { reactive, onMounted, onBeforeUnmount, ref, watch, computed } from 'vue'
 import { useArtifactsStore } from '@/stores/artifact'
-import { useRoute } from 'vue-router'
+import { useRoute, onBeforeRouteLeave } from 'vue-router'
 import router from '@/router'
-import { parseUrn, usernameToUrn, gitToUrn, filterArtifacts, parseBibtex } from '@/util'
+import {
+  parseUrn,
+  parseImageUrn,
+  usernameToUrn,
+  gitToUrn,
+  filterArtifacts,
+  parseBibtex,
+} from '@/util'
 import TagFilter from '@/components/TagFilter.vue'
 import MainSection from '@/components/MainSection.vue'
 import Loading from '@/components/Loading.vue'
-import { Dialog, Notify, QSpinner } from 'quasar'
+import { Dialog, Notify, QSpinner, copyToClipboard } from 'quasar'
 import axios from 'axios'
 import draggable from 'vuedraggable'
 
@@ -15,13 +22,21 @@ const route = useRoute()
 const artifactUUID = route.params.uuid
 const artifactsStore = useArtifactsStore()
 
-const VISIBILITY_OPTIONS = ['public', 'private']
+const VISIBILITY_OPTIONS = [
+  {
+    value: 'private',
+    label: 'Private',
+    description: 'Only its owner, collaborators, and anyone with the secret link can see it.',
+  },
+  { value: 'public', label: 'Public', description: 'Anyone can find and view it on Trovi.' },
+]
 const ROLES = ['collaborator', 'administrator']
 
 const state = reactive({
   artifact: null, // editable artifact
   originalArtifact: null, // keep original for comparison if needed
   loading: true,
+  saving: false,
   loadingLinkOptions: true,
   availableTags: [],
   // local linked artifacts view: array of { relation, linked_artifact, artifact }
@@ -63,10 +78,18 @@ function makeEditableArtifact(raw) {
   })
 }
 
+function resetForm(raw) {
+  state.originalArtifact = raw
+  state.artifact = makeEditableArtifact(raw)
+  state.linked_list = state.artifact.linked_artifacts.map((link, index) => ({
+    ...link,
+    order: index,
+  }))
+}
+
 onMounted(async () => {
   const rawArtifact = await artifactsStore.fetchArtifactById(artifactUUID)
-  state.originalArtifact = rawArtifact
-  state.artifact = makeEditableArtifact(rawArtifact)
+  resetForm(rawArtifact)
   await artifactsStore.fetchTags()
   state.availableTags = artifactsStore.tags
   state.loading = false
@@ -82,15 +105,6 @@ onMounted(async () => {
     a.computed.isLinkedToArtifact = false
   })
 
-  state.linked_list = []
-  if (state.artifact.linked_artifacts) {
-    state.artifact.linked_artifacts.forEach((link, index) => {
-      state.linked_list.push({
-        ...link,
-        order: index, // track position
-      })
-    })
-  }
   initSelectionFromLinks()
   state.loadingLinkOptions = false
 })
@@ -155,11 +169,11 @@ const submitGitVersion = async () => {
       contents: { urn: contents_urn },
     })
     if (newVersion) {
-      state.artifact.versions.push(newVersion)
+      state.artifact.versions.unshift(newVersion)
+      gitDialog.value = false
     }
   } finally {
     gitForm.submitting = false
-    gitDialog.value = false
   }
 }
 
@@ -171,6 +185,7 @@ const SITE_MAP = {
   Other: 'other',
 }
 
+const imageDialog = ref(false)
 const imageForm = reactive({
   selectedSite: null,
   imageUuid: '',
@@ -211,11 +226,12 @@ const submitImageVersion = async () => {
     }
     const newVersion = await artifactsStore.createVersion(state.artifact.uuid, version_obj)
     if (newVersion) {
-      state.artifact.versions.push(newVersion)
+      state.artifact.versions.unshift(newVersion)
+      imageForm.selectedSite = null
+      imageForm.imageUuid = ''
+      imageDialog.value = false
+      Notify.create({ type: 'positive', message: 'Image version created' })
     }
-    imageForm.selectedSite = null
-    imageForm.imageUuid = ''
-    Notify.create({ type: 'positive', message: 'Image version created' })
   } catch (err) {
     Notify.create({
       type: 'negative',
@@ -226,6 +242,7 @@ const submitImageVersion = async () => {
   }
 }
 
+const heatTemplateDialog = ref(false)
 const infrastructureTemplateContent = ref('')
 const infrastructureTemplateSubmitting = ref(false)
 
@@ -244,11 +261,11 @@ const submitInfrastructureTemplate = async () => {
 
     const newVersion = await artifactsStore.createVersion(state.artifact.uuid, version_obj)
     if (newVersion) {
-      state.artifact.versions.push(newVersion)
+      state.artifact.versions.unshift(newVersion)
+      infrastructureTemplateContent.value = ''
+      heatTemplateDialog.value = false
+      Notify.create({ type: 'positive', message: 'Infrastructure template version created' })
     }
-
-    infrastructureTemplateContent.value = ''
-    Notify.create({ type: 'positive', message: 'Infrastructure template version created' })
   } catch (err) {
     Notify.create({
       type: 'negative',
@@ -260,6 +277,7 @@ const submitInfrastructureTemplate = async () => {
 }
 
 /* --------- Linked Artifacts (checkbox UI) ---------- */
+const relatedDialog = ref(false)
 const linkSearch = ref('')
 
 const filteredCandidates = computed(() => {
@@ -311,7 +329,7 @@ const addPublicationsFromBibtex = () => {
 }
 
 /* --------- Metadata ---------- */
-const submitMetadata = async () => {
+const buildMetadataPatch = () => {
   const patch = []
 
   const original = state.originalArtifact
@@ -324,8 +342,8 @@ const submitMetadata = async () => {
   if (edited.short_description !== original.short_description) {
     patch.push({ op: 'replace', path: '/short_description', value: edited.short_description })
   }
-  if (edited.long_description !== original.long_description) {
-    patch.push({ op: 'replace', path: '/long_description', value: edited.long_description })
+  if (edited.long_description !== (original.long_description ?? '')) {
+    patch.push({ op: 'replace', path: '/long_description', value: edited.long_description || null })
   }
   if (edited.visibility !== original.visibility) {
     patch.push({ op: 'replace', path: '/visibility', value: edited.visibility })
@@ -359,67 +377,105 @@ const submitMetadata = async () => {
     patch.push({ op: 'replace', path: '/publications', value: publications })
   }
 
-  if (patch.length > 0) {
-    await artifactsStore.updateArtifactMetadata(edited.uuid, patch)
-  } else {
-    Notify.create({
-      type: 'info',
-      message: 'No changes to save',
-    })
-  }
+  return patch
 }
 
-/* --------- Roles ---------- */
-const submitRoles = async () => {
-  // compute role changes
-  state.artifact.roles.forEach((role) => {
-    role.user = usernameToUrn(role.username)
+/* --------- Sharing ---------- */
+const secretLink = computed(() => {
+  const { href } = router.resolve({
+    name: 'artifact',
+    params: { uuid: state.artifact.uuid },
+    query: { sharing_key: state.artifact.sharing_key },
   })
-  const addedRoles = state.artifact.roles.filter(
+  return new URL(href, window.location.origin).href
+})
+
+const copySecretLink = () =>
+  copyToClipboard(secretLink.value).then(() =>
+    Notify.create({ type: 'positive', message: 'Link copied' }),
+  )
+
+/* --------- Roles ---------- */
+const isOwnerRole = (role) => role.user === state.originalArtifact.owner_urn
+
+const roleChanges = () => {
+  const roles = state.artifact.roles.filter((role) => role.username.trim())
+  const addedRoles = roles.filter(
     (newRole) =>
       !state.originalArtifact.roles.some(
         (oldRole) =>
-          parseUrn(oldRole.user).username === newRole.username && oldRole.role === newRole.role,
+          parseUrn(oldRole.user).username === newRole.username.trim() &&
+          oldRole.role === newRole.role,
       ),
   )
   const removedRoles = state.originalArtifact.roles.filter(
     (oldRole) =>
-      !state.artifact.roles.some(
+      !roles.some(
         (newRole) =>
-          parseUrn(oldRole.user).username === newRole.username && oldRole.role === newRole.role,
+          parseUrn(oldRole.user).username === newRole.username.trim() &&
+          oldRole.role === newRole.role,
       ),
   )
 
-  await artifactsStore.updateArtifactRoles(
-    state.artifact.uuid,
-    addedRoles.map((r) => ({ role: r.role, user: r.user })),
-    removedRoles.map((r) => ({ role: r.role, user: r.user })),
-  )
+  return {
+    added: addedRoles.map((r) => ({ role: r.role, user: usernameToUrn(r.username.trim()) })),
+    removed: removedRoles.map((r) => ({ role: r.role, user: r.user })),
+  }
 }
 
 /* --------- Versions ---------- */
-const submitVersions = async () => {
-  const removedVersions = state.originalArtifact.versions.filter(
-    (oldVersion) =>
-      !state.artifact.versions.some((newVersion) => newVersion.slug === oldVersion.slug),
-  )
-  await artifactsStore.updateArtifactVersions(
-    state.artifact.uuid,
-    removedVersions.map((v) => v.slug),
-  )
-  // update original copy
-  state.originalArtifact.versions = state.artifact.versions.map((v) => ({ ...v }))
-  // Handle DOI requests
-  const versionsToRequestDOI = state.artifact.versions.filter((v) => v.doi_request)
-  for (const version of versionsToRequestDOI) {
-    await artifactsStore.migrateArtifactVersion(state.artifact.uuid, version.slug)
-    version.doi_request = false // reset flag
+// The DOI only shows up once the migration finishes, so remember what was requested
+const requestedDois = reactive(new Set())
+
+const requestDoi = (version) => {
+  if (hasChanges.value) {
+    Notify.create({
+      type: 'warning',
+      message: 'Save your changes first. The DOI record uses the saved title, authors and tags.',
+    })
+    return
   }
-  // TODO we don't know the DOI unless we wait a while and refetch
+  Dialog.create({
+    title: 'Request a DOI?',
+    message: `Version ${version.slug} will be published to Zenodo with a permanent DOI. Zenodo records are public, the artifact will be listed publicly on Trovi, and this version can no longer be deleted.`,
+    persistent: true,
+    ok: { label: 'Request DOI', color: 'primary' },
+    cancel: { label: 'Cancel' },
+  }).onOk(async () => {
+    try {
+      if (await artifactsStore.migrateArtifactVersion(state.artifact.uuid, version.slug)) {
+        requestedDois.add(version.slug)
+      }
+    } catch (err) {
+      // 409 means a migration for this version is already in progress
+      if (err.response?.status === 409) requestedDois.add(version.slug)
+    }
+  })
 }
 
-function isDiskImageVersion(version) {
-  return version.environment_setup && version.environment_setup.some((e) => e.type === 'image')
+const VERSION_TYPES = {
+  chameleon: 'Archive',
+  git: 'Git',
+  github: 'Git',
+  http: 'External',
+  heat_template: 'Heat template',
+  zenodo: 'Zenodo',
+}
+
+function versionType(version) {
+  const urn = version.contents.urn
+  if (urn.startsWith('urn:trovi:image:')) {
+    const { siteKey } = parseImageUrn(urn)
+    const site = Object.keys(SITE_MAP).find((name) => SITE_MAP[name] === siteKey)
+    return `Disk image (${site ?? siteKey})`
+  }
+  const { provider } = parseUrn(urn)
+  return VERSION_TYPES[provider] ?? provider
+}
+
+// Zenodo migration can only read files uploaded to Chameleon storage
+function canRequestDoi(version) {
+  return version.contents.urn.startsWith('urn:trovi:contents:chameleon:')
 }
 
 const deleteVersion = (index) => {
@@ -433,46 +489,116 @@ const deleteVersion = (index) => {
     ok: { label: 'Delete', color: 'negative' },
     cancel: { label: 'Cancel' },
   }).onOk(async () => {
-    try {
-      await artifactsStore.updateArtifactVersions(state.artifact.uuid, [version.slug])
+    if (await artifactsStore.updateArtifactVersions(state.artifact.uuid, [version.slug])) {
       state.artifact.versions.splice(index, 1)
       Notify.create({ type: 'positive', message: 'Version deleted' })
-    } catch (err) {
-      Notify.create({ type: 'negative', message: `Failed to delete: ${err.message}` })
     }
   })
 }
 
-/* --------- Linked Artifacts submission ---------- */
-const submitLinks = async () => {
-  if (!state.artifact) return
+/* --------- Linked Artifacts changes ---------- */
+// The API returns every link with order 0, so compare positions instead
+const linkKey = (link) => `${link.linked_artifact} ${link.relation || 'collection'}`
 
+const linksChanged = () =>
+  state.linked_list.map(linkKey).join() !==
+  state.originalArtifact.linked_artifacts.map(linkKey).join()
+
+/* --------- Sections ---------- */
+const SECTIONS = [
+  { id: 'details', label: 'Details' },
+  { id: 'authors', label: 'Authors' },
+  { id: 'versions', label: 'Versions' },
+  { id: 'sharing', label: 'Sharing' },
+  { id: 'media', label: 'Videos & Publications' },
+  { id: 'related', label: 'Related Artifacts' },
+  { id: 'danger', label: 'Danger Zone' },
+]
+
+// The section of the page where each metadata field is edited
+const SECTION_OF_PATH = {
+  '/title': 'details',
+  '/short_description': 'details',
+  '/long_description': 'details',
+  '/tags': 'details',
+  '/authors': 'authors',
+  '/visibility': 'sharing',
+  '/comments_enabled': 'sharing',
+  '/videos': 'media',
+  '/publications': 'media',
+}
+
+const changedSections = computed(() => {
+  if (!state.artifact) return new Set()
+  const sections = new Set(buildMetadataPatch().map((op) => SECTION_OF_PATH[op.path]))
+  const { added, removed } = roleChanges()
+  if (added.length + removed.length > 0) sections.add('sharing')
+  if (linksChanged()) sections.add('related')
+  return sections
+})
+
+const scrollToSection = (id) => document.getElementById(id).scrollIntoView({ behavior: 'smooth' })
+
+/* --------- Saving ---------- */
+const hasChanges = computed(() => changedSections.value.size > 0)
+
+const saveChanges = async () => {
+  const uuid = state.artifact.uuid
+  const patch = buildMetadataPatch()
+  const { added, removed } = roleChanges()
+  const rolesChanged = added.length + removed.length > 0
+  state.saving = true
   try {
-    // Send the ordered linked_artifacts
-    const linksPayload = state.linked_list.map((link, index) => ({
-      linked_artifact: link.linked_artifact,
-      relation: link.relation,
-      order: index, // include order
-    }))
-
-    await artifactsStore.updateArtifactLinks(state.artifact.uuid, linksPayload)
-
-    // Refresh local copies
-    const refreshed = await artifactsStore.fetchArtifactById(state.artifact.uuid)
-    state.originalArtifact = refreshed
-    state.artifact = makeEditableArtifact(refreshed)
-
-    // Reinitialize linked_list with proper order
-    state.linked_list = refreshed.linked_artifacts.map((link, index) => ({
-      ...link,
-      order: index,
-    }))
-
-    initSelectionFromLinks()
+    const saved =
+      (!patch.length || (await artifactsStore.updateArtifactMetadata(uuid, patch))) &&
+      (!rolesChanged || (await artifactsStore.updateArtifactRoles(uuid, added, removed))) &&
+      (!linksChanged() || (await artifactsStore.updateArtifactLinks(uuid, state.linked_list)))
+    // The store caches artifacts, and role changes don't return the updated one
+    delete artifactsStore.artifactDetails[uuid]
+    const fresh = await artifactsStore.fetchArtifactById(uuid)
+    if (saved) {
+      resetForm(fresh)
+      initSelectionFromLinks()
+    } else {
+      state.originalArtifact = fresh
+    }
   } catch (err) {
-    Notify.create({ type: 'negative', message: `Failed to update links: ${err?.message || err}` })
+    Notify.create({ type: 'negative', message: `Could not reload the artifact: ${err.message}` })
+  } finally {
+    state.saving = false
   }
 }
+
+const discardChanges = () => {
+  // Version changes are saved as they happen, so keep the current list
+  const versions = state.artifact.versions
+  resetForm(state.originalArtifact)
+  state.artifact.versions = versions
+  initSelectionFromLinks()
+}
+
+let artifactDeleted = false
+
+onBeforeRouteLeave(() => {
+  if (artifactDeleted || !hasChanges.value) return true
+  return new Promise((resolve) => {
+    Dialog.create({
+      title: 'Discard unsaved changes?',
+      message: 'You have changes on this page that have not been saved.',
+      persistent: true,
+      ok: { label: 'Discard', color: 'negative' },
+      cancel: { label: 'Keep editing' },
+    })
+      .onOk(() => resolve(true))
+      .onCancel(() => resolve(false))
+  })
+})
+
+const warnBeforeUnload = (event) => {
+  if (hasChanges.value) event.preventDefault()
+}
+onMounted(() => window.addEventListener('beforeunload', warnBeforeUnload))
+onBeforeUnmount(() => window.removeEventListener('beforeunload', warnBeforeUnload))
 
 const confirmDelete = () => {
   Dialog.create({
@@ -482,30 +608,39 @@ const confirmDelete = () => {
     ok: { label: 'Delete', color: 'negative' },
     cancel: { label: 'Cancel' },
   }).onOk(async () => {
-    try {
-      await artifactsStore.deleteArtifact(state.artifact.uuid)
+    if (await artifactsStore.deleteArtifact(state.artifact.uuid)) {
       Notify.create({ type: 'positive', message: 'Artifact deleted' })
+      artifactDeleted = true
       router.push('/artifacts')
-    } catch (err) {
-      Notify.create({ type: 'negative', message: `Failed to delete: ${err.message}` })
     }
   })
 }
 
-const reimportArtifact = async () => {
-  const resArtifact = await artifactsStore.importArtifact(
-    state.artifact.computed.github_url,
-    state.artifact.uuid,
-  )
-  if (resArtifact) {
-    state.artifact = resArtifact
-    router.push({ path: `/artifacts/${state.artifact.uuid}` })
+const reimportArtifact = () => {
+  if (hasChanges.value) {
+    Notify.create({ type: 'warning', message: 'Save or discard your changes before importing.' })
+    return
   }
+  Dialog.create({
+    title: 'Sync from GitHub?',
+    message: `This updates the title, descriptions, tags, authors, videos and publications from trovi.json in ${state.artifact.computed.github_repo}, and adds a version from its latest commit. Edits made here may be overwritten.`,
+    persistent: true,
+    ok: { label: 'Sync', color: 'primary' },
+    cancel: { label: 'Cancel' },
+  }).onOk(async () => {
+    const resArtifact = await artifactsStore.importArtifact(
+      state.artifact.computed.github_url,
+      state.artifact.uuid,
+    )
+    if (resArtifact) {
+      router.push({ path: `/artifacts/${state.artifact.uuid}` })
+    }
+  })
 }
 </script>
 
 <template>
-  <Loading :loading="state.loading">
+  <Loading :loading="state.loading || state.saving">
     <MainSection>
       <q-card v-if="state.artifact" class="q-mb-md">
         <q-card-section>
@@ -516,422 +651,628 @@ const reimportArtifact = async () => {
             </RouterLink>
           </h2>
 
-          <!-- Metadata -->
-          <q-card class="q-pa-md q-mb-md">
-            <h3 class="text-h6 q-mb-sm">Metadata</h3>
-            <q-input
-              v-model="state.artifact.title"
-              label="Title"
-              dense
-              class="q-mb-sm"
-              :rules="[(val) => val.length <= 140 || 'Please use maximum 140 characters']"
-              hint="Max 140 characters"
-            />
-            <q-input
-              v-model="state.artifact.short_description"
-              type="textarea"
-              autogrow
-              label="Short Description"
-              dense
-              class="q-mb-sm"
-              :rules="[(val) => val.length <= 200 || 'Please use maximum 200 characters']"
-              hint="Max 200 characters"
-            />
-            <q-input
-              v-model="state.artifact.long_description"
-              type="textarea"
-              autogrow
-              label="Long Description"
-              class="q-mb-sm"
-            />
-            <q-select
-              v-model="state.artifact.tags"
-              :options="artifactsStore.tags"
-              label="Tags"
-              multiple
-              use-chips
-              dense
-              class="q-mb-sm"
-            />
-            <q-select
-              v-model="state.artifact.visibility"
-              :options="VISIBILITY_OPTIONS"
-              label="Visibility"
-              dense
-              class="q-mb-sm"
-            />
-            <p>
-              <RouterLink
-                v-if="state.artifact.visibility === 'private'"
-                :to="
-                  '/artifacts/' +
-                  state.artifact.uuid +
-                  '/?sharing_key=' +
-                  state.artifact.sharing_key
-                "
-              >
-                Shareable Secret Link
-              </RouterLink>
-            </p>
-            <q-checkbox
-              v-model="state.artifact.comments_enabled"
-              label="Allow comments"
-              dense
-              class="q-mb-sm"
-            />
-
-            <h3 class="text-h6 q-mb-sm">Authors</h3>
-            <div
-              v-for="(author, index) in state.artifact.authors"
-              :key="index"
-              class="q-mb-sm row items-center q-gutter-sm"
-            >
-              <q-input v-model="author.full_name" label="Full Name" dense class="col" />
-              <q-input v-model="author.affiliation" label="Affiliation" dense class="col" />
-              <q-input v-model="author.email" type="email" label="Email" dense class="col" />
-              <q-btn
-                color="negative"
-                flat
-                icon="delete"
-                @click="state.artifact.authors.splice(index, 1)"
-                round
-                dense
-              />
-            </div>
-            <div class="row q-gutter-sm q-mt-md">
-              <q-btn
-                label="Add Author"
-                color="primary"
-                @click="state.artifact.authors.push({ full_name: '', affiliation: '', email: '' })"
-              />
+          <div class="row q-col-gutter-md">
+            <div class="col-12 col-md-3">
+              <nav class="edit-nav">
+                <q-list dense>
+                  <q-item
+                    v-for="section in SECTIONS"
+                    :key="section.id"
+                    clickable
+                    @click="scrollToSection(section.id)"
+                  >
+                    <q-item-section>{{ section.label }}</q-item-section>
+                    <q-item-section v-if="changedSections.has(section.id)" side>
+                      <q-icon name="circle" size="10px" color="primary">
+                        <q-tooltip>Unsaved changes</q-tooltip>
+                      </q-icon>
+                    </q-item-section>
+                  </q-item>
+                </q-list>
+                <div class="column q-gutter-sm q-mt-md">
+                  <q-btn
+                    label="Save changes"
+                    color="positive"
+                    :disable="!hasChanges || state.loadingLinkOptions"
+                    :loading="state.saving"
+                    @click="saveChanges"
+                  />
+                  <q-btn flat label="Discard" :disable="!hasChanges" @click="discardChanges" />
+                </div>
+              </nav>
             </div>
 
-            <h3 class="text-h6 q-mb-sm q-mt-lg">Videos</h3>
-            <div
-              v-for="(video, index) in state.artifact.videos"
-              :key="index"
-              class="q-mb-sm row items-center q-gutter-sm"
-            >
-              <q-input
-                v-model="video.url"
-                label="Video URL"
-                dense
-                class="col"
-              />
-              <q-btn
-                color="negative"
-                flat
-                icon="delete"
-                @click="state.artifact.videos.splice(index, 1)"
-                round
-                dense
-              />
-            </div>
-            <div class="row q-gutter-sm q-mt-md">
-              <q-btn
-                label="Add Video"
-                color="primary"
-                @click="state.artifact.videos.push({ url: '' })"
-              />
-            </div>
+            <div class="col-12 col-md-9">
+              <!-- Details -->
+              <q-card id="details" class="q-pa-md q-mb-md">
+                <h3 class="text-h6 q-mt-none q-mb-xs">Details</h3>
+                <q-input
+                  v-model="state.artifact.title"
+                  label="Title"
+                  dense
+                  class="q-mb-sm"
+                  :rules="[(val) => val.length <= 140 || 'Please use maximum 140 characters']"
+                  hint="Max 140 characters"
+                />
+                <q-input
+                  v-model="state.artifact.short_description"
+                  type="textarea"
+                  autogrow
+                  label="Short Description"
+                  dense
+                  class="q-mb-sm"
+                  :rules="[(val) => val.length <= 200 || 'Please use maximum 200 characters']"
+                  hint="Max 200 characters"
+                />
+                <q-input
+                  v-model="state.artifact.long_description"
+                  type="textarea"
+                  autogrow
+                  label="Long Description"
+                  hint="Markdown supported"
+                  class="q-mb-sm"
+                />
+                <q-select
+                  v-model="state.artifact.tags"
+                  :options="artifactsStore.tags"
+                  label="Tags"
+                  multiple
+                  use-chips
+                  dense
+                  class="q-mb-sm"
+                />
+              </q-card>
 
-            <h3 class="text-h6 q-mb-sm q-mt-lg">Publications</h3>
-            <div v-for="(publication, index) in state.artifact.publications" :key="index">
-              <div class="q-mb-sm row items-start q-gutter-sm">
-                <div class="col column q-gutter-sm">
-                  <q-input v-model="publication.title" label="Title" dense />
-                  <div class="row q-gutter-sm">
-                    <q-input v-model="publication.authors" label="Authors" dense class="col" />
-                    <q-input v-model="publication.venue" label="Venue" dense class="col" />
+              <!-- Authors -->
+              <q-card id="authors" class="q-pa-md q-mb-md">
+                <h3 class="text-h6 q-mt-none q-mb-xs">Authors</h3>
+                <p class="text-caption">Listed on the artifact page and used in its citation.</p>
+                <div
+                  v-for="(author, index) in state.artifact.authors"
+                  :key="index"
+                  class="q-mb-sm row items-center q-gutter-sm"
+                >
+                  <q-input v-model="author.full_name" label="Full Name" dense class="col" />
+                  <q-input v-model="author.affiliation" label="Affiliation" dense class="col" />
+                  <q-input v-model="author.email" type="email" label="Email" dense class="col" />
+                  <q-btn
+                    color="negative"
+                    flat
+                    icon="delete"
+                    @click="state.artifact.authors.splice(index, 1)"
+                    round
+                    dense
+                  />
+                </div>
+                <div class="row q-gutter-sm q-mt-md">
+                  <q-btn
+                    label="Add Author"
+                    color="primary"
+                    flat
+                    icon="add"
+                    @click="
+                      state.artifact.authors.push({ full_name: '', affiliation: '', email: '' })
+                    "
+                  />
+                </div>
+              </q-card>
+
+              <!-- Versions -->
+              <q-card id="versions" class="q-pa-md q-mb-md">
+                <div class="row items-center justify-between q-mb-xs">
+                  <h3 class="text-h6 q-my-none">Versions</h3>
+                  <q-btn-dropdown color="primary" icon="add" label="New Version">
+                    <q-list>
+                      <q-item clickable v-close-popup @click="gitDialog = true">
+                        <q-item-section>
+                          <q-item-label>From a Git repository</q-item-label>
+                          <q-item-label caption>A branch, tag, or commit</q-item-label>
+                        </q-item-section>
+                      </q-item>
+                      <q-item clickable v-close-popup @click="imageDialog = true">
+                        <q-item-section>
+                          <q-item-label>Disk image</q-item-label>
+                          <q-item-label caption>An image on a Chameleon site</q-item-label>
+                        </q-item-section>
+                      </q-item>
+                      <q-item clickable v-close-popup @click="heatTemplateDialog = true">
+                        <q-item-section>
+                          <q-item-label>Heat template</q-item-label>
+                          <q-item-label caption>An orchestration template</q-item-label>
+                        </q-item-section>
+                      </q-item>
+                      <template
+                        v-if="
+                          state.artifact.computed?.github_url &&
+                          state.originalArtifact.computed.isOwnedByUser()
+                        "
+                      >
+                        <q-separator />
+                        <q-item clickable v-close-popup @click="reimportArtifact">
+                          <q-item-section>
+                            <q-item-label>Sync from GitHub</q-item-label>
+                            <q-item-label caption>
+                              Update details from trovi.json and add the latest commit
+                            </q-item-label>
+                          </q-item-section>
+                        </q-item>
+                      </template>
+                    </q-list>
+                  </q-btn-dropdown>
+                </div>
+                <p class="text-caption">
+                  Creating or deleting a version and requesting a DOI take effect immediately.
+                </p>
+                <q-list v-if="state.artifact.versions.length" bordered separator>
+                  <q-item v-for="(version, index) in state.artifact.versions" :key="version.slug">
+                    <q-item-section>
+                      <q-item-label>
+                        {{ version.slug }}
+                        <q-badge
+                          outline
+                          color="secondary"
+                          class="q-ml-sm"
+                          :label="versionType(version)"
+                        />
+                      </q-item-label>
+                      <q-item-label caption>{{ version.created_at }}</q-item-label>
+                    </q-item-section>
+                    <q-item-section side>
+                      <div class="row items-center q-gutter-sm">
+                        <q-btn
+                          v-if="version.computed?.doi"
+                          flat
+                          no-caps
+                          color="primary"
+                          :label="version.computed.doi"
+                          :href="version.computed.doi_url"
+                          target="_blank"
+                        />
+                        <span v-else-if="requestedDois.has(version.slug)">DOI requested</span>
+                        <q-btn
+                          v-else-if="canRequestDoi(version)"
+                          flat
+                          color="primary"
+                          label="Request DOI"
+                          @click="requestDoi(version)"
+                        />
+                        <q-btn
+                          v-if="!version.computed?.doi && !requestedDois.has(version.slug)"
+                          flat
+                          round
+                          color="negative"
+                          icon="delete"
+                          @click="deleteVersion(index)"
+                        >
+                          <q-tooltip>Delete version</q-tooltip>
+                        </q-btn>
+                      </div>
+                    </q-item-section>
+                  </q-item>
+                </q-list>
+                <div v-else class="text-grey-6">No versions yet.</div>
+              </q-card>
+
+              <!-- Sharing -->
+              <q-card id="sharing" class="q-pa-md q-mb-md">
+                <h3 class="text-h6 q-mt-none q-mb-xs">Sharing</h3>
+                <p class="text-caption">Who can see this artifact, edit it, and comment on it.</p>
+                <h4 class="text-subtitle2 q-mt-md q-mb-xs">Visibility</h4>
+                <q-option-group
+                  v-model="state.artifact.visibility"
+                  :options="VISIBILITY_OPTIONS"
+                  type="radio"
+                >
+                  <template #label="option">
+                    <div>{{ option.label }}</div>
+                    <div class="text-caption">{{ option.description }}</div>
+                  </template>
+                </q-option-group>
+                <p v-if="state.originalArtifact.computed.hasDoi" class="text-caption q-mt-sm">
+                  This artifact has a DOI, so it is listed publicly and its DOI versions are visible
+                  to everyone, whatever its visibility.
+                </p>
+                <q-input
+                  v-if="state.artifact.visibility === 'private'"
+                  :model-value="secretLink"
+                  label="Shareable Secret Link"
+                  hint="Anyone with this link can view and launch the artifact."
+                  readonly
+                  dense
+                  class="q-mt-md"
+                >
+                  <template #append>
+                    <q-btn flat round dense icon="content_copy" @click="copySecretLink">
+                      <q-tooltip>Copy link</q-tooltip>
+                    </q-btn>
+                  </template>
+                </q-input>
+
+                <h4 class="text-subtitle2 q-mt-lg q-mb-xs">Comments</h4>
+                <q-checkbox
+                  v-model="state.artifact.comments_enabled"
+                  label="Allow comments"
+                  dense
+                  class="q-mb-sm"
+                />
+
+                <template v-if="state.originalArtifact.computed.canEditRoles()">
+                  <h4 class="text-subtitle2 q-mt-lg q-mb-xs">Roles</h4>
+                  <p class="text-caption">
+                    Collaborators can edit this artifact, add and delete versions, and share it.
+                    Administrators can also manage roles.
+                  </p>
+                  <div
+                    v-for="(role, index) in state.artifact.roles"
+                    :key="index"
+                    class="q-mb-sm row items-center q-gutter-sm"
+                  >
                     <q-input
-                      v-model="publication.year"
-                      type="number"
-                      label="Year"
-                      dense
-                      class="col-2"
-                    />
-                  </div>
-                  <div class="row q-gutter-sm">
-                    <q-input
-                      v-model="publication.doi"
-                      label="DOI"
-                      hint="e.g. 10.1145/3555776.3577766"
+                      v-model="role.username"
+                      type="email"
+                      :label="isOwnerRole(role) ? 'Owner' : 'User Email'"
+                      :readonly="isOwnerRole(role)"
                       dense
                       class="col"
                     />
-                    <q-input v-model="publication.url" label="URL" dense class="col" />
+                    <q-select
+                      v-model="role.role"
+                      :options="ROLES"
+                      label="Role"
+                      :readonly="isOwnerRole(role)"
+                      dense
+                      class="col-3"
+                    />
+                    <q-btn
+                      color="negative"
+                      flat
+                      icon="delete"
+                      :disable="isOwnerRole(role)"
+                      @click="state.artifact.roles.splice(index, 1)"
+                      round
+                      dense
+                    />
                   </div>
+                  <div class="row q-gutter-sm q-mt-md">
+                    <q-btn
+                      label="Add Role"
+                      color="primary"
+                      flat
+                      icon="add"
+                      @click="state.artifact.roles.push({ username: '', role: ROLES[0] })"
+                    />
+                  </div>
+                </template>
+
+                <h4 class="text-subtitle2 q-mt-lg q-mb-xs">Daypass</h4>
+                <p class="text-caption">
+                  Lets people without a Chameleon allocation request temporary access to reproduce
+                  this artifact. Daypass is set up on the Chameleon portal.
+                </p>
+                <div class="row items-center q-gutter-md">
+                  <span v-if="state.originalArtifact.reproducibility.enable_requests">
+                    Requests are on, with
+                    {{ state.originalArtifact.reproducibility.access_hours }} hours of access.
+                  </span>
+                  <span v-else>Requests are off.</span>
+                  <q-btn
+                    label="Configure Daypass"
+                    color="primary"
+                    outline
+                    icon-right="open_in_new"
+                    :href="state.artifact.computed?.get_chameleon_daypass_url()"
+                    target="_blank"
+                  />
                 </div>
-                <q-btn
-                  color="negative"
-                  flat
-                  icon="delete"
-                  @click="state.artifact.publications.splice(index, 1)"
-                  round
-                  dense
-                />
-              </div>
-              <q-separator class="q-mb-md" />
-            </div>
-            <q-expansion-item
-              icon="content_paste"
-              label="Add from BibTeX"
-              caption="Paste one or more entries"
-              class="q-mt-sm bg-grey-2 rounded-borders"
-            >
-              <div class="q-pa-md">
-                <q-input
-                  v-model="bibtexInput"
-                  type="textarea"
-                  autogrow
-                  dense
-                  class="code"
-                  input-class="code"
-                  placeholder="@inproceedings{key,
+              </q-card>
+
+              <!-- Videos & Publications -->
+              <q-card id="media" class="q-pa-md q-mb-md">
+                <h3 class="text-h6 q-mt-none q-mb-xs">Videos & Publications</h3>
+                <p class="text-caption">
+                  Shown after the description on the artifact page, in this order.
+                </p>
+                <h4 class="text-subtitle2 q-mt-md q-mb-sm">Videos</h4>
+                <div
+                  v-for="(video, index) in state.artifact.videos"
+                  :key="index"
+                  class="q-mb-sm row items-center q-gutter-sm"
+                >
+                  <q-input v-model="video.url" label="Video URL" dense class="col" />
+                  <q-btn
+                    color="negative"
+                    flat
+                    icon="delete"
+                    @click="state.artifact.videos.splice(index, 1)"
+                    round
+                    dense
+                  />
+                </div>
+                <div class="row q-gutter-sm q-mt-md">
+                  <q-btn
+                    label="Add Video"
+                    color="primary"
+                    flat
+                    icon="add"
+                    @click="state.artifact.videos.push({ url: '' })"
+                  />
+                </div>
+
+                <h4 class="text-subtitle2 q-mt-lg q-mb-sm">Publications</h4>
+                <div v-for="(publication, index) in state.artifact.publications" :key="index">
+                  <div class="q-mb-sm row items-start q-gutter-sm">
+                    <div class="col column q-gutter-sm">
+                      <q-input v-model="publication.title" label="Title" dense />
+                      <div class="row q-gutter-sm">
+                        <q-input v-model="publication.authors" label="Authors" dense class="col" />
+                        <q-input v-model="publication.venue" label="Venue" dense class="col" />
+                        <q-input
+                          v-model="publication.year"
+                          type="number"
+                          label="Year"
+                          dense
+                          class="col-2"
+                        />
+                      </div>
+                      <div class="row q-gutter-sm">
+                        <q-input
+                          v-model="publication.doi"
+                          label="DOI"
+                          hint="e.g. 10.1145/3555776.3577766"
+                          dense
+                          class="col"
+                        />
+                        <q-input v-model="publication.url" label="URL" dense class="col" />
+                      </div>
+                    </div>
+                    <q-btn
+                      color="negative"
+                      flat
+                      icon="delete"
+                      @click="state.artifact.publications.splice(index, 1)"
+                      round
+                      dense
+                    />
+                  </div>
+                  <q-separator class="q-mb-md" />
+                </div>
+                <q-expansion-item
+                  icon="content_paste"
+                  label="Add from BibTeX"
+                  caption="Paste one or more entries"
+                  class="q-mt-sm bg-grey-2 rounded-borders"
+                >
+                  <div class="q-pa-md">
+                    <q-input
+                      v-model="bibtexInput"
+                      type="textarea"
+                      autogrow
+                      dense
+                      class="code"
+                      input-class="code"
+                      placeholder="@inproceedings{key,
   title = {...},
   author = {Last, First and Other, Author},
   booktitle = {...},
   year = {2026},
   doi = {10.1145/...}
 }"
-                />
-                <q-btn
-                  label="Add from BibTeX"
-                  color="primary"
-                  class="q-mt-sm"
-                  :disable="!bibtexInput.trim()"
-                  @click="addPublicationsFromBibtex"
-                />
-              </div>
-            </q-expansion-item>
+                    />
+                    <q-btn
+                      label="Add from BibTeX"
+                      color="primary"
+                      class="q-mt-sm"
+                      :disable="!bibtexInput.trim()"
+                      @click="addPublicationsFromBibtex"
+                    />
+                  </div>
+                </q-expansion-item>
 
-            <div class="row q-gutter-sm q-mt-md">
-              <q-btn
-                label="Add Publication"
-                color="primary"
-                @click="
-                  state.artifact.publications.push({
-                    title: '',
-                    authors: '',
-                    venue: '',
-                    year: null,
-                    doi: '',
-                    url: '',
-                  })
-                "
-              />
-            </div>
-            <div class="row q-gutter-sm q-mt-md">
-              <q-btn
-                label="Configure Daypass"
-                color="primary"
-                :href="state.artifact.computed?.get_chameleon_daypass_url()"
-                target="_blank"
-              />
-              <q-btn label="Save Metadata" color="positive" @click="submitMetadata" />
-            </div>
-          </q-card>
+                <div class="row q-gutter-sm q-mt-md">
+                  <q-btn
+                    label="Add Publication"
+                    color="primary"
+                    flat
+                    icon="add"
+                    @click="
+                      state.artifact.publications.push({
+                        title: '',
+                        authors: '',
+                        venue: '',
+                        year: null,
+                        doi: '',
+                        url: '',
+                      })
+                    "
+                  />
+                </div>
+              </q-card>
 
-          <!-- Roles -->
-          <q-card class="q-pa-md q-mb-md" v-if="state.originalArtifact.computed.canEditRoles()">
-            <h3 class="text-h6 q-mb-sm">Roles</h3>
-            <div
-              v-for="(role, index) in state.artifact.roles"
-              :key="index"
-              class="q-mb-sm row items-center q-gutter-sm"
-            >
-              <q-input v-model="role.username" type="email" label="User Email" dense class="col" />
-              <q-select v-model="role.role" :options="ROLES" dense class="col-3" />
-              <q-btn
-                color="negative"
+              <!-- Related Artifacts -->
+              <q-card id="related" class="q-pa-md q-mb-md">
+                <div class="row items-center justify-between q-mb-xs">
+                  <h3 class="text-h6 q-my-none">Related Artifacts</h3>
+                  <q-btn
+                    label="Add Related Artifacts"
+                    color="primary"
+                    flat
+                    icon="add"
+                    @click="relatedDialog = true"
+                  />
+                </div>
+                <div v-if="!state.linked_list.length" class="text-grey-6">
+                  No related artifacts yet.
+                </div>
+                <draggable
+                  v-model="state.linked_list"
+                  item-key="linked_artifact"
+                  handle=".drag-handle"
+                  animation="200"
+                >
+                  <template #item="{ element, index }">
+                    <div>
+                      <q-item clickable>
+                        <q-item-section avatar>
+                          <q-icon name="drag_indicator" class="drag-handle" />
+                        </q-item-section>
+                        <q-item-section>
+                          <RouterLink :to="'/artifacts/' + element.linked_artifact" target="_blank">
+                            {{ element.linked_title || '(untitled)' }}
+                          </RouterLink>
+                          <div class="text-caption">{{ element.computed?.authorString }}</div>
+                        </q-item-section>
+                        <q-item-section side>
+                          <q-btn
+                            color="negative"
+                            icon="delete"
+                            flat
+                            dense
+                            @click="
+                              () => {
+                                state.linked_list.splice(index, 1)
+                                // Also uncheck table checkbox
+                                const tableItem = artifactsStore.artifacts.find(
+                                  (a) => a.uuid === element.linked_artifact,
+                                )
+                                if (tableItem) tableItem.computed.isLinkedToArtifact = false
+                              }
+                            "
+                          />
+                        </q-item-section>
+                      </q-item>
+                      <q-separator />
+                    </div>
+                  </template>
+                </draggable>
+              </q-card>
+
+              <!-- Danger Zone -->
+              <q-card
+                id="danger"
                 flat
-                icon="delete"
-                @click="state.artifact.roles.splice(index, 1)"
-                round
-                dense
-              />
-            </div>
-            <div class="row q-gutter-sm q-mt-md">
-              <q-btn
-                label="Add Role"
-                color="primary"
-                @click="state.artifact.roles.push({ username: '', role: ROLES[0] })"
-              />
-              <q-btn label="Save Roles" color="positive" @click="submitRoles" />
-            </div>
-          </q-card>
-
-          <!-- Versions -->
-          <q-card class="q-pa-md q-mb-md">
-            <h3 class="text-h6 q-mb-sm">Versions</h3>
-            <div
-              v-if="state.artifact.computed?.github_url"
-              class="row items-center justify-between q-mb-md"
-            >
-              <div>
-                <span
-                  >Import latest changes from the linked GitHub repo
-                  <a :href="state.artifact.computed.github_url" target="_blank">
-                    {{ state.artifact.computed.github_repo }}
-                  </a>
-                  (requires a <a href="/dashboard/artifacts/add">trovi.json</a>)
-                </span>
-              </div>
-              <q-btn label="Import Version" color="primary" @click="reimportArtifact" />
-            </div>
-            <div class="row items-center justify-between q-mb-md">
-              <span>Create a new version from Git repo</span>
-              <q-btn label="Create Version" color="primary" @click="gitDialog = true" />
-            </div>
-            <q-separator />
-
-            <div
-              v-for="(version, index) in state.artifact.versions"
-              :key="index"
-              class="row justify-between items-center q-mb-sm"
-            >
-              <div>{{ version.slug }}</div>
-              <div>{{ version.created_at }}</div>
-              <div class="row q-gutter-sm">
-                <q-btn
-                  v-if="!version.computed?.doi && !version.doi_request && !version.computed?.is_git"
-                  color="secondary"
-                  label="Request DOI"
-                  @click="version.doi_request = true"
-                />
-                <span v-else-if="version.doi_request">Will Request DOI</span>
-                <div v-else-if="version.computed?.doi">
-                  <a :href="version.computed.doi_url" target="_blank">{{ version.computed.doi }}</a>
+                class="q-pa-md q-mb-md"
+                style="border: 1px solid var(--q-negative)"
+              >
+                <h3 class="text-h6 text-negative q-mt-none q-mb-sm">Danger Zone</h3>
+                <div class="row items-center justify-between q-gutter-sm">
+                  <span>Delete this artifact and all of its versions. This cannot be undone.</span>
+                  <q-btn
+                    label="Delete Artifact"
+                    color="negative"
+                    outline
+                    icon="delete"
+                    @click="confirmDelete"
+                  />
                 </div>
-                <q-btn
-                  v-if="!version.computed?.doi"
-                  color="negative"
-                  icon="delete"
-                  @click="deleteVersion(index)"
-                  label="Delete"
-                />
-              </div>
+              </q-card>
             </div>
-
-            <div class="row q-gutter-sm q-mt-md">
-              <q-btn label="Save Versions" color="positive" @click="submitVersions" />
-            </div>
-
-            <div
-              v-if="state.artifact.versions && state.artifact.versions.length"
-              class="q-mt-md q-pa-sm rounded-borders"
-            >
-              <h4 class="text-subtitle2 q-mb-sm">Disk Images</h4>
-              <div v-for="(v, vi) in state.artifact.versions" :key="vi">
-                <div v-if="v.links">
-                  <div
-                    v-for="(l, li) in v.links.filter((link) =>
-                      (link.urn || '').startsWith('urn:trovi:image:'),
-                    )"
-                    :key="li"
-                    class="row items-center q-gutter-sm q-mb-sm"
-                  >
-                    <div class="col">
-                      <div>{{ l.label || l.urn }}</div>
-                      <div class="text-caption">{{ l.urn }}</div>
-                    </div>
-                    <div class="col-auto row q-gutter-sm">
-                      <q-btn
-                        v-if="isDiskImageVersion(v)"
-                        color="negative"
-                        icon="delete"
-                        @click="deleteVersion(vi)"
-                        label="Delete"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="q-mt-md q-pa-sm rounded-borders">
-              <h4 class="text-subtitle2 q-mb-sm">Add Disk Image Version</h4>
-              <div class="row q-gutter-sm items-center q-mb-sm">
-                <q-select
-                  v-model="imageForm.selectedSite"
-                  :options="imageForm.siteOptions"
-                  label="Site"
-                  dense
-                  class="col-6"
-                />
-                <q-input
-                  v-model="imageForm.imageUuid"
-                  label="Image UUID"
-                  dense
-                  class="col"
-                />
-              </div>
-              <div class="row q-gutter-sm">
-                <q-btn
-                  label="Create Image Version"
-                  color="primary"
-                  :loading="imageForm.submitting"
-                  @click="submitImageVersion"
-                />
-              </div>
-            </div>
-
-            <div v-if="state.artifact.versions && state.artifact.versions.length" class="q-mt-md q-pa-sm rounded-borders">
-              <h4 class="text-subtitle2 q-mb-sm">Heat Templates</h4>
-              <div v-for="(v, vi) in state.artifact.versions" :key="vi">
-                <div v-if="v.environment_setup && v.environment_setup.some((e) => e.type === 'heat_template')">
-                  <div class="row items-center q-gutter-sm q-mb-sm">
-                    <div class="col">
-                      <div>{{ v.slug }}</div>
-                    </div>
-                    <div class="col-auto row q-gutter-sm">
-                      <q-btn
-                        color="negative" icon="delete" @click="deleteVersion(vi)"
-                        label="Delete"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="q-mt-md q-pa-sm rounded-borders">
-              <h4 class="text-subtitle2 q-mb-sm">Add Heat Template</h4>
-              <div class="row q-gutter-sm items-center q-mb-sm">
-                <q-input
-                  v-model="infrastructureTemplateContent"
-                  type="textarea"
-                  label="Add Heat Template Text Here"
-                  dense
-                  class="col"
-                />
-              </div>
-              <div class="row q-gutter-sm">
-                <q-btn
-                  label="Create Heat Template Version"
-                  color="primary"
-                  :loading="infrastructureTemplateSubmitting"
-                  @click="submitInfrastructureTemplate"
-                />
-              </div>
-            </div>
-            <div>
-              <q-btn
-                label="Delete Artifact and All Versions"
-                color="negative"
-                icon="delete"
-                @click="confirmDelete"
-                class="q-mt-md"
-              />
-            </div>
-          </q-card>
+          </div>
         </q-card-section>
+      </q-card>
 
-        <!-- Linked Artifacts -->
-        <q-card-section>
-          <q-card class="q-pa-md q-mb-md">
-            <h3 class="text-h6 q-mb-sm">Linked Artifacts</h3>
+      <q-dialog v-model="gitDialog" persistent>
+        <q-card style="min-width: 400px; max-width: 600px">
+          <q-card-section>
+            <h3 class="text-h6 q-mb-md">Create Version from Git</h3>
+            <p>
+              Enter the Git repository URL and select a branch, tag, or commit to create a new
+              artifact version.
+            </p>
+            <q-input
+              filled
+              v-model="gitForm.gitUrl"
+              label="Git Clone URL"
+              type="url"
+              placeholder="https://github.com/owner/repo.git"
+              class="q-mb-md"
+              clearable
+            />
+            <q-select
+              v-model="gitForm.selectedOption"
+              :options="gitOptions"
+              label="Select Git Branch/Tag"
+              dense
+              emit-value
+              map-options
+              use-input
+              class="q-mb-md"
+              @filter="onGitFilter"
+            >
+              <template v-slot:append>
+                <QSpinner v-if="gitForm.loadingOptions" size="24px" />
+              </template>
+            </q-select>
+          </q-card-section>
+          <q-card-actions align="right">
+            <q-btn flat label="Cancel" color="secondary" v-close-popup />
+            <q-btn
+              label="Create Version"
+              color="primary"
+              :loading="gitForm.submitting"
+              @click="submitGitVersion"
+            />
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
 
+      <q-dialog v-model="imageDialog" persistent>
+        <q-card style="min-width: 400px; max-width: 600px">
+          <q-card-section>
+            <h3 class="text-h6 q-mb-md">Create Version from Disk Image</h3>
+            <p>Choose the site where the image is stored and enter its UUID.</p>
+            <q-select
+              v-model="imageForm.selectedSite"
+              :options="imageForm.siteOptions"
+              label="Site"
+              dense
+              class="q-mb-md"
+            />
+            <q-input v-model="imageForm.imageUuid" label="Image UUID" dense />
+          </q-card-section>
+          <q-card-actions align="right">
+            <q-btn flat label="Cancel" color="secondary" v-close-popup />
+            <q-btn
+              label="Create Version"
+              color="primary"
+              :loading="imageForm.submitting"
+              @click="submitImageVersion"
+            />
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
+
+      <q-dialog v-model="heatTemplateDialog" persistent>
+        <q-card style="width: 700px; max-width: 90vw">
+          <q-card-section>
+            <h3 class="text-h6 q-mb-md">Create Version from Heat Template</h3>
+            <p>
+              Paste the template. It is shown on the artifact page so others can copy it into a
+              stack on Chameleon.
+            </p>
+            <q-input
+              v-model="infrastructureTemplateContent"
+              type="textarea"
+              label="Heat Template"
+              input-class="code"
+              dense
+            />
+          </q-card-section>
+          <q-card-actions align="right">
+            <q-btn flat label="Cancel" color="secondary" v-close-popup />
+            <q-btn
+              label="Create Version"
+              color="primary"
+              :loading="infrastructureTemplateSubmitting"
+              @click="submitInfrastructureTemplate"
+            />
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
+
+      <q-dialog v-model="relatedDialog" no-route-dismiss>
+        <q-card style="width: 900px; max-width: 90vw">
+          <q-card-section>
+            <h3 class="text-h6 q-mb-md">Add Related Artifacts</h3>
             <!-- Filter/Search -->
             <div class="row q-gutter-sm q-mb-md items-center">
               <TagFilter
@@ -998,101 +1339,21 @@ const reimportArtifact = async () => {
                 </template>
               </q-table>
             </Loading>
-            <q-separator class="q-mt-md q-mb-md" />
-
-            <!-- Draggable selected links -->
-            <h4 class="text-subtitle2">Selected to link (Drag to reorder)</h4>
-            <draggable
-              v-model="state.linked_list"
-              item-key="linked_artifact"
-              handle=".drag-handle"
-              animation="200"
-            >
-              <template #item="{ element, index }">
-                <div>
-                  <q-item clickable>
-                    <q-item-section avatar>
-                      <q-icon name="drag_indicator" class="drag-handle" />
-                    </q-item-section>
-                    <q-item-section>
-                      <RouterLink :to="'/artifacts/' + element.linked_artifact" target="_blank">
-                        {{ element.linked_title || '(untitled)' }}
-                      </RouterLink>
-                      <div class="text-caption">{{ element.computed?.authorString }}</div>
-                    </q-item-section>
-                    <q-item-section side>
-                      <q-btn
-                        color="negative"
-                        icon="delete"
-                        flat
-                        dense
-                        @click="
-                          () => {
-                            state.linked_list.splice(index, 1)
-                            // Also uncheck table checkbox
-                            const tableItem = artifactsStore.artifacts.find(
-                              (a) => a.uuid === element.linked_artifact,
-                            )
-                            if (tableItem) tableItem.computed.isLinkedToArtifact = false
-                          }
-                        "
-                      />
-                    </q-item-section>
-                  </q-item>
-                  <q-separator />
-                </div>
-              </template>
-            </draggable>
-
-            <q-btn label="Save Links" color="positive" class="q-mt-md" @click="submitLinks" />
-          </q-card>
-        </q-card-section>
-      </q-card>
-
-      <q-dialog v-model="gitDialog" persistent>
-        <q-card style="min-width: 400px; max-width: 600px">
-          <q-card-section>
-            <h3 class="text-h6 q-mb-md">Create Version from Git</h3>
-            <p>
-              Enter the Git repository URL and select a branch, tag, or commit to create a new
-              artifact version.
-            </p>
-            <q-input
-              filled
-              v-model="gitForm.gitUrl"
-              label="Git Clone URL"
-              type="url"
-              placeholder="https://github.com/owner/repo.git"
-              class="q-mb-md"
-              clearable
-            />
-            <q-select
-              v-model="gitForm.selectedOption"
-              :options="gitOptions"
-              label="Select Git Branch/Tag"
-              dense
-              emit-value
-              map-options
-              use-input
-              class="q-mb-md"
-              @filter="onGitFilter"
-            >
-              <template v-slot:append>
-                <QSpinner v-if="gitForm.loadingOptions" size="24px" />
-              </template>
-            </q-select>
           </q-card-section>
           <q-card-actions align="right">
-            <q-btn flat label="Cancel" color="secondary" v-close-popup />
-            <q-btn
-              label="Create Version"
-              color="primary"
-              :loading="gitForm.submitting"
-              @click="submitGitVersion"
-            />
+            <q-btn label="Done" color="primary" v-close-popup />
           </q-card-actions>
         </q-card>
       </q-dialog>
     </MainSection>
   </Loading>
 </template>
+
+<style scoped>
+@media (min-width: 1024px) {
+  .edit-nav {
+    position: sticky;
+    top: 16px;
+  }
+}
+</style>
