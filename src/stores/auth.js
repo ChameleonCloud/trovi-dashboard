@@ -154,6 +154,18 @@ export const useAuthStore = defineStore('auth', {
       })
       return undefined
     },
+    async fetchProfile() {
+      const response = await axios.get('/users/me/', {
+        params: { access_token: await this.getTroviToken() },
+      })
+      return response.data
+    },
+    async updateProfile(data) {
+      const response = await axios.patch('/users/me/', data, {
+        params: { access_token: await this.getTroviToken() },
+      })
+      return response.data
+    },
     async logout() {
       if (!this.keycloak) {
         return
