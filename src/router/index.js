@@ -7,6 +7,7 @@ import AddArtifactView from '@/views/AddArtifactView.vue'
 import EditArtifactView from '@/views/EditArtifactView.vue'
 import AboutView from '@/views/AboutView.vue'
 import LoginView from '@/views/LoginView.vue'
+import SettingsView from '@/views/SettingsView.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const router = createRouter({
@@ -63,6 +64,15 @@ const router = createRouter({
       component: AboutView,
       meta: {
         title: 'About - Trovi',
+      },
+    },
+    {
+      path: '/settings',
+      name: 'settings',
+      component: SettingsView,
+      meta: {
+        requiresAuth: true,
+        title: 'Settings - Trovi',
       },
     },
     {

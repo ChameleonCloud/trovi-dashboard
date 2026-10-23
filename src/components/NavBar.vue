@@ -8,8 +8,6 @@ const route = useRoute()
 const authStore = useAuthStore()
 
 const isActiveLink = (routePath) => route.path === routePath
-
-const toggleSession = () => (authStore.isAuthenticated ? authStore.logout() : authStore.login())
 </script>
 
 <template>
@@ -43,13 +41,24 @@ const toggleSession = () => (authStore.isAuthenticated ? authStore.logout() : au
 
     <q-space />
 
-    <q-btn
+    <q-btn-dropdown
+      v-if="authStore.isAuthenticated"
       flat
-      dense
-      @click="toggleSession"
-      :label="
-        authStore.isAuthenticated ? `Sign Out: ${authStore.userInfo.preferred_username}` : 'Log in'
-      "
-    />
+      no-caps
+      icon="account_circle"
+      :label="authStore.userInfo.name || authStore.userInfo.preferred_username"
+    >
+      <q-list>
+        <q-item clickable v-close-popup to="/settings">
+          <q-item-section avatar><q-icon name="settings" /></q-item-section>
+          <q-item-section>Settings</q-item-section>
+        </q-item>
+        <q-item clickable v-close-popup @click="authStore.logout()">
+          <q-item-section avatar><q-icon name="logout" /></q-item-section>
+          <q-item-section>Sign out</q-item-section>
+        </q-item>
+      </q-list>
+    </q-btn-dropdown>
+    <q-btn v-else flat label="Log in" @click="authStore.login()" />
   </q-toolbar>
 </template>
