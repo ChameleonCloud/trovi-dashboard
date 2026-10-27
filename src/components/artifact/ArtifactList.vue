@@ -6,9 +6,10 @@ import MainSection from '@/components/MainSection.vue'
 import { filterArtifacts } from '@/util'
 import { useArtifactsStore } from '@/stores/artifact'
 import { QSpinnerDots } from 'quasar'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
+const router = useRouter()
 
 const artifactsStore = useArtifactsStore()
 artifactsStore.fetchTags()
@@ -87,6 +88,11 @@ watch(
   async () => {
   await performSearch()
 })
+
+watch(
+  () => state.sortBy,
+  (sortBy) => router.replace({ query: { ...route.query, sort_by: sortBy } }),
+)
 
 watch(
   () => route.query,
