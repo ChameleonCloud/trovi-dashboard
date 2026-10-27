@@ -19,6 +19,13 @@ const props = defineProps({ artifact: Object })
       <q-icon name="desktop_windows" class="q-mx-xs" />
       {{ artifact.computed.summedMetrics.unique_cell_execution_count }}
     </div>
+    <div class="row items-center">
+      <q-tooltip>
+        User Verifications ({{ artifact.computed.summedMetrics.verify_failed_count }} failed)
+      </q-tooltip>
+      <q-icon name="verified" class="q-mx-xs" />
+      {{ artifact.computed.summedMetrics.verified_count }}
+    </div>
     <div class="row items-center" v-if="artifact.versions.length > 0">
       <q-tooltip> Versions </q-tooltip>
       <q-icon name="commit" class="q-mx-xs" />
