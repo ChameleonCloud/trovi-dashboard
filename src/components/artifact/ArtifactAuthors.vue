@@ -40,7 +40,7 @@ const hasSupportEmail = computed(() =>
               v-if="author.email !== 'help@chameleoncloud.org'"
               class="text-body2"
             >
-              {{ author.email }}
+              <a :href="`mailto:${author.email}`">{{ author.email }}</a>
             </div>
           </div>
         </li>
