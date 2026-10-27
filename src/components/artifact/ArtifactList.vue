@@ -170,6 +170,7 @@ function showAllArtifacts() {
             { label: recentAccessLabel, value: 'recent_access_count,access_count' },
             { label: 'Unique Access Count', value: 'unique_access_count' },
             { label: 'Unique Cell Execution Count', value: 'unique_cell_execution_count' },
+            { label: 'Verifications', value: 'verified_count,unique_access_count' },
           ]"
           option-value="value"
           option-label="label"
