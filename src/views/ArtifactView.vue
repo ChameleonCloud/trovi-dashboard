@@ -10,6 +10,7 @@ import ArtifactVideos from '@/components/artifact/ArtifactVideos.vue'
 import ArtifactPublications from '@/components/artifact/ArtifactPublications.vue'
 import ArtifactLinksFrom from '@/components/artifact/ArtifactLinksFrom.vue'
 import ArtifactComments from '@/components/artifact/ArtifactComments.vue'
+import ArtifactVerification from '@/components/artifact/ArtifactVerification.vue'
 import Launch from '@/components/artifact/Launch.vue'
 import Loading from '@/components/Loading.vue'
 
@@ -27,6 +28,7 @@ const state = reactive({
   isLoading: true,
   selectedVersion: null,
   viewKey: 0,
+  commentsKey: 0,
 })
 
 async function goLatestView() {
@@ -108,11 +110,20 @@ const launchVersionSlug = computed(() => {
               <ArtifactVideos :artifact="state.artifact" />
               <ArtifactPublications :artifact="state.artifact" />
               <ArtifactLinks :artifact="state.artifact" />
-              <ArtifactComments v-if="state.artifact.comments_enabled" :artifact="state.artifact" />
+              <ArtifactComments
+                v-if="state.artifact.comments_enabled"
+                :key="state.commentsKey"
+                :artifact="state.artifact"
+              />
             </main>
 
             <aside class="col">
               <Launch :artifact="state.artifact" :version_slug="launchVersionSlug" />
+              <ArtifactVerification
+                :artifact="state.artifact"
+                :version_slug="launchVersionSlug"
+                @commented="state.commentsKey++"
+              />
 
               <ArtifactAuthors :authors="state.artifact.authors" />
               <ArtifactVersions

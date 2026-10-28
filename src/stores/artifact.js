@@ -39,12 +39,16 @@ function processArtifact(store, artifact) {
           acc.access_count += version.metrics.access_count
           acc.unique_access_count += version.metrics.unique_access_count
           acc.unique_cell_execution_count += version.metrics.unique_cell_execution_count
+          acc.verified_count += version.metrics.verified_count
+          acc.verify_failed_count += version.metrics.verify_failed_count
           return acc
         },
         {
           access_count: 0,
           unique_access_count: 0,
           unique_cell_execution_count: 0,
+          verified_count: 0,
+          verify_failed_count: 0,
         },
       )
   artifact.computed.long_description_markup = DOMPurify.sanitize(
@@ -709,6 +713,24 @@ export const useArtifactsStore = defineStore('artifacts', {
         decision,
         decision_comment,
       })
+    },
+    async fetchVerifications(uuid, sharing_key) {
+      const token = await this.authStore.getTroviToken()
+      const response = await axios.get(`/artifacts/${uuid}/verifications/`, {
+        params: { access_token: token, sharing_key },
+      })
+      return response.data
+    },
+    async createVerification(uuid, verification) {
+      const url = `/artifacts/${uuid}/verifications/`
+      if (!(await sendCommentRequest(this, 'post', url, verification))) return false
+      // Refresh in place so views holding this artifact pick up the new counts
+      const sharing_key = new URLSearchParams(window.location.search).get('sharing_key')
+      const response = await axios.get(`/artifacts/${uuid}/`, {
+        params: { access_token: await this.authStore.getTroviToken(), sharing_key },
+      })
+      Object.assign(this.artifactDetails[uuid], processArtifact(this, response.data))
+      return true
     },
   },
 })
