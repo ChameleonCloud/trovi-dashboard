@@ -30,6 +30,7 @@ function filtersFromQuery(query) {
     filterDoi: query.doi === '1',
     filterCollection: query.collection === '1',
     filterVideo: query.video === '1',
+    filterVerified: query.verified === '1',
   }
 }
 
@@ -38,7 +39,7 @@ const state = reactive({
   badges: [],
   ...filtersFromQuery(route.query),
   searchText: route.query.q || '',
-  sortBy: route.query.sort_by || 'recent_unique_access_count,unique_access_count',
+  sortBy: route.query.sort_by || 'recent_unique_access_count,verified_count,unique_access_count',
   showAllArtifacts: false,
 })
 
@@ -53,6 +54,7 @@ const locallyFilteredArtifacts = computed(() => {
     filterDoi: state.filterDoi,
     filterCollection: state.filterCollection,
     filterVideo: state.filterVideo,
+    filterVerified: state.filterVerified,
   })
 })
 
@@ -141,6 +143,7 @@ function showAllArtifacts() {
       v-model:searchText="state.searchText"
       v-model:filterCollection="state.filterCollection"
       v-model:filterVideo="state.filterVideo"
+      v-model:filterVerified="state.filterVerified"
       v-model:sortBy="state.sortBy"
       :isSearching="isSearching && artifactsStore.artifacts.length === 0"
       @search="handleSearch"
@@ -163,7 +166,7 @@ function showAllArtifacts() {
         <q-select
           v-model="state.sortBy"
           :options="[
-            { label: 'Relevance', value: 'recent_unique_access_count,unique_access_count' },
+            { label: 'Relevance', value: 'recent_unique_access_count,verified_count,unique_access_count' },
             { label: 'Creation Date', value: 'created_at' },
             { label: 'Updated Date', value: 'updated_at' },
             { label: 'Access Count', value: 'access_count' },
