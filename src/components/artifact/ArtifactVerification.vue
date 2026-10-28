@@ -83,7 +83,7 @@ function promptComment() {
       <q-btn
         class="full-width q-mb-sm"
         icon="verified"
-        label="Verified"
+        label="Successfully verified"
         color="positive"
         :outline="myAnswer !== true"
         :loading="state.saving"
@@ -92,7 +92,7 @@ function promptComment() {
       <q-btn
         class="full-width"
         icon="report_problem"
-        label="Unable to verify"
+        label="Failure to verify"
         color="negative"
         :outline="myAnswer !== false"
         :loading="state.saving"
