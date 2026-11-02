@@ -79,7 +79,15 @@ function promptComment() {
       @click="authStore.login()"
     />
     <template v-else-if="!isAuthor">
-      <div class="text-body2 q-mb-sm">Verify this artifact works when executed.</div>
+      <div class="text-body2 q-mb-sm">
+        Verify this artifact works when executed.
+        <a
+          href="https://chameleoncloud.readthedocs.io/en/latest/technical/experiments/browsing_artifacts.html#trovi-verification"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Learn more</a
+        >
+      </div>
       <q-btn
         class="full-width q-mb-sm"
         icon="verified"
