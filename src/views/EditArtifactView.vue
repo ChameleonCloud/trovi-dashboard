@@ -1281,8 +1281,8 @@ const reimportArtifact = () => {
             <h3 class="text-h6 q-mb-md">trovi.json</h3>
             <p>
               A <code>trovi.json</code> at the root of a GitHub repository describes the artifact:
-              its details, authors and launch options. With one, <em>Import from GitHub</em> creates
-              the artifact, and <em>Sync from GitHub</em> updates it.
+              its details, authors and launch options. With one, <em>Create from trovi.json</em> on
+              the Create page makes the artifact, and <em>Sync from GitHub</em> updates it.
             </p>
             <q-select
               v-model="troviJsonForm.version"
