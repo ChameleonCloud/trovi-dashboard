@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, onMounted, onBeforeUnmount, ref, watch, computed } from 'vue'
+import { reactive, onMounted, onBeforeUnmount, ref, computed } from 'vue'
 import { useArtifactsStore } from '@/stores/artifact'
 import { useRoute, onBeforeRouteLeave } from 'vue-router'
 import router from '@/router'
@@ -10,12 +10,16 @@ import {
   gitToUrn,
   filterArtifacts,
   parseBibtex,
+  newLaunchOption,
+  launchOptionsToSetup,
+  setupSummary,
 } from '@/util'
 import TagFilter from '@/components/TagFilter.vue'
+import GitRefInput from '@/components/GitRefInput.vue'
+import LaunchOptionsEditor from '@/components/artifact/LaunchOptionsEditor.vue'
 import MainSection from '@/components/MainSection.vue'
 import Loading from '@/components/Loading.vue'
-import { Dialog, Notify, QSpinner, copyToClipboard } from 'quasar'
-import axios from 'axios'
+import { Dialog, Notify, copyToClipboard } from 'quasar'
 import draggable from 'vuedraggable'
 
 const route = useRoute()
@@ -94,7 +98,7 @@ onMounted(async () => {
   await artifactsStore.fetchTags()
   state.availableTags = artifactsStore.tags
   state.loading = false
-  gitForm.gitUrl = state.artifact.computed?.github_url || ''
+  versionForm.gitUrl = state.artifact.computed?.github_url || ''
 
   // fetch available artifacts for linking
   await artifactsStore.fetchAllArtifacts()
@@ -110,71 +114,56 @@ onMounted(async () => {
   state.loadingLinkOptions = false
 })
 
-const gitDialog = ref(false)
-const gitForm = reactive({
+/* --------- New versions ---------- */
+// A version is its contents, and the ways users can launch them
+const CONTENT_TYPES = [
+  { value: 'git', label: 'Git repository' },
+  { value: 'http', label: 'Archive URL' },
+  { value: 'image', label: 'Disk image' },
+  { value: 'heat_template', label: 'Heat template' },
+]
+
+const versionDialog = ref(false)
+const versionForm = reactive({
+  contents: 'git',
   gitUrl: '',
-  selectedOption: null,
-  loadingOptions: false,
+  gitRef: null,
+  archiveUrl: '',
+  launchOptions: [newLaunchOption()],
   submitting: false,
 })
 
-const gitOptions = ref([])
-let rawGitOptions = []
-
-// Fetch options when Git URL changes
-watch(
-  () => gitForm.gitUrl,
-  async (newUrl) => {
-    gitForm.selectedOption = null
-    gitOptions.value = []
-    if (!newUrl) return
-    gitForm.loadingOptions = true
-    try {
-      // Call the portal API to list remote branches/tags/commits
-      const res = await axios.get(
-        `${import.meta.env.VITE_CHAMELEON_PORTAL_URL}/experiment/share/api/git/`,
-        {
-          params: { remote_url: newUrl },
-        },
-      )
-      rawGitOptions = res.data.result.map((i) => i)
-      gitOptions.value = rawGitOptions.map(([value, label]) => ({ value, label }))
-      // gitOptions.value = (res.data.result || []).map(([value, label]) => ({ value, label }))
-    } catch (err) {
-      Notify.create({ type: 'negative', message: `Failed to fetch options: ${err.message}` })
-    } finally {
-      gitForm.loadingOptions = false
-    }
-  },
-)
-
-const onGitFilter = async function (val, update) {
-  const needle = val.toLowerCase()
-  // gitOptions.value = stringOptions.filter((v) => v.toLowerCase().indexOf(needle) > -1)
-  update(() => {
-    gitOptions.value = rawGitOptions
-      .filter(([_val, label]) => label.toLowerCase().indexOf(needle) > -1)
-      .map(([value, label]) => ({ value, label }))
-  })
-}
-
-const submitGitVersion = async () => {
-  if (!gitForm.gitUrl || !gitForm.selectedOption) {
-    Notify.create({ type: 'negative', message: 'Please fill in both fields' })
+const submitVersion = async () => {
+  if (versionForm.contents === 'image') return submitImageVersion()
+  if (versionForm.contents === 'heat_template') return submitInfrastructureTemplate()
+  const urn =
+    versionForm.contents === 'git'
+      ? versionForm.gitUrl && versionForm.gitRef && gitToUrn(versionForm.gitUrl, versionForm.gitRef)
+      : versionForm.archiveUrl && `urn:trovi:contents:http:${versionForm.archiveUrl}`
+  if (!urn) {
+    Notify.create({
+      type: 'negative',
+      message:
+        versionForm.contents === 'git'
+          ? 'Please enter a repository and select a branch, tag or commit'
+          : 'Please enter an archive URL',
+    })
     return
   }
-  gitForm.submitting = true
+
+  versionForm.submitting = true
   try {
-    const contents_urn = gitToUrn(gitForm.gitUrl, gitForm.selectedOption)
     const newVersion = await artifactsStore.createVersion(artifactUUID, {
-      contents: { urn: contents_urn },
+      contents: { urn },
+      environment_setup: launchOptionsToSetup(versionForm.launchOptions),
     })
     if (newVersion) {
       state.artifact.versions.unshift(newVersion)
-      gitDialog.value = false
+      versionForm.launchOptions = [newLaunchOption()]
+      versionDialog.value = false
     }
   } finally {
-    gitForm.submitting = false
+    versionForm.submitting = false
   }
 }
 
@@ -186,7 +175,6 @@ const SITE_MAP = {
   Other: 'other',
 }
 
-const imageDialog = ref(false)
 const imageForm = reactive({
   selectedSite: null,
   imageUuid: '',
@@ -230,7 +218,7 @@ const submitImageVersion = async () => {
       state.artifact.versions.unshift(newVersion)
       imageForm.selectedSite = null
       imageForm.imageUuid = ''
-      imageDialog.value = false
+      versionDialog.value = false
       Notify.create({ type: 'positive', message: 'Image version created' })
     }
   } catch (err) {
@@ -243,7 +231,6 @@ const submitImageVersion = async () => {
   }
 }
 
-const heatTemplateDialog = ref(false)
 const infrastructureTemplateContent = ref('')
 const infrastructureTemplateSubmitting = ref(false)
 
@@ -264,7 +251,7 @@ const submitInfrastructureTemplate = async () => {
     if (newVersion) {
       state.artifact.versions.unshift(newVersion)
       infrastructureTemplateContent.value = ''
-      heatTemplateDialog.value = false
+      versionDialog.value = false
       Notify.create({ type: 'positive', message: 'Infrastructure template version created' })
     }
   } catch (err) {
@@ -472,6 +459,8 @@ function versionType(version) {
     return `Disk image (${site ?? siteKey})`
   }
   const { provider } = parseUrn(urn)
+  // External listings link to their source, which isn't launchable contents
+  if (provider === 'http' && version.environment_setup?.length) return 'Archive URL'
   return VERSION_TYPES[provider] ?? provider
 }
 
@@ -763,47 +752,33 @@ const reimportArtifact = () => {
               <q-card id="versions" class="q-pa-md q-mb-md">
                 <div class="row items-center justify-between q-mb-xs">
                   <h3 class="text-h6 q-my-none">Versions</h3>
-                  <q-btn-dropdown color="primary" icon="add" label="New Version">
-                    <q-list>
-                      <q-item clickable v-close-popup @click="gitDialog = true">
-                        <q-item-section>
-                          <q-item-label>From a Git repository</q-item-label>
-                          <q-item-label caption>A branch, tag, or commit</q-item-label>
-                        </q-item-section>
-                      </q-item>
-                      <q-item clickable v-close-popup @click="imageDialog = true">
-                        <q-item-section>
-                          <q-item-label>Disk image</q-item-label>
-                          <q-item-label caption>An image on a Chameleon site</q-item-label>
-                        </q-item-section>
-                      </q-item>
-                      <q-item clickable v-close-popup @click="heatTemplateDialog = true">
-                        <q-item-section>
-                          <q-item-label>Heat template</q-item-label>
-                          <q-item-label caption>An orchestration template</q-item-label>
-                        </q-item-section>
-                      </q-item>
-                      <template
-                        v-if="
-                          state.artifact.computed?.github_url &&
-                          state.originalArtifact.computed.isOwnedByUser()
-                        "
-                      >
-                        <q-separator />
-                        <q-item clickable v-close-popup @click="reimportArtifact">
-                          <q-item-section>
-                            <q-item-label>Sync from GitHub</q-item-label>
-                            <q-item-label caption>
-                              Update details from trovi.json and add the latest commit
-                            </q-item-label>
-                          </q-item-section>
-                        </q-item>
-                      </template>
-                    </q-list>
-                  </q-btn-dropdown>
+                  <div class="row q-gutter-sm">
+                    <q-btn
+                      v-if="
+                        state.artifact.computed?.github_url &&
+                        state.originalArtifact.computed.isOwnedByUser()
+                      "
+                      flat
+                      color="primary"
+                      icon="sync"
+                      label="Sync from GitHub"
+                      @click="reimportArtifact"
+                    >
+                      <q-tooltip>
+                        Update details from trovi.json and add the latest commit
+                      </q-tooltip>
+                    </q-btn>
+                    <q-btn
+                      color="primary"
+                      icon="add"
+                      label="New Version"
+                      @click="versionDialog = true"
+                    />
+                  </div>
                 </div>
                 <p class="text-caption">
-                  Creating or deleting a version and requesting a DOI take effect immediately.
+                  Each version is its contents and the ways users can launch them. Creating or
+                  deleting a version and requesting a DOI take effect immediately.
                 </p>
                 <q-list v-if="state.artifact.versions.length" bordered separator>
                   <q-item v-for="(version, index) in state.artifact.versions" :key="version.slug">
@@ -818,6 +793,20 @@ const reimportArtifact = () => {
                         />
                       </q-item-label>
                       <q-item-label caption>{{ version.created_at }}</q-item-label>
+                      <q-item-label>
+                        <q-chip
+                          v-for="(setup, i) in version.environment_setup"
+                          :key="i"
+                          dense
+                          outline
+                          color="primary"
+                          icon="rocket_launch"
+                          :label="setupSummary(setup)"
+                        />
+                        <span v-if="!version.environment_setup?.length" class="text-caption">
+                          No launch options
+                        </span>
+                      </q-item-label>
                     </q-item-section>
                     <q-item-section side>
                       <div class="row items-center q-gutter-sm">
@@ -1172,100 +1161,80 @@ const reimportArtifact = () => {
         </q-card-section>
       </q-card>
 
-      <q-dialog v-model="gitDialog" persistent>
-        <q-card style="min-width: 400px; max-width: 600px">
+      <q-dialog v-model="versionDialog" persistent>
+        <q-card style="width: 760px; max-width: 90vw">
           <q-card-section>
-            <h3 class="text-h6 q-mb-md">Create Version from Git</h3>
-            <p>
-              Enter the Git repository URL and select a branch, tag, or commit to create a new
-              artifact version.
-            </p>
+            <h3 class="text-h6 q-mb-md">New Version</h3>
+            <h4 class="text-subtitle1 q-mt-none q-mb-sm">Contents</h4>
+            <p class="text-caption">What the version holds, such as an experiment's code.</p>
+            <q-btn-toggle
+              v-model="versionForm.contents"
+              :options="CONTENT_TYPES"
+              no-caps
+              unelevated
+              toggle-color="primary"
+              class="q-mb-md"
+            />
+            <GitRefInput
+              v-if="versionForm.contents === 'git'"
+              v-model:url="versionForm.gitUrl"
+              v-model:git-ref="versionForm.gitRef"
+            />
             <q-input
+              v-else-if="versionForm.contents === 'http'"
               filled
-              v-model="gitForm.gitUrl"
-              label="Git Clone URL"
+              v-model="versionForm.archiveUrl"
+              label="Archive URL"
               type="url"
-              placeholder="https://github.com/owner/repo.git"
+              placeholder="https://zenodo.org/records/123/files/code.zip"
+              hint="A zip or tar archive, which is unpacked where it's launched"
               class="q-mb-md"
-              clearable
             />
-            <q-select
-              v-model="gitForm.selectedOption"
-              :options="gitOptions"
-              label="Select Git Branch/Tag"
-              dense
-              emit-value
-              map-options
-              use-input
-              class="q-mb-md"
-              @filter="onGitFilter"
-            >
-              <template v-slot:append>
-                <QSpinner v-if="gitForm.loadingOptions" size="24px" />
-              </template>
-            </q-select>
-          </q-card-section>
-          <q-card-actions align="right">
-            <q-btn flat label="Cancel" color="secondary" v-close-popup />
-            <q-btn
-              label="Create Version"
-              color="primary"
-              :loading="gitForm.submitting"
-              @click="submitGitVersion"
-            />
-          </q-card-actions>
-        </q-card>
-      </q-dialog>
+            <template v-else-if="versionForm.contents === 'image'">
+              <p>Choose the site where the image is stored and enter its UUID.</p>
+              <q-select
+                v-model="imageForm.selectedSite"
+                :options="imageForm.siteOptions"
+                label="Site"
+                dense
+                class="q-mb-md"
+              />
+              <q-input v-model="imageForm.imageUuid" label="Image UUID" dense class="q-mb-md" />
+            </template>
+            <template v-else>
+              <p>
+                Paste the template. It is shown on the artifact page so others can copy it into a
+                stack on Chameleon.
+              </p>
+              <q-input
+                v-model="infrastructureTemplateContent"
+                type="textarea"
+                label="Heat Template"
+                input-class="code"
+                dense
+                class="q-mb-md"
+              />
+            </template>
 
-      <q-dialog v-model="imageDialog" persistent>
-        <q-card style="min-width: 400px; max-width: 600px">
-          <q-card-section>
-            <h3 class="text-h6 q-mb-md">Create Version from Disk Image</h3>
-            <p>Choose the site where the image is stored and enter its UUID.</p>
-            <q-select
-              v-model="imageForm.selectedSite"
-              :options="imageForm.siteOptions"
-              label="Site"
-              dense
-              class="q-mb-md"
-            />
-            <q-input v-model="imageForm.imageUuid" label="Image UUID" dense />
-          </q-card-section>
-          <q-card-actions align="right">
-            <q-btn flat label="Cancel" color="secondary" v-close-popup />
-            <q-btn
-              label="Create Version"
-              color="primary"
-              :loading="imageForm.submitting"
-              @click="submitImageVersion"
-            />
-          </q-card-actions>
-        </q-card>
-      </q-dialog>
-
-      <q-dialog v-model="heatTemplateDialog" persistent>
-        <q-card style="width: 700px; max-width: 90vw">
-          <q-card-section>
-            <h3 class="text-h6 q-mb-md">Create Version from Heat Template</h3>
-            <p>
-              Paste the template. It is shown on the artifact page so others can copy it into a
-              stack on Chameleon.
+            <h4 class="text-subtitle1 q-mt-md q-mb-sm">How users launch it</h4>
+            <template v-if="['git', 'http'].includes(versionForm.contents)">
+              <p class="text-caption">Each launch option is a button on the artifact page.</p>
+              <LaunchOptionsEditor v-model="versionForm.launchOptions" />
+            </template>
+            <p v-else-if="versionForm.contents === 'image'" class="text-caption">
+              Users boot the image on a Chameleon site, following the links on the artifact page.
             </p>
-            <q-input
-              v-model="infrastructureTemplateContent"
-              type="textarea"
-              label="Heat Template"
-              input-class="code"
-              dense
-            />
+            <p v-else class="text-caption">Users copy the template into a stack on Chameleon.</p>
           </q-card-section>
           <q-card-actions align="right">
             <q-btn flat label="Cancel" color="secondary" v-close-popup />
             <q-btn
               label="Create Version"
               color="primary"
-              :loading="infrastructureTemplateSubmitting"
-              @click="submitInfrastructureTemplate"
+              :loading="
+                versionForm.submitting || imageForm.submitting || infrastructureTemplateSubmitting
+              "
+              @click="submitVersion"
             />
           </q-card-actions>
         </q-card>
