@@ -143,7 +143,7 @@ function processArtifact(store, artifact) {
   artifact.computed.hasDoi = false
   artifact.versions.forEach((v, i) => {
     v.computed = {}
-    if (v.contents.urn.includes('zenodo')) {
+    if (v.contents.urn.startsWith('urn:trovi:contents:zenodo:')) {
       v.computed.doi = parseDoi(v.contents.urn)
       v.computed.doi_url = `https://doi.org/${v.computed.doi}`
       artifact.computed.hasDoi = true
