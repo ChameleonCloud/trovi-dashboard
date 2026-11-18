@@ -54,10 +54,14 @@ function processArtifact(store, artifact) {
   artifact.computed.long_description_markup = DOMPurify.sanitize(
     marked(artifact.long_description ? artifact.long_description : ''),
   )
-  artifact.computed.get_chameleon_launch_url = function (version_slug, sharing_key) {
+  artifact.computed.get_chameleon_launch_url = function (version_slug, sharing_key, setup) {
     const params = new URLSearchParams()
     if (sharing_key) {
       params.append('s', sharing_key)
+    }
+    // Which launch option, by its index among the version's setups
+    if (setup !== undefined) {
+      params.append('setup', setup)
     }
 
     const version = artifact.versions.find((v) => v.slug === version_slug)

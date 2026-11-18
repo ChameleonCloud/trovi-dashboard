@@ -266,3 +266,15 @@ export function parseImageUrn(urn) {
     uuid: parts[4] || '',
   }
 }
+
+// The button each launch type has on the artifact page
+export const LAUNCH_BUTTONS = {
+  jupyterhub: {
+    label: 'Launch on Chameleon',
+    tooltip: 'Open the contents in JupyterLab on Chameleon',
+  },
+  single_node: {
+    label: 'Bare Metal Launch',
+    tooltip: 'Reserve a Chameleon node, boot it, and copy this artifact onto it',
+  },
+}
