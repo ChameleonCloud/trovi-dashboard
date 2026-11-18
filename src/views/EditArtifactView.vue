@@ -264,6 +264,49 @@ const submitInfrastructureTemplate = async () => {
   }
 }
 
+/* --------- trovi.json ---------- */
+const troviJsonDialog = ref(false)
+const troviJsonForm = reactive({
+  version: null,
+  useReadme: false,
+  readme: 'README.md',
+  loading: false,
+})
+
+const openTroviJsonDialog = () => {
+  troviJsonForm.version = state.artifact.versions[0]?.slug ?? null
+  troviJsonDialog.value = true
+}
+
+// Fetches trovi.json, and hands its text to deliver
+const getTroviJson = async (deliver) => {
+  troviJsonForm.loading = true
+  try {
+    const crate = await artifactsStore.fetchTroviJson(artifactUUID, {
+      version: troviJsonForm.version ?? undefined,
+      readme: troviJsonForm.useReadme ? troviJsonForm.readme : undefined,
+    })
+    if (crate) await deliver(JSON.stringify(crate, null, 2) + '\n')
+  } finally {
+    troviJsonForm.loading = false
+  }
+}
+
+const downloadTroviJson = () =>
+  getTroviJson((text) => {
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }))
+    link.download = 'trovi.json'
+    link.click()
+    URL.revokeObjectURL(link.href)
+  })
+
+const copyTroviJson = () =>
+  getTroviJson(async (text) => {
+    await copyToClipboard(text)
+    Notify.create({ type: 'positive', message: 'Copied trovi.json' })
+  })
+
 /* --------- Linked Artifacts (checkbox UI) ---------- */
 const relatedDialog = ref(false)
 const linkSearch = ref('')
@@ -754,20 +797,12 @@ const reimportArtifact = () => {
                   <h3 class="text-h6 q-my-none">Versions</h3>
                   <div class="row q-gutter-sm">
                     <q-btn
-                      v-if="
-                        state.artifact.computed?.github_url &&
-                        state.originalArtifact.computed.isOwnedByUser()
-                      "
                       flat
                       color="primary"
-                      icon="sync"
-                      label="Sync from GitHub"
-                      @click="reimportArtifact"
-                    >
-                      <q-tooltip>
-                        Update details from trovi.json and add the latest commit
-                      </q-tooltip>
-                    </q-btn>
+                      icon="description"
+                      label="trovi.json"
+                      @click="openTroviJsonDialog"
+                    />
                     <q-btn
                       color="primary"
                       icon="add"
@@ -1235,6 +1270,67 @@ const reimportArtifact = () => {
                 versionForm.submitting || imageForm.submitting || infrastructureTemplateSubmitting
               "
               @click="submitVersion"
+            />
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
+
+      <q-dialog v-model="troviJsonDialog">
+        <q-card style="width: 600px; max-width: 90vw">
+          <q-card-section>
+            <h3 class="text-h6 q-mb-md">trovi.json</h3>
+            <p>
+              A <code>trovi.json</code> at the root of a GitHub repository describes the artifact:
+              its details, authors and launch options. With one, <em>Import from GitHub</em> creates
+              the artifact, and <em>Sync from GitHub</em> updates it.
+            </p>
+            <q-select
+              v-model="troviJsonForm.version"
+              :options="state.artifact.versions.map((v) => v.slug)"
+              label="Launch options from version"
+              dense
+              class="q-mb-md"
+            />
+            <q-checkbox
+              v-model="troviJsonForm.useReadme"
+              label="Use a file in the repository, such as the README, as the long description"
+            />
+            <q-input
+              v-if="troviJsonForm.useReadme"
+              v-model="troviJsonForm.readme"
+              label="File"
+              hint="Its path in the repository"
+              dense
+              class="q-mb-md"
+            />
+          </q-card-section>
+          <q-card-actions align="right">
+            <q-btn
+              v-if="
+                state.artifact.computed?.github_url &&
+                state.originalArtifact.computed.isOwnedByUser()
+              "
+              flat
+              color="primary"
+              label="Sync from GitHub"
+              v-close-popup
+              @click="reimportArtifact"
+            />
+            <q-space />
+            <q-btn
+              flat
+              color="primary"
+              icon="content_copy"
+              label="Copy"
+              :loading="troviJsonForm.loading"
+              @click="copyTroviJson"
+            />
+            <q-btn
+              color="primary"
+              icon="download"
+              label="Download"
+              :loading="troviJsonForm.loading"
+              @click="downloadTroviJson"
             />
           </q-card-actions>
         </q-card>

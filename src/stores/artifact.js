@@ -378,6 +378,22 @@ export const useArtifactsStore = defineStore('artifacts', {
         return undefined
       }
     },
+    // The artifact's trovi.json, with the launch options of version, or the latest one.
+    // With readme, the description is that file in the repository.
+    async fetchTroviJson(uuid, { version, readme } = {}) {
+      const token = await this.authStore.getTroviToken()
+      const params = { ...(token && { access_token: token }), version, readme }
+      try {
+        const res = await axios.get(`/import/${uuid}/`, { params })
+        return res.data
+      } catch (error) {
+        Notify.create({
+          type: 'negative',
+          message: `Could not make trovi.json: ${error.response ? errObjToMessage(error.response.data) : error.message}`,
+        })
+        return undefined
+      }
+    },
     async createArtifact(artifact_obj) {
       await this.authStore.requireLogin()
       let token = await this.authStore.getTroviToken()
