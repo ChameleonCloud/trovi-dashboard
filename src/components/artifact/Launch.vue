@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import { LAUNCH_BUTTONS } from '@/util'
 
 const { artifact, version_slug } = defineProps({
   artifact: Object,
@@ -17,43 +18,41 @@ const selectedVersion = computed(() => {
   return versions.find((v) => v.slug === version_slug) || null
 })
 
-const isJupyterHub = computed(() => {
-  const v = selectedVersion.value
-  const setup = Array.isArray(v?.environment_setup) ? v.environment_setup : []
-  return setup.some((e) => e.type === 'jupyterhub')
-})
+// The setups that have a launch button
+const LAUNCHERS = { ...LAUNCH_BUTTONS, source_code: LAUNCH_BUTTONS.jupyterhub }
 
-const genericJupyter = computed(() => {
-  const v = selectedVersion.value
-  const setup = Array.isArray(v?.environment_setup) ? v.environment_setup : []
-  const entry = setup.find((e) => e.type === 'source_code' && e.arguments && e.arguments.url)
-  return entry ? entry.arguments : null
-})
+// Each launch option, with its index among the version's setups, which the portal
+// launches it by
+const launchOptions = computed(() =>
+  (selectedVersion.value?.environment_setup || [])
+    .map((setup, index) => ({ ...setup, index }))
+    .filter((s) => s.type in LAUNCHERS && (s.type !== 'source_code' || s.arguments?.url)),
+)
 </script>
 
 <template>
   <div v-if="version_slug">
     <h2 class="text-h6 text-primary">Content</h2>
 
-    <div class="q-mb-sm" v-if="isJupyterHub || genericJupyter">
+    <div v-for="option in launchOptions" :key="option.index" class="q-mb-sm">
       <q-btn
         color="primary"
-        label="Launch on Chameleon"
-        :href="artifact.computed.get_chameleon_launch_url(version_slug, sharingKey)"
+        :label="
+          option.label
+            ? `${LAUNCHERS[option.type].label} (${option.label})`
+            : LAUNCHERS[option.type].label
+        "
+        :href="artifact.computed.get_chameleon_launch_url(version_slug, sharingKey, option.index)"
         target="_blank"
         class="full-width"
-      />
+      >
+        <q-tooltip>{{ LAUNCHERS[option.type].tooltip }}</q-tooltip>
+      </q-btn>
     </div>
 
-    <div class="q-mb-sm" v-if="!isJupyterHub">
-      <q-chip
-        color="grey"
-        text-color="white"
-        class="full-width justify-center cursor-inherit"
-      >
-        External Artifact
-      </q-chip>
-    </div>
+    <p v-if="!selectedVersion?.environment_setup?.length" class="text-caption text-grey-7">
+      This version has no launch options.
+    </p>
 
     <div class="q-mb-sm">
       <q-btn

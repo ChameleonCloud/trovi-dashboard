@@ -266,3 +266,64 @@ export function parseImageUrn(urn) {
     uuid: parts[4] || '',
   }
 }
+
+// The ways an author can let users launch a version's contents, which become the
+// version's environment_setup
+export const LAUNCH_TYPES = {
+  jupyterhub: 'Chameleon JupyterHub',
+  single_node: 'Chameleon bare metal',
+}
+
+// The button each launch type has on the artifact page
+export const LAUNCH_BUTTONS = {
+  jupyterhub: {
+    label: 'Launch on Chameleon',
+    tooltip: 'Open the contents in JupyterLab on Chameleon',
+  },
+  single_node: {
+    label: 'Bare Metal Launch',
+    tooltip: 'Reserve a Chameleon node, boot it, and copy this artifact onto it',
+  },
+}
+
+// The node defaults are ignored by the other types
+export function newLaunchOption(type = 'jupyterhub') {
+  return {
+    type,
+    label: '',
+    site: null,
+    node_type: '',
+    lease_duration_hours: 3,
+    image: 'CC-Ubuntu24.04',
+  }
+}
+
+// Node defaults left blank are omitted, so users fill them in at launch
+export function launchOptionsToSetup(options) {
+  return options.map(({ type, label, ...args }) => ({
+    type,
+    label,
+    arguments:
+      type === 'single_node'
+        ? Object.fromEntries(
+            Object.entries(args).filter(([, value]) => value !== '' && value !== null),
+          )
+        : {},
+  }))
+}
+
+const SETUP_NAMES = {
+  ...LAUNCH_TYPES,
+  source_code: LAUNCH_TYPES.jupyterhub,
+  image: 'Disk image',
+  heat_template: 'Heat template',
+}
+
+// What a setup launches, such as "Chameleon bare metal: GPU node · CHI@UC · 4 h"
+export function setupSummary(setup) {
+  const args = setup.type === 'single_node' ? setup.arguments || {} : {}
+  const hours = args.lease_duration_hours && `${args.lease_duration_hours} h`
+  const details = [setup.label, args.site, args.node_type, hours, args.image].filter(Boolean)
+  const name = SETUP_NAMES[setup.type] ?? setup.type
+  return details.length ? `${name}: ${details.join(' · ')}` : name
+}

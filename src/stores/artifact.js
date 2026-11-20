@@ -54,10 +54,14 @@ function processArtifact(store, artifact) {
   artifact.computed.long_description_markup = DOMPurify.sanitize(
     marked(artifact.long_description ? artifact.long_description : ''),
   )
-  artifact.computed.get_chameleon_launch_url = function (version_slug, sharing_key) {
+  artifact.computed.get_chameleon_launch_url = function (version_slug, sharing_key, setup) {
     const params = new URLSearchParams()
     if (sharing_key) {
       params.append('s', sharing_key)
+    }
+    // Which launch option, by its index among the version's setups
+    if (setup !== undefined) {
+      params.append('setup', setup)
     }
 
     const version = artifact.versions.find((v) => v.slug === version_slug)
@@ -143,7 +147,7 @@ function processArtifact(store, artifact) {
   artifact.computed.hasDoi = false
   artifact.versions.forEach((v, i) => {
     v.computed = {}
-    if (v.contents.urn.includes('zenodo')) {
+    if (v.contents.urn.startsWith('urn:trovi:contents:zenodo:')) {
       v.computed.doi = parseDoi(v.contents.urn)
       v.computed.doi_url = `https://doi.org/${v.computed.doi}`
       artifact.computed.hasDoi = true
@@ -371,6 +375,22 @@ export const useArtifactsStore = defineStore('artifacts', {
           })
         }
       } else {
+        return undefined
+      }
+    },
+    // The artifact's trovi.json, with the launch options of version, or the latest one.
+    // With readme, the description is that file in the repository.
+    async fetchTroviJson(uuid, { version, readme } = {}) {
+      const token = await this.authStore.getTroviToken()
+      const params = { ...(token && { access_token: token }), version, readme }
+      try {
+        const res = await axios.get(`/import/${uuid}/`, { params })
+        return res.data
+      } catch (error) {
+        Notify.create({
+          type: 'negative',
+          message: `Could not make trovi.json: ${error.response ? errObjToMessage(error.response.data) : error.message}`,
+        })
         return undefined
       }
     },

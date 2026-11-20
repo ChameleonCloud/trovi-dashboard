@@ -1,75 +1,119 @@
 <script setup>
 import router from '@/router'
-import { reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
+import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 import { useArtifactsStore } from '@/stores/artifact'
+import { useAuthStore } from '@/stores/auth'
 import MainSection from '@/components/MainSection.vue'
-import { Notify, QSpinner, QInput, QBtn, QSelect, QTabs, QTab, QTabPanels, QTabPanel } from 'quasar'
-import { useRoute } from 'vue-router'
+import FormSection from '@/components/FormSection.vue'
+import GitRefInput from '@/components/GitRefInput.vue'
+import LaunchOptionsEditor from '@/components/artifact/LaunchOptionsEditor.vue'
+import { gitToUrn, launchOptionsToSetup, newLaunchOption } from '@/util'
+import { Notify } from 'quasar'
 
 const artifactsStore = useArtifactsStore()
+const authStore = useAuthStore()
 
-const route = useRoute()
+const VISIBILITY = [
+  { label: 'Private', value: 'private', icon: 'lock' },
+  { label: 'Public', value: 'public', icon: 'public' },
+]
+const VISIBILITY_HINTS = {
+  private: 'Only you, and people you share it with, can see it.',
+  public: 'Anyone can find and launch it on Trovi.',
+}
 
-// Default to 'import', but override if query param exists
-const tab = ref(route.query.mode || 'manual')
-watch(tab, (newTab) => {
-  router.replace({ query: { ...route.query, mode: newTab } })
-})
-
-// GitHub form
-const githubForm = reactive({
-  githubRepo: '',
-  loading: false,
-})
-
-// Manual form
-const manualForm = reactive({
+const form = reactive({
+  gitUrl: '',
+  gitRef: null,
   title: '',
   short_description: '',
   long_description: '',
-  visibility: 'private',
   tags: [],
-  authors: [],
+  visibility: 'private',
+  authors: [
+    {
+      full_name: authStore.userInfo.name || '',
+      affiliation: '',
+      email: authStore.userInfo.email || '',
+    },
+  ],
+  launchOptions: [newLaunchOption()],
   loading: false,
+  importing: false,
 })
 
-const handleGithubSubmit = async () => {
-  githubForm.loading = true
+const required = (val) => !!val?.trim() || 'Required'
+
+const descriptionTab = ref('write')
+const descriptionMarkup = computed(() => DOMPurify.sanitize(marked(form.long_description)))
+
+const repoName = (url) => url?.match(/([^/:]+?)(?:\.git)?\/*$/)?.[1] || ''
+
+// Names the artifact after the repository, until the user names it
+watch(
+  () => form.gitUrl,
+  (url, old) => {
+    if (form.title === repoName(old)) form.title = repoName(url)
+  },
+)
+
+const githubRepo = computed(
+  () => form.gitUrl?.match(/github\.com[:/]([^/]+\/[^/]+?)(?:\.git)?\/*$/i)?.[1],
+)
+const hasTroviJson = ref(false)
+watch(githubRepo, async (repo) => {
+  hasTroviJson.value = false
+  if (!repo) return
   try {
-    const artifact = await artifactsStore.importArtifact(githubForm.githubRepo)
+    const res = await fetch(`https://raw.githubusercontent.com/${repo}/HEAD/trovi.json`, {
+      method: 'HEAD',
+    })
+    // The URL may have changed while this was checked
+    hasTroviJson.value = res.ok && repo === githubRepo.value
+  } catch {
+    // GitHub is unreachable, so there is no import to offer
+  }
+})
+
+const importTroviJson = async () => {
+  form.importing = true
+  try {
+    const artifact = await artifactsStore.importArtifact(form.gitUrl)
     if (artifact) router.push({ path: `/artifacts/${artifact.uuid}` })
   } finally {
-    githubForm.loading = false
+    form.importing = false
   }
 }
 
-const handleManualSubmit = async () => {
-  if (manualForm.authors.length === 0) {
-    Notify.create({
-      type: 'negative',
-      message: 'Please add at least one author.',
-    })
+const submit = async () => {
+  if (form.gitUrl && !form.gitRef) {
+    Notify.create({ type: 'negative', message: 'Please select a branch, tag or commit.' })
     return
   }
 
-  manualForm.loading = true
+  form.loading = true
   try {
     const artifact = await artifactsStore.createArtifact({
-      title: manualForm.title,
-      short_description: manualForm.short_description,
-      long_description: manualForm.long_description,
-      visibility: manualForm.visibility,
-      tags: manualForm.tags,
-      authors: manualForm.authors,
+      title: form.title,
+      short_description: form.short_description,
+      long_description: form.long_description,
+      visibility: form.visibility,
+      tags: form.tags,
+      authors: form.authors,
+      // The first version, made with the artifact
+      ...(form.gitUrl && {
+        version: {
+          contents: { urn: gitToUrn(form.gitUrl, form.gitRef) },
+          environment_setup: launchOptionsToSetup(form.launchOptions),
+        },
+      }),
     })
     if (artifact) router.push({ path: `/artifacts/${artifact.uuid}` })
   } finally {
-    manualForm.loading = false
+    form.loading = false
   }
-}
-
-const addAuthor = () => {
-  manualForm.authors.push({ full_name: '', affiliation: '', email: '' })
 }
 
 artifactsStore.fetchTags()
@@ -77,164 +121,190 @@ artifactsStore.fetchTags()
 
 <template>
   <MainSection>
-    <q-card>
-      <q-card-section>
-        <q-tabs v-model="tab" dense class="q-mb-md">
-          <q-tab name="import" label="Import from GitHub" />
-          <q-tab name="manual" label="Manual Entry" />
-        </q-tabs>
+    <q-form class="q-mx-auto" style="max-width: 960px" @submit="submit">
+      <h2 class="text-h5 q-mt-none q-mb-xs">Create an artifact</h2>
+      <p class="text-grey-8 q-mb-lg">
+        Share an experiment's code and data, and how others can launch it.
+      </p>
 
-        <q-tab-panels v-model="tab" animated>
-          <!-- GitHub import -->
-          <q-tab-panel name="import">
-            <form @submit.prevent="handleGithubSubmit">
-              <h2 class="text-h5 text-center q-mb-lg">Import Artifact from GitHub</h2>
-              <article class="q-mb-lg">
-                <p>
-                  To import an artifact, you must provide a GitHub repository URL. This repository
-                  should be configured with a <code>trovi.json</code>, which contains the artifact's
-                  metadata.
-                </p>
-                <p>Detailed instructions:</p>
-                <ol>
-                  <li>Create a public repository on GitHub.</li>
-                  <li>
-                    Create a <code>trovi.json</code> file, either manually or via
-                    <a
-                      href="https://github.com/ChameleonCloud/troviclient?tab=readme-ov-file#trovi-artifact-generate"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      >the Trovi CLI tool</a
-                    >.
-                  </li>
-                  <li>Upload <code>trovi.json</code> to the root of your git repository.</li>
-                  <li>
-                    Copy and paste the GitHub clone URL into the input below, then click
-                    <em>Add Artifact</em>.
-                  </li>
-                  <li>
-                    Once your artifact is created, you can register further versions with Trovi
-                    under the <em>Edit</em> page.
-                  </li>
-                </ol>
-              </article>
-              <q-input
-                filled
-                v-model="githubForm.githubRepo"
-                label="GitHub Repository URL"
-                type="url"
-                placeholder="https://github.com/owner/repo"
-                :disable="githubForm.loading"
-                class="q-mb-md"
-                required
-              />
-              <div v-if="githubForm.loading" class="row justify-center q-my-md">
-                <QSpinner size="40px" color="primary" />
-              </div>
-              <q-btn
-                label="Add Artifact"
-                color="primary"
-                class="full-width"
-                type="submit"
-                :loading="githubForm.loading"
-              />
-            </form>
-          </q-tab-panel>
+      <FormSection
+        :step="1"
+        title="Git repository"
+        caption="Optional. The repository with the experiment's code, notebooks and data. The commit you pick becomes the artifact's first version."
+      >
+        <q-banner dense rounded class="bg-blue-1 q-mb-md">
+          <template v-slot:avatar>
+            <q-icon name="info" color="primary" />
+          </template>
+          Have a <code>trovi.json</code>? Enter its GitHub repository, and the artifact can be
+          created from it (<a
+            href="https://chameleoncloud.readthedocs.io/en/latest/technical/sharing.html#packaging-shared-artifacts"
+            target="_blank"
+            rel="noopener noreferrer"
+            >learn more</a
+          >).
+        </q-banner>
+        <GitRefInput v-model:url="form.gitUrl" v-model:git-ref="form.gitRef" />
+        <q-banner v-if="hasTroviJson" rounded class="bg-green-1 q-mb-md">
+          <template v-slot:avatar>
+            <q-icon name="check_circle" color="positive" />
+          </template>
+          This repository has a <code>trovi.json</code>. Create the artifact from it, with the
+          details, authors and launch options it has on the default branch. Or fill in the form
+          below yourself.
+          <template v-slot:action>
+            <q-btn
+              color="primary"
+              unelevated
+              no-caps
+              label="Create from trovi.json"
+              :loading="form.importing"
+              @click="importTroviJson"
+            />
+          </template>
+        </q-banner>
+        <p v-if="!form.gitUrl" class="text-caption text-grey-8 q-mb-none">
+          No repository? Leave this blank, and add a version later.
+        </p>
+        <template v-else>
+          <h4 class="text-subtitle1 q-mt-md q-mb-xs">How users launch it</h4>
+          <p class="text-caption text-grey-8">
+            Each launch option is a button on the artifact page.
+          </p>
+          <LaunchOptionsEditor v-model="form.launchOptions" />
+        </template>
+      </FormSection>
 
-          <!-- Manual entry -->
-          <q-tab-panel name="manual">
-            <form @submit.prevent="handleManualSubmit">
-              <h2 class="text-h5 text-center q-mb-lg">Create Artifact Manually</h2>
-              <article class="q-mb-lg">
-                <p>
-                  You can create an artifact manually by filling out the form below. You will need
-                  to provide at least one author.
-                </p>
-                <p>
-                  After creating the artifact, you can register further versions from Git under the
-                  <em>Edit</em> page.
-                </p>
-              </article>
-              <q-input
-                v-model="manualForm.title"
-                label="Title"
-                dense
-                class="q-mb-sm"
-                :rules="[(val) => val.length <= 140 || 'Please use maximum 140 characters']"
-                hint="Max 140 characters"
-              />
-              <q-input
-                v-model="manualForm.short_description"
-                type="textarea"
-                autogrow
-                label="Short Description"
-                dense
-                class="q-mb-sm"
-                :rules="[(val) => val.length <= 200 || 'Please use maximum 200 characters']"
-                hint="Max 200 characters"
-              />
-              <q-input
-                filled
-                type="textarea"
-                autogrow
-                v-model="manualForm.long_description"
-                label="Long Description"
-                class="q-mb-md"
-              />
-              <q-select
-                filled
-                v-model="manualForm.tags"
-                :options="artifactsStore.tags"
-                label="Tags"
-                multiple
-                use-chips
-                dense
-                class="q-mb-md"
-              />
-              <q-select
-                filled
-                v-model="manualForm.visibility"
-                :options="['public', 'private']"
-                label="Visibility"
-                dense
-                class="q-mb-md"
-              />
+      <FormSection :step="2" title="Details">
+        <q-input
+          v-model="form.title"
+          label="Title *"
+          filled
+          maxlength="140"
+          counter
+          :rules="[required]"
+          class="q-mb-sm"
+        />
+        <q-input
+          v-model="form.short_description"
+          label="Short description *"
+          filled
+          autogrow
+          maxlength="200"
+          counter
+          :rules="[required]"
+          class="q-mb-sm"
+        />
+        <div class="row items-center justify-between q-mb-xs">
+          <span class="text-subtitle2">Description</span>
+          <q-btn-toggle
+            v-model="descriptionTab"
+            :options="[
+              { label: 'Write', value: 'write' },
+              { label: 'Preview', value: 'preview' },
+            ]"
+            flat
+            dense
+            no-caps
+            toggle-color="primary"
+          />
+        </div>
+        <q-input
+          v-if="descriptionTab === 'write'"
+          v-model="form.long_description"
+          type="textarea"
+          filled
+          autogrow
+          maxlength="5000"
+          counter
+          hint="Markdown"
+          input-style="min-height: 8em"
+          class="q-mb-md"
+        />
+        <div v-else class="rounded-borders bg-grey-2 q-pa-md q-mb-lg" style="min-height: 8em">
+          <div v-if="form.long_description" v-html="descriptionMarkup"></div>
+          <span v-else class="text-grey-7">Nothing to preview.</span>
+        </div>
+        <div class="row q-col-gutter-md">
+          <q-select
+            v-model="form.tags"
+            :options="artifactsStore.tags"
+            label="Tags"
+            filled
+            multiple
+            use-chips
+            class="col-12 col-md-8"
+          />
+          <div class="col-12 col-md-4">
+            <q-btn-toggle
+              v-model="form.visibility"
+              :options="VISIBILITY"
+              spread
+              no-caps
+              unelevated
+              toggle-color="primary"
+            />
+            <p class="text-caption text-grey-7 q-mt-xs q-mb-none">
+              {{ VISIBILITY_HINTS[form.visibility] }}
+            </p>
+          </div>
+        </div>
 
-              <h3 class="text-h6 q-mb-sm">Authors</h3>
-              <div
-                v-for="(author, index) in manualForm.authors"
-                :key="index"
-                class="row items-center q-gutter-sm q-mb-sm"
-              >
-                <q-input v-model="author.full_name" label="Full Name" dense class="col" required />
-                <q-input v-model="author.affiliation" label="Affiliation" dense class="col" />
-                <q-input v-model="author.email" type="email" label="Email" dense class="col" />
-                <q-btn
-                  color="negative"
-                  flat
-                  icon="delete"
-                  @click="manualForm.authors.splice(index, 1)"
-                  round
-                  dense
-                />
-              </div>
-              <q-btn label="Add Author" color="primary" @click="addAuthor" class="q-mb-md" />
+        <h4 class="text-subtitle1 q-mt-lg q-mb-sm">Authors</h4>
+        <div
+          v-for="(author, index) in form.authors"
+          :key="index"
+          class="row items-start q-col-gutter-sm q-mb-sm"
+        >
+          <q-input
+            v-model="author.full_name"
+            label="Full name *"
+            filled
+            dense
+            :rules="[required]"
+            hide-bottom-space
+            class="col"
+          />
+          <q-input v-model="author.affiliation" label="Affiliation" filled dense class="col" />
+          <q-input v-model="author.email" type="email" label="Email" filled dense class="col" />
+          <div class="col-auto">
+            <q-btn
+              flat
+              round
+              dense
+              color="negative"
+              icon="delete"
+              @click="form.authors.splice(index, 1)"
+            >
+              <q-tooltip>Remove author</q-tooltip>
+            </q-btn>
+          </div>
+        </div>
+        <p v-if="!form.authors.length" class="text-caption text-negative">
+          Add at least one author.
+        </p>
+        <q-btn
+          flat
+          dense
+          no-caps
+          color="primary"
+          icon="add"
+          label="Add author"
+          @click="form.authors.push({ full_name: '', affiliation: '', email: '' })"
+        />
+      </FormSection>
 
-              <div v-if="manualForm.loading" class="row justify-center q-my-md">
-                <QSpinner size="40px" color="primary" />
-              </div>
-
-              <q-btn
-                label="Create Artifact"
-                color="primary"
-                class="full-width"
-                type="submit"
-                :loading="manualForm.loading"
-              />
-            </form>
-          </q-tab-panel>
-        </q-tab-panels>
-      </q-card-section>
-    </q-card>
+      <div class="row justify-end items-center q-gutter-md">
+        <span class="text-caption text-grey-7">You can change all of this later.</span>
+        <q-btn
+          type="submit"
+          color="primary"
+          unelevated
+          label="Create artifact"
+          :loading="form.loading"
+          :disable="!form.authors.length"
+        />
+      </div>
+    </q-form>
   </MainSection>
 </template>
