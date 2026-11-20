@@ -1,6 +1,8 @@
 <script setup>
 import { ref } from 'vue'
-import { LAUNCH_BUTTONS, LAUNCH_TYPES, NODE_SITES, newLaunchOption } from '@/util'
+import axios from 'axios'
+import { Notify } from 'quasar'
+import { LAUNCH_BUTTONS, LAUNCH_TYPES, newLaunchOption } from '@/util'
 
 // How users can launch a version, as a list of newLaunchOption()s
 const options = defineModel({ type: Array, required: true })
@@ -21,6 +23,17 @@ const KINDS = {
 }
 
 const HARDWARE_URL = `${import.meta.env.VITE_CHAMELEON_PORTAL_URL}/hardware/`
+
+// The bare metal sites, which take the node reservations launches make
+const sites = ref([])
+axios
+  .get('https://api.chameleoncloud.org/sites')
+  .then((res) => {
+    sites.value = res.data.items.filter((s) => s.site_class === 'baremetal').map((s) => s.name)
+  })
+  .catch((err) => {
+    Notify.create({ type: 'negative', message: `Failed to fetch Chameleon sites: ${err.message}` })
+  })
 
 // The option whose settings are shown
 const open = ref(null)
@@ -101,7 +114,7 @@ function summary(option) {
             <template v-if="option.type === 'single_node'">
               <q-select
                 v-model="option.site"
-                :options="NODE_SITES"
+                :options="sites"
                 label="Site"
                 clearable
                 filled

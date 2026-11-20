@@ -286,9 +286,6 @@ export const LAUNCH_BUTTONS = {
   },
 }
 
-// The bare metal sites, which take the node reservations launches make
-export const NODE_SITES = ['CHI@UC', 'CHI@TACC', 'CHI@NCAR', 'CHI@NRP', 'CHI@NU']
-
 // The node defaults are ignored by the other types
 export function newLaunchOption(type = 'jupyterhub') {
   return {
